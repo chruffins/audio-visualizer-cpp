@@ -29,7 +29,9 @@ public:
 	// Shutdown/cleanup. Safe to call multiple times.
 	void shutdown();
 
-	void run_callbacks() {
+    void set_new_song(std::string &title, std::string &artist);
+
+    void run_callbacks() {
 		discordpp::RunCallbacks();
 	}
 
