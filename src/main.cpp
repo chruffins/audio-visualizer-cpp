@@ -12,6 +12,7 @@
 
 #include "../include/core/app_state.hpp"
 #include "../include/core/discord_integration.hpp"
+#include "database/library_scanner.hpp"
 
 // Replace with your Discord Application ID
 const uint64_t APPLICATION_ID = 123456789012345678;
@@ -82,6 +83,11 @@ int main() {
   appState.init();
 
   std::cout << "App state initialized!\n";
+
+  // Import songs from a directory
+  database::LibraryScanner scanner;
+  auto result = scanner.scan(appState.db, "C:\\Users\\chris\\Music");
+  std::cout << "Scanned " << result.scanned << " files, imported " << result.imported << " songs, skipped " << result.skipped << " songs.\n";
 
   run_main_loop();
 

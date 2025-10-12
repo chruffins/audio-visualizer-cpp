@@ -1,9 +1,14 @@
+#define MINIMP3_IMPLEMENTATION
+
 #include <core/app_state.hpp>
+#include "mp3/mp3_streaming.hpp"
 
 namespace core {
 bool AppState::init() {
     static bool initialized = false;
     if (initialized) return true; // Already initialized
+
+    addMP3Support();
 
     // Update your application state here
     this->display = al_create_display(400, 300);
@@ -25,11 +30,17 @@ bool AppState::init() {
         return false; // Failed to initialize music engine
     }
 
+    // init the database
+    if (!this->db.open()) {
+        return false; // Failed to open database
+    }
+
     initialized = true;
     return true;
 }
 
 void AppState::shutdown() {
     // Render your application state here
+
 }
 };

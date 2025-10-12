@@ -52,6 +52,12 @@ target_include_directories(audiovis PRIVATE ${SQLite3_INCLUDE_DIRS})
 target_link_libraries(audiovis PRIVATE ${SQLite3_LIBRARIES})
 target_compile_options(audiovis PRIVATE ${SQLite3_CFLAGS_OTHER})
 
+# Link TagLib library
+pkg_check_modules(TAGLIB REQUIRED IMPORTED_TARGET taglib)
+target_include_directories(audiovis PRIVATE ${TAGLIB_INCLUDE_DIRS})
+target_link_libraries(audiovis PRIVATE ${TAGLIB_LIBRARIES})
+target_compile_options(audiovis PRIVATE ${TAGLIB_CFLAGS_OTHER})
+
 # Set the runtime search path (RPATH) for Linux and macOS
 if(UNIX)
     # Use RPATH when building

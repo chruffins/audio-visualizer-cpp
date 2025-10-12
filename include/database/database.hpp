@@ -5,6 +5,7 @@
 #include <sqlite3.h>
 #include <optional>
 
+namespace database {
 class MusicDatabase {
 public:
     explicit MusicDatabase(const std::string& dbPath);
@@ -46,3 +47,4 @@ private:
     bool addToJunctionTable(const std::string& table, const std::string& col1, const std::string& col2, int64_t id1, int64_t id2);
     int64_t getLastPositionInPlaylist(int64_t playlist_id);
 };
+} // namespace database

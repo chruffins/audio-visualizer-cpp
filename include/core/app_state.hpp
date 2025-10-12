@@ -12,6 +12,7 @@
 #include <sqlite3.h>
 #include "discord_integration.hpp"
 #include "music_engine.hpp"
+#include "database/database.hpp"
 
 namespace core {
 
@@ -44,7 +45,7 @@ public:
 	ALLEGRO_EVENT event;
 
     // Database
-    sqlite3* db;
+    database::MusicDatabase db;
 
 	// Discord
 	std::atomic<bool> discord_initialized;
@@ -57,7 +58,7 @@ private:
 	AppState()
 		: display(nullptr)
 		, default_font(nullptr)
-		, db(nullptr)
+		, db("music.db")
 		, discord_initialized(false)
 		, discord_integration(DiscordIntegration::instance())
 		, music_engine() {}

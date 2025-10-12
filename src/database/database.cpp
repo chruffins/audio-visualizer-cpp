@@ -6,6 +6,7 @@
 #include <sstream>
 #include <iostream>
 
+using namespace database;
 MusicDatabase::MusicDatabase(const std::string &dbPath) : path(dbPath), db(nullptr) {}
 
 MusicDatabase::~MusicDatabase() { close(); }
@@ -21,6 +22,9 @@ bool MusicDatabase::open() {
     }
     // Enable foreign keys
     exec("PRAGMA foreign_keys = ON;");
+
+    // Ensure schema exists
+    createSchema();
     return true;
 }
 
