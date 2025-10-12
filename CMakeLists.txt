@@ -41,10 +41,16 @@ target_link_libraries(audiovis PRIVATE ${DISCORD_LIB_PATH})
 
 # Link Allegro 5 libraries
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(ALLEGRO5 REQUIRED allegro-5 allegro_main-5 allegro_image-5 allegro_font-5 allegro_ttf-5 allegro_primitives-5)
+pkg_check_modules(ALLEGRO5 REQUIRED allegro-5 allegro_main-5 allegro_image-5 allegro_font-5 allegro_ttf-5 allegro_primitives-5 allegro_audio-5 allegro_acodec-5 allegro_dialog-5)
 target_include_directories(audiovis PRIVATE ${ALLEGRO5_INCLUDE_DIRS})
 target_link_libraries(audiovis PRIVATE ${ALLEGRO5_LIBRARIES})
 target_compile_options(audiovis PRIVATE ${ALLEGRO5_CFLAGS_OTHER})
+
+# Link SQLite3 library
+find_package(SQLite3 REQUIRED)
+target_include_directories(audiovis PRIVATE ${SQLite3_INCLUDE_DIRS})
+target_link_libraries(audiovis PRIVATE ${SQLite3_LIBRARIES})
+target_compile_options(audiovis PRIVATE ${SQLite3_CFLAGS_OTHER})
 
 # Set the runtime search path (RPATH) for Linux and macOS
 if(UNIX)

@@ -5,6 +5,11 @@
 #include <string>
 #include <iostream>
 #include "discordpp.h"
+
+namespace music {
+	class SongView;
+}
+
 namespace core {
 
 class DiscordIntegration {
@@ -30,6 +35,7 @@ public:
 	void shutdown();
 
     void set_new_song(std::string &title, std::string &artist);
+	void setSongPresence(const music::SongView& song);
 
     void run_callbacks() {
 		discordpp::RunCallbacks();

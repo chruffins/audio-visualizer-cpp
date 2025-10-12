@@ -8,6 +8,7 @@
 #include <csignal>
 
 #include <allegro5/allegro.h>
+#include <allegro5/allegro_audio.h>
 
 #include "../include/core/app_state.hpp"
 #include "../include/core/discord_integration.hpp"
@@ -27,6 +28,8 @@ void run_main_loop() {
   auto& appState = core::AppState::instance();
   bool finished = false;
 
+  appState.music_engine.playSound("C:\\Users\\chris\\Music\\mine\\Carissa's Wierd - You Should Be at Home Here\\Carissa's Wierd - You Should Be at Home Here - 10 You Should Be at Home Here.ogg");
+ 
   while (!finished) {
     al_wait_for_event(appState.event_queue, &appState.event);
 
@@ -69,7 +72,12 @@ int main() {
   al_init();
   al_install_mouse();
   al_install_keyboard();
+  al_install_audio();
+
   al_init_font_addon();
+
+  al_reserve_samples(16);
+  al_init_acodec_addon();
 
   appState.init();
 

@@ -1,4 +1,5 @@
 #include "core/discord_integration.hpp"
+#include "music/library_views.hpp"
 #include <fstream>
 #include <filesystem>
 
@@ -6,7 +7,7 @@ const std::string token_file = "discord_tokens.txt";
 
 namespace core {
 
-static bool save_tokens(const std::string& access, const std::string& refresh, int64_t expires_at) {
+static bool save_tokens(const std::string& access, const std::string& refresh, int32_t expires_at) {
     try {
         std::ofstream ofs(token_file, std::ios::trunc);
         if (!ofs) return false;
@@ -19,7 +20,7 @@ static bool save_tokens(const std::string& access, const std::string& refresh, i
     }
 }
 
-static bool load_tokens(std::string& access, std::string& refresh, int64_t& expires_at) {
+static bool load_tokens(std::string& access, std::string& refresh, int32_t& expires_at) {
     if (!std::filesystem::exists(token_file)) return false;
     std::ifstream ifs(token_file);
     if (!ifs) return false;
@@ -77,12 +78,52 @@ void DiscordIntegration::shutdown() {
 
 void DiscordIntegration::set_new_song(std::string& title, std::string& artist) {
     discordpp::Activity activity;
+    discordpp::ActivityAssets assets;
+    discordpp::ActivityTimestamps timestamps;
+    assets.SetSmallImage("logo");
+    assets.SetSmallText("Audio Visualizer C++");
+    assets.SetLargeImage("https://coverartarchive.org/release-group/3c7430a6-798f-3060-8539-4d22a92aaffe/front");
+    // assets.SetLargeText("Abandoned Pools - Humanistic");
+
     // activity.SetName("Audio Visualizer C++"); this does nothing
     activity.SetType(discordpp::ActivityTypes::Listening);
     activity.SetDetails(title);
-    activity.SetState(artist);;
+    activity.SetState(artist);
     activity.SetApplicationId(APPLICATION_ID);
     activity.SetStatusDisplayType(discordpp::StatusDisplayTypes::State);
+    activity.SetAssets(assets);
+    timestamps.SetStart(std::time(nullptr));
+    timestamps.SetEnd(std::time(nullptr) + 200); // Example: song ends in 200 seconds
+    activity.SetTimestamps(timestamps);
+
+    client->UpdateRichPresence(activity, [](auto result) {
+        if (result.Successful()) {
+            std::cout << "✅ Rich presence updated successfully.\n";
+        } else {
+            std::cerr << "❌ Failed to update rich presence: " << result.Error() << std::endl;
+        }
+        });
+}
+
+void DiscordIntegration::setSongPresence(const music::SongView &song) {
+    discordpp::Activity activity;
+    discordpp::ActivityAssets assets;
+    discordpp::ActivityTimestamps timestamps;
+    assets.SetSmallImage("logo");
+    assets.SetSmallText("Audio Visualizer C++");
+    assets.SetLargeImage("https://coverartarchive.org/release-group/3c7430a6-798f-3060-8539-4d22a92aaffe/front");
+    // assets.SetLargeText("Abandoned Pools - Humanistic");
+
+    // activity.SetName("Audio Visualizer C++"); this does nothing
+    activity.SetType(discordpp::ActivityTypes::Listening);
+    activity.SetDetails(song.title);
+    activity.SetState(song.artist);
+    activity.SetApplicationId(APPLICATION_ID);
+    activity.SetStatusDisplayType(discordpp::StatusDisplayTypes::State);
+    activity.SetAssets(assets);
+    timestamps.SetStart(std::time(nullptr));
+    timestamps.SetEnd(std::time(nullptr) + song.duration); // Example: song ends in song.duration seconds
+    activity.SetTimestamps(timestamps);
 
     client->UpdateRichPresence(activity, [](auto result) {
         if (result.Successful()) {
@@ -122,6 +163,46 @@ bool DiscordIntegration::authorize()
     args.SetClientId(APPLICATION_ID);
     args.SetScopes(discordpp::Client::GetDefaultPresenceScopes());
     args.SetCodeChallenge(codeVerifier.Challenge());
+    // args.SetIntegrationType(discordpp::IntegrationType::UserInstall);
+
+    // Try to load existing tokens
+    std::string accessToken, refreshToken;
+    int32_t expiresAt = 0;
+
+    bool tokens_loaded = load_tokens(accessToken, refreshToken, expiresAt);
+
+    if (tokens_loaded) {
+        std:: cout << "Loaded tokens from file. Access token expires at " << expiresAt << " (current time: " << std::time(nullptr) << ")\n";
+        if (expiresAt > static_cast<int32_t>(std::time(nullptr))) {
+            std::cout << "🔑 Access token is still valid. Updating token and connecting...\n";
+            client->UpdateToken(discordpp::AuthorizationTokenType::Bearer, accessToken, [this](discordpp::ClientResult result) {
+              if(result.Successful()) {
+                std::cout << "🔑 Token updated, connecting to Discord...\n";
+                this->client->Connect();
+              }
+            });
+            return true;
+        } else {
+            std::cout << "Access token expired. Refreshing...\n";
+            client->RefreshToken(APPLICATION_ID, refreshToken, [this](auto result, std::string accessToken,
+            std::string refreshToken, auto tokenType, int32_t newExpiresIn, std::string scope) {
+                if (result.Successful()) {
+                    std::cout << "🔄 Token refreshed successfully! New access token expires in " << newExpiresIn << "\n";
+                    client->UpdateToken(discordpp::AuthorizationTokenType::Bearer, accessToken, [this](discordpp::ClientResult result) {
+                        if (result.Successful()) {
+                            std::cout << "🔑 Token updated, connecting to Discord...\n";
+                            this->client->Connect();
+                        }
+                    });
+
+                    // Save new tokens to file
+                    save_tokens(accessToken, refreshToken, newExpiresIn + static_cast<int32_t>(std::time(nullptr)));
+                } else {
+                    std::cerr << "❌ Failed to refresh token: " << result.Error() << std::endl;
+                }
+            });
+        }
+    }
 
     // Begin authentication process
     client->Authorize(args, [this, codeVerifier](auto result, auto code, auto redirectUri) {
@@ -147,6 +228,9 @@ bool DiscordIntegration::authorize()
                 this->client->Connect();
               }
             });
+
+            // Save tokens to file
+            save_tokens(accessToken, refreshToken, expiresIn + static_cast<int32_t>(std::time(nullptr)));
         });
         return true;
     }

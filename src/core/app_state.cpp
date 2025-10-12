@@ -20,6 +20,11 @@ bool AppState::init() {
     al_start_timer(this->graphics_timer);
     al_start_timer(this->discord_callback_timer);
 
+    // init the music engine
+    if (!this->music_engine.initialize()) {
+        return false; // Failed to initialize music engine
+    }
+
     initialized = true;
     return true;
 }

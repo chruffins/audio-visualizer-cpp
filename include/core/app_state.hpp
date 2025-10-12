@@ -11,6 +11,7 @@
 #include <allegro5/allegro_font.h>
 #include <sqlite3.h>
 #include "discord_integration.hpp"
+#include "music_engine.hpp"
 
 namespace core {
 
@@ -49,13 +50,17 @@ public:
 	std::atomic<bool> discord_initialized;
 	DiscordIntegration& discord_integration;
 
+	// Music engine
+	MusicEngine music_engine;
+
 private:
 	AppState()
 		: display(nullptr)
 		, default_font(nullptr)
 		, db(nullptr)
 		, discord_initialized(false)
-		, discord_integration(DiscordIntegration::instance()) {}
+		, discord_integration(DiscordIntegration::instance())
+		, music_engine() {}
 	~AppState() = default;
 };
 
