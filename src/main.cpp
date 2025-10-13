@@ -29,7 +29,7 @@ void run_main_loop() {
   auto& appState = core::AppState::instance();
   bool finished = false;
 
-  appState.music_engine.playSound("C:\\Users\\chris\\Music\\mine\\Carissa's Wierd - You Should Be at Home Here\\Carissa's Wierd - You Should Be at Home Here - 10 You Should Be at Home Here.ogg");
+  appState.music_engine.playSound("C:\\Users\\chris\\Music\\downloaded\\complete\\GotMedieval\\[2001] Humanistic\\01 - The Remedy.mp3");
  
   while (!finished) {
     al_wait_for_event(appState.event_queue, &appState.event);

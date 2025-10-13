@@ -8,7 +8,7 @@ bool AppState::init() {
     static bool initialized = false;
     if (initialized) return true; // Already initialized
 
-    addMP3Support();
+    mp3streaming::addMP3Support();
 
     // Update your application state here
     this->display = al_create_display(400, 300);
