@@ -9,10 +9,13 @@
 
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_audio.h>
+#include <allegro5/allegro_primitives.h>
 
 #include "../include/core/app_state.hpp"
 #include "../include/core/discord_integration.hpp"
 #include "database/library_scanner.hpp"
+#include "graphics/drawables/progress_bar.hpp"
+#include "graphics/uv.hpp"
 
 // Replace with your Discord Application ID
 const uint64_t APPLICATION_ID = 123456789012345678;
@@ -29,8 +32,15 @@ void run_main_loop() {
   auto& appState = core::AppState::instance();
   bool finished = false;
 
-  appState.music_engine.playSound("C:\\Users\\chris\\Music\\downloaded\\complete\\GotMedieval\\[2001] Humanistic\\01 - The Remedy.mp3");
- 
+  // Example: Play a sound file (make sure the path is correct)
+  std::cout << "Starting playback...\n";
+  auto progressBar = ui::ProgressBarDrawable(appState.music_engine.progressBarModel);
+  progressBar.setPosition(graphics::UV(0.2f, 0.8f, 0.0f, 0.0f));
+  progressBar.setSize(graphics::UV(0.6f, 0.05f, 0.0f, 0.0f));
+
+  appState.music_engine.playSound("C:\\Users\\chris\\Music\\downloaded\\complete\\truffles\\Abandoned Pools - Armed To The Teeth (2005)\\05. Waiting To Panic.mp3");
+  
+  std::cout << "Starting graphics...\n";
   while (!finished) {
     al_wait_for_event(appState.event_queue, &appState.event);
 
@@ -41,9 +51,12 @@ void run_main_loop() {
       break;
     case ALLEGRO_EVENT_TIMER:
       if (appState.event.timer.source == appState.graphics_timer) {
+        appState.music_engine.update(); // Update music engine (progress bar, etc.)
+
         // Handle graphics timer event
         al_clear_to_color(al_map_rgb(0, 0, 0));
         al_draw_text(appState.default_font, al_map_rgb(255, 255, 255), 200, 150, ALLEGRO_ALIGN_CENTRE, "Hello, Allegro!");
+        progressBar.draw();
         al_flip_display();
       } else if (appState.event.timer.source == appState.discord_callback_timer) {
         // Handle Discord callback timer event
@@ -79,6 +92,7 @@ int main() {
 
   al_reserve_samples(16);
   al_init_acodec_addon();
+  al_init_primitives_addon();
 
   appState.init();
 

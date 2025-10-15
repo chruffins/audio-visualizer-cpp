@@ -1,4 +1,5 @@
 #include "core/music_engine.hpp"
+#include <iostream>
 
 namespace core {
 MusicEngine::MusicEngine() {
@@ -58,6 +59,10 @@ void MusicEngine::playSound(const std::string& file_path) {
     current_stream = al_load_audio_stream(file_path.c_str(), 4, 4096);
 
     if (current_stream) {
+        current_time = 0.0;
+        duration = al_get_audio_stream_length_secs(current_stream);
+        progressBarModel->setFinishesAt(duration);
+        std::cout << "Loaded audio stream. Duration: " << duration << " seconds.\n";
         al_attach_audio_stream_to_mixer(current_stream, mixer);
         al_set_audio_stream_playing(current_stream, true);
     }
@@ -104,4 +109,20 @@ bool MusicEngine::isPlaying() const {
     // Check if playing code
     return current_stream && al_get_audio_stream_playing(current_stream);
 }
+
+void MusicEngine::update() {
+    if (current_stream) {
+        current_time = al_get_audio_stream_position_secs(current_stream);
+        progressBarModel->setProgress(current_time);
+    } 
+    /*
+    else {
+        current_time = 0.0;
+        duration = 0.0;
+        progressBarModel->setProgress(0.0f);
+        progressBarModel->setFinishesAt(1.0f);
+    }
+    */
+}
+
 };
