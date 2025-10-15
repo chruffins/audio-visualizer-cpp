@@ -6,6 +6,12 @@
 #include <sstream>
 #include <iostream>
 
+#include "music/album.hpp"
+#include "music/artist.hpp"
+#include "music/genre.hpp"
+#include "music/playlist.hpp"
+#include "music/song.hpp"
+
 using namespace database;
 MusicDatabase::MusicDatabase(const std::string &dbPath) : path(dbPath), db(nullptr) {}
 
@@ -65,6 +71,10 @@ bool MusicDatabase::rollback() {
 
 std::string MusicDatabase::lastError() const {
     return lastErr;
+}
+
+void MusicDatabase::clearLastError() {
+    lastErr = "";
 }
 
 std::optional<int64_t> MusicDatabase::addGenre(const std::string& name) {
@@ -251,4 +261,214 @@ int64_t MusicDatabase::getLastPositionInPlaylist(int64_t playlist_id) {
     if (rc == SQLITE_ROW) { position = sqlite3_column_int64(stmt, 0); }
     sqlite3_finalize(stmt);
     return position;
+}
+
+std::optional<music::Genre> MusicDatabase::getGenreById(int64_t id) const {
+    if (!db) { lastErr = "DB not open"; return std::nullopt; }
+    sqlite3_stmt* stmt = nullptr;
+    const char* sql = "SELECT id, name FROM genres WHERE id = ?1";
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) { lastErr = sqlite3_errmsg(db); return std::nullopt; }
+    sqlite3_bind_int64(stmt, 1, id);
+    int rc = sqlite3_step(stmt);
+    std::optional<music::Genre> result = std::nullopt;
+    if (rc == SQLITE_ROW) {
+        int gid = static_cast<int>(sqlite3_column_int64(stmt, 0));
+        const unsigned char* text = sqlite3_column_text(stmt, 1);
+        std::string name = text ? reinterpret_cast<const char*>(text) : std::string();
+        result = music::Genre(gid, name);
+    }
+    sqlite3_finalize(stmt);
+    return result;
+}
+
+std::optional<music::Artist> MusicDatabase::getArtistById(int64_t id) const {
+    if (!db) { lastErr = "DB not open"; return std::nullopt; }
+    sqlite3_stmt* stmt = nullptr;
+    const char* sql = "SELECT id, name, picture_path, desc FROM artists WHERE id = ?1";
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) { lastErr = sqlite3_errmsg(db); return std::nullopt; }
+    sqlite3_bind_int64(stmt, 1, id);
+    int rc = sqlite3_step(stmt);
+    std::optional<music::Artist> result = std::nullopt;
+    if (rc == SQLITE_ROW) {
+        int aid = static_cast<int>(sqlite3_column_int64(stmt, 0));
+        const unsigned char* nameTxt = sqlite3_column_text(stmt, 1);
+        const unsigned char* picTxt = sqlite3_column_text(stmt, 2);
+        const unsigned char* descTxt = sqlite3_column_text(stmt, 3);
+        std::string name = nameTxt ? reinterpret_cast<const char*>(nameTxt) : std::string();
+        std::string pic = picTxt ? reinterpret_cast<const char*>(picTxt) : std::string();
+        std::string desc = descTxt ? reinterpret_cast<const char*>(descTxt) : std::string();
+        result = music::Artist(aid, name, pic, desc);
+    }
+    sqlite3_finalize(stmt);
+    return result;
+}
+
+std::optional<music::Album> MusicDatabase::getAlbumById(int64_t id) const {
+    if (!db) { lastErr = "DB not open"; return std::nullopt; }
+    sqlite3_stmt* stmt = nullptr;
+    const char* sql = "SELECT id, name, year, picture_path, artist_id FROM albums WHERE id = ?1";
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) { lastErr = sqlite3_errmsg(db); return std::nullopt; }
+    sqlite3_bind_int64(stmt, 1, id);
+    int rc = sqlite3_step(stmt);
+    std::optional<music::Album> result = std::nullopt;
+    if (rc == SQLITE_ROW) {
+        int aid = static_cast<int>(sqlite3_column_int64(stmt, 0));
+        const unsigned char* titleTxt = sqlite3_column_text(stmt, 1);
+        int year = sqlite3_column_type(stmt,2) == SQLITE_NULL ? 0 : sqlite3_column_int(stmt,2);
+        const unsigned char* picTxt = sqlite3_column_text(stmt, 3);
+        int artist_id = sqlite3_column_type(stmt,4) == SQLITE_NULL ? 0 : sqlite3_column_int(stmt,4);
+        std::string title = titleTxt ? reinterpret_cast<const char*>(titleTxt) : std::string();
+        std::string pic = picTxt ? reinterpret_cast<const char*>(picTxt) : std::string();
+        result = music::Album(aid, title, year, pic, artist_id);
+    }
+    sqlite3_finalize(stmt);
+    return result;
+}
+
+std::optional<music::Song> MusicDatabase::getSongById(int64_t id) const {
+    if (!db) { lastErr = "DB not open"; return std::nullopt; }
+    sqlite3_stmt* stmt = nullptr;
+    const char* sql = "SELECT id, song_path, title, album_id, track, comment, duration FROM songs WHERE id = ?1";
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) { lastErr = sqlite3_errmsg(db); return std::nullopt; }
+    sqlite3_bind_int64(stmt, 1, id);
+    int rc = sqlite3_step(stmt);
+    std::optional<music::Song> result = std::nullopt;
+    if (rc == SQLITE_ROW) {
+        int sid = static_cast<int>(sqlite3_column_int64(stmt, 0));
+        const unsigned char* pathTxt = sqlite3_column_text(stmt, 1);
+        const unsigned char* titleTxt = sqlite3_column_text(stmt, 2);
+        int album_id = sqlite3_column_type(stmt,3) == SQLITE_NULL ? 0 : sqlite3_column_int(stmt,3);
+        int track = sqlite3_column_type(stmt,4) == SQLITE_NULL ? 0 : sqlite3_column_int(stmt,4);
+        const unsigned char* commentTxt = sqlite3_column_text(stmt, 5);
+        int duration = sqlite3_column_type(stmt,6) == SQLITE_NULL ? 0 : sqlite3_column_int(stmt,6);
+        std::string path = pathTxt ? reinterpret_cast<const char*>(pathTxt) : std::string();
+        std::string title = titleTxt ? reinterpret_cast<const char*>(titleTxt) : std::string();
+        std::string comment = commentTxt ? reinterpret_cast<const char*>(commentTxt) : std::string();
+        result = music::Song(sid, path, title, album_id, track, comment, duration);
+    }
+    sqlite3_finalize(stmt);
+    return result;
+}
+
+std::optional<music::Playlist> MusicDatabase::getPlaylistById(int64_t id) const {
+    if (!db) { lastErr = "DB not open"; return std::nullopt; }
+    sqlite3_stmt* stmt = nullptr;
+    const char* sql = "SELECT id, name, picture_path, desc FROM playlists WHERE id = ?1";
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) { lastErr = sqlite3_errmsg(db); return std::nullopt; }
+    sqlite3_bind_int64(stmt, 1, id);
+    int rc = sqlite3_step(stmt);
+    std::optional<music::Playlist> result = std::nullopt;
+    if (rc == SQLITE_ROW) {
+        int pid = static_cast<int>(sqlite3_column_int64(stmt, 0));
+        const unsigned char* nameTxt = sqlite3_column_text(stmt, 1);
+        const unsigned char* picTxt = sqlite3_column_text(stmt, 2);
+        const unsigned char* descTxt = sqlite3_column_text(stmt, 3);
+        std::string name = nameTxt ? reinterpret_cast<const char*>(nameTxt) : std::string();
+        std::string pic = picTxt ? reinterpret_cast<const char*>(picTxt) : std::string();
+        std::string desc = descTxt ? reinterpret_cast<const char*>(descTxt) : std::string();
+        time_t created_at = 0; // schema doesn't store created_at currently
+    result = music::Playlist(pid, name, pic, desc, created_at);
+    }
+    sqlite3_finalize(stmt);
+    return result;
+}
+
+std::vector<music::Genre> MusicDatabase::getAllGenres() const {
+    std::vector<music::Genre> out;
+    if (!db) { lastErr = "DB not open"; return out; }
+    sqlite3_stmt* stmt = nullptr;
+    const char* sql = "SELECT id, name FROM genres ORDER BY name ASC";
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) { lastErr = sqlite3_errmsg(db); return out; }
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        int gid = static_cast<int>(sqlite3_column_int64(stmt, 0));
+        const unsigned char* nameTxt = sqlite3_column_text(stmt, 1);
+        std::string name = nameTxt ? reinterpret_cast<const char*>(nameTxt) : std::string();
+        out.emplace_back(gid, name);
+    }
+    sqlite3_finalize(stmt);
+    return out;
+}
+
+std::vector<music::Artist> MusicDatabase::getAllArtists() const {
+    std::vector<music::Artist> out;
+    if (!db) { lastErr = "DB not open"; return out; }
+    sqlite3_stmt* stmt = nullptr;
+    const char* sql = "SELECT id, name, picture_path, desc FROM artists ORDER BY name ASC";
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) { lastErr = sqlite3_errmsg(db); return out; }
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        int aid = static_cast<int>(sqlite3_column_int64(stmt, 0));
+        const unsigned char* nameTxt = sqlite3_column_text(stmt, 1);
+        const unsigned char* picTxt = sqlite3_column_text(stmt, 2);
+        const unsigned char* descTxt = sqlite3_column_text(stmt, 3);
+        std::string name = nameTxt ? reinterpret_cast<const char*>(nameTxt) : std::string();
+        std::string pic = picTxt ? reinterpret_cast<const char*>(picTxt) : std::string();
+        std::string desc = descTxt ? reinterpret_cast<const char*>(descTxt) : std::string();
+        out.emplace_back(aid, name, pic, desc);
+    }
+    sqlite3_finalize(stmt);
+    return out;
+}
+
+std::vector<music::Album> MusicDatabase::getAllAlbums() const {
+    std::vector<music::Album> out;
+    if (!db) { lastErr = "DB not open"; return out; }
+    sqlite3_stmt* stmt = nullptr;
+    const char* sql = "SELECT id, name, year, picture_path, artist_id FROM albums ORDER BY year DESC, name ASC";
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) { lastErr = sqlite3_errmsg(db); return out; }
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        int aid = static_cast<int>(sqlite3_column_int64(stmt, 0));
+        const unsigned char* titleTxt = sqlite3_column_text(stmt, 1);
+        int year = sqlite3_column_type(stmt,2) == SQLITE_NULL ? 0 : sqlite3_column_int(stmt,2);
+        const unsigned char* picTxt = sqlite3_column_text(stmt, 3);
+        int artist_id = sqlite3_column_type(stmt,4) == SQLITE_NULL ? 0 : sqlite3_column_int(stmt,4);
+        std::string title = titleTxt ? reinterpret_cast<const char*>(titleTxt) : std::string();
+        std::string pic = picTxt ? reinterpret_cast<const char*>(picTxt) : std::string();
+        out.emplace_back(aid, title, year, pic, artist_id);
+    }
+    sqlite3_finalize(stmt);
+    return out;
+}
+
+std::vector<music::Song> MusicDatabase::getAllSongs() const {
+    std::vector<music::Song> out;
+    if (!db) { lastErr = "DB not open"; return out; }
+    sqlite3_stmt* stmt = nullptr;
+    const char* sql = "SELECT id, song_path, title, album_id, track, comment, duration FROM songs ORDER BY id ASC";
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) { lastErr = sqlite3_errmsg(db); return out; }
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        int sid = static_cast<int>(sqlite3_column_int64(stmt, 0));
+        const unsigned char* pathTxt = sqlite3_column_text(stmt, 1);
+        const unsigned char* titleTxt = sqlite3_column_text(stmt, 2);
+        int album_id = sqlite3_column_type(stmt,3) == SQLITE_NULL ? 0 : sqlite3_column_int(stmt,3);
+        int track = sqlite3_column_type(stmt,4) == SQLITE_NULL ? 0 : sqlite3_column_int(stmt,4);
+        const unsigned char* commentTxt = sqlite3_column_text(stmt, 5);
+        int duration = sqlite3_column_type(stmt,6) == SQLITE_NULL ? 0 : sqlite3_column_int(stmt,6);
+        std::string path = pathTxt ? reinterpret_cast<const char*>(pathTxt) : std::string();
+        std::string title = titleTxt ? reinterpret_cast<const char*>(titleTxt) : std::string();
+        std::string comment = commentTxt ? reinterpret_cast<const char*>(commentTxt) : std::string();
+        out.emplace_back(sid, path, title, album_id, track, comment, duration);
+    }
+    sqlite3_finalize(stmt);
+    return out;
+}
+
+std::vector<music::Playlist> MusicDatabase::getAllPlaylists() const {
+    std::vector<music::Playlist> out;
+    if (!db) { lastErr = "DB not open"; return out; }
+    sqlite3_stmt* stmt = nullptr;
+    const char* sql = "SELECT id, name, picture_path, desc FROM playlists ORDER BY name ASC";
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) { lastErr = sqlite3_errmsg(db); return out; }
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        int pid = static_cast<int>(sqlite3_column_int64(stmt, 0));
+        const unsigned char* nameTxt = sqlite3_column_text(stmt, 1);
+        const unsigned char* picTxt = sqlite3_column_text(stmt, 2);
+        const unsigned char* descTxt = sqlite3_column_text(stmt, 3);
+        std::string name = nameTxt ? reinterpret_cast<const char*>(nameTxt) : std::string();
+        std::string pic = picTxt ? reinterpret_cast<const char*>(picTxt) : std::string();
+        std::string desc = descTxt ? reinterpret_cast<const char*>(descTxt) : std::string();
+        time_t created_at = 0;
+    out.emplace_back(pid, name, pic, desc, created_at);
+    }
+    sqlite3_finalize(stmt);
+    return out;
 }

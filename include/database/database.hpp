@@ -4,6 +4,16 @@
 #include <cstdint>
 #include <sqlite3.h>
 #include <optional>
+#include <vector>
+
+namespace music {
+// forward declarations
+struct Album;
+struct Artist;
+struct Genre;
+struct Playlist;
+struct Song;
+}
 
 namespace database {
 class MusicDatabase {
@@ -37,7 +47,25 @@ public:
     bool addSongGenre(int64_t song_id, int64_t genre_id);
     std::optional<int64_t> addPlaylistSong(int64_t playlist_id, int64_t song_id, int position);
 
+    // Get last error message
     std::string lastError() const;
+
+    // Clear last error message
+    void clearLastError();
+
+    // Get entities by ID
+    std::optional<music::Genre> getGenreById(int64_t id) const;
+    std::optional<music::Artist> getArtistById(int64_t id) const;
+    std::optional<music::Album> getAlbumById(int64_t id) const;
+    std::optional<music::Song> getSongById(int64_t id) const;
+    std::optional<music::Playlist> getPlaylistById(int64_t id) const;
+
+    // Get all entities
+    std::vector<music::Genre> getAllGenres() const;
+    std::vector<music::Artist> getAllArtists() const;
+    std::vector<music::Album> getAllAlbums() const;
+    std::vector<music::Song> getAllSongs() const;
+    std::vector<music::Playlist> getAllPlaylists() const;
 
 private:
     std::string path;

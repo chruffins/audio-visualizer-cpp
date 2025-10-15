@@ -2,19 +2,19 @@
 #include <string>
 
 namespace music {
-struct playlist {
+struct Playlist {
     int id;
     std::string name;
     std::string image_path;
     std::string description;
     time_t created_at;
 
-    playlist(int id, const std::string& name, const std::string& image_path,
+    Playlist(int id, const std::string& name, const std::string& image_path,
              const std::string& description, time_t created_at)
         : id(id), name(name), image_path(image_path),
           description(description), created_at(created_at) {}
     
-    playlist() : id(0), name(""), image_path(""), description(""), created_at(0) {}
+    Playlist() : id(0), name(""), image_path(""), description(""), created_at(0) {}
 
     // for printing
     std::string toString() const {
@@ -26,11 +26,11 @@ struct playlist {
     }
 
     // order by created_at
-    bool operator<(const playlist& other) const {
+    bool operator<(const Playlist& other) const {
         return created_at < other.created_at;
     }
 
-    bool operator==(const playlist& other) const {
+    bool operator==(const Playlist& other) const {
         return id == other.id;
     }
 };

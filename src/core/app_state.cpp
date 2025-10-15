@@ -2,6 +2,7 @@
 
 #include <core/app_state.hpp>
 #include "mp3/mp3_streaming.hpp"
+#include "music/album.hpp"
 
 namespace core {
 bool AppState::init() {
@@ -33,6 +34,15 @@ bool AppState::init() {
     // init the database
     if (!this->db.open()) {
         return false; // Failed to open database
+    }
+
+    // init the library
+    if (!this->library.loadFromDatabase(this->db)) {
+        return false; // Failed to load library from database
+    }
+
+    for (auto& album : this->library.getAllAlbums()) {
+        std::cout << "Loaded album: " << album.title << " (ID: " << album.id << ")\n";
     }
 
     initialized = true;

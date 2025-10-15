@@ -13,6 +13,7 @@
 #include "discord_integration.hpp"
 #include "music_engine.hpp"
 #include "database/database.hpp"
+#include "music/library.hpp"
 
 namespace core {
 
@@ -54,6 +55,9 @@ public:
 	// Music engine
 	MusicEngine music_engine;
 
+	// Library (in-memory)
+	music::Library library;
+
 private:
 	AppState()
 		: display(nullptr)
@@ -61,7 +65,9 @@ private:
 		, db("music.db")
 		, discord_initialized(false)
 		, discord_integration(DiscordIntegration::instance())
-		, music_engine() {}
+		, music_engine()
+		, library() {}
+
 	~AppState() = default;
 };
 
