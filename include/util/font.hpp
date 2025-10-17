@@ -48,4 +48,26 @@ private:
     std::string filename;
     std::map<int, ALLEGRO_FONT*> fonts;
 };
+
+class FontManager {
+public:
+    FontManager() {
+        defaultFont = Font();
+    }
+
+    Font& getFont(const std::string& name) {
+        return fonts[name];
+    }
+
+    Font& getDefaultFont() {
+        return defaultFont;
+    }
+
+    void loadFont(const std::string& name, const std::string& filename) {
+        fonts[name] = Font(filename);
+    }
+private:
+    std::map<std::string, Font> fonts;
+    Font defaultFont;
+};
 }; // namespace util

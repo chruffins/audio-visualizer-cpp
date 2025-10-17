@@ -39,6 +39,7 @@ struct SongView {
     std::string artist;
     std::string genre;
     std::string comment;
+    std::string filename;
     int track_number;
     int disc;
     int year;
@@ -47,9 +48,9 @@ struct SongView {
     SongView(int id, const std::string& title, const std::string& album,
              const std::string& artist, const std::string& genre,
              const std::string& comment, int track_number, int disc,
-             int year, int duration) : id(id), title(title), album(album),
+             int year, int duration, const std::string& filename) : id(id), title(title), album(album),
              artist(artist), genre(genre), comment(comment), track_number(track_number),
-             disc(disc), year(year), duration(duration) {};
+             disc(disc), year(year), duration(duration), filename(filename) {};
     // SongView(Song& song);
     std::string toString() const;
 };

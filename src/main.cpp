@@ -10,6 +10,7 @@
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_audio.h>
 #include <allegro5/allegro_primitives.h>
+#include <allegro5/allegro_image.h>
 
 #include "../include/core/app_state.hpp"
 #include "../include/core/discord_integration.hpp"
@@ -38,8 +39,18 @@ void run_main_loop() {
   progressBar.setPosition(graphics::UV(0.2f, 0.8f, 0.0f, 0.0f));
   progressBar.setSize(graphics::UV(0.6f, 0.05f, 0.0f, 0.0f));
 
-  appState.music_engine.playSound("C:\\Users\\chris\\Music\\downloaded\\complete\\truffles\\Abandoned Pools - Armed To The Teeth (2005)\\05. Waiting To Panic.mp3");
-  
+  // lets get a random song now (SongView)
+  const music::SongView* song = appState.library.getRandomSong();
+  if (song) {
+    std::cout << "Playing random song: " << song->title << "\n";
+    // Look up the concrete Song for filename using ID from SongView
+    if (const music::Song* songModel = appState.library.getSongById(song->id)) {
+      appState.music_engine.playSound(songModel->filename);
+    }
+  } else {
+    std::cerr << "No songs in library.\n";
+  }
+
   std::cout << "Starting graphics...\n";
   while (!finished) {
     al_wait_for_event(appState.event_queue, &appState.event);
@@ -72,6 +83,25 @@ void run_main_loop() {
         appState.discord_integration.run_callbacks();
       }
       break;
+    case ALLEGRO_EVENT_KEY_DOWN:
+      if (appState.event.keyboard.keycode == ALLEGRO_KEY_ESCAPE) {
+        finished = true;
+      } else if (appState.event.keyboard.keycode == ALLEGRO_KEY_SPACE) {
+        if (appState.music_engine.isPlaying()) {
+          appState.music_engine.pauseSound();
+        } else {
+          appState.music_engine.resumeSound();
+        }
+      } else if (appState.event.keyboard.keycode == ALLEGRO_KEY_RIGHT) {
+        song = appState.library.getRandomSong();
+        if (song) {
+          if (const music::Song* songModel = appState.library.getSongById(song->id)) {
+            appState.music_engine.playSound(songModel->filename);
+          }
+          appState.discord_integration.setSongPresence(*song);
+        }
+      }
+      break;
     default:
       break;
     }
@@ -92,9 +122,21 @@ int main() {
 
   al_reserve_samples(16);
   al_init_acodec_addon();
+  al_init_image_addon();
   al_init_primitives_addon();
 
+  al_set_new_bitmap_flags(ALLEGRO_MIN_LINEAR | ALLEGRO_MAG_LINEAR | ALLEGRO_VIDEO_BITMAP);
+
   appState.init();
+
+  // set icon here
+  ALLEGRO_BITMAP* icon = al_load_bitmap("../assets/logotransparent.png");
+  if (icon) {
+      al_set_display_icon(appState.display, icon);
+      al_destroy_bitmap(icon);
+  } else {
+      std::cerr << "Warning: Failed to load icon image.\n";
+  }
 
   std::cout << "App state initialized!\n";
 

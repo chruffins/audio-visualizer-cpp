@@ -41,7 +41,7 @@ bool AppState::init() {
         return false; // Failed to load library from database
     }
 
-    for (auto& album : this->library.getAllAlbums()) {
+    for (const auto& [id, album] : this->library.getAllAlbums()) {
         std::cout << "Loaded album: " << album.title << " (ID: " << album.id << ")\n";
     }
 

@@ -377,7 +377,7 @@ std::vector<music::Genre> MusicDatabase::getAllGenres() const {
     std::vector<music::Genre> out;
     if (!db) { lastErr = "DB not open"; return out; }
     sqlite3_stmt* stmt = nullptr;
-    const char* sql = "SELECT id, name FROM genres ORDER BY name ASC";
+    const char* sql = "SELECT id, name FROM genres ORDER BY id ASC";
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) { lastErr = sqlite3_errmsg(db); return out; }
     while (sqlite3_step(stmt) == SQLITE_ROW) {
         int gid = static_cast<int>(sqlite3_column_int64(stmt, 0));
@@ -393,7 +393,7 @@ std::vector<music::Artist> MusicDatabase::getAllArtists() const {
     std::vector<music::Artist> out;
     if (!db) { lastErr = "DB not open"; return out; }
     sqlite3_stmt* stmt = nullptr;
-    const char* sql = "SELECT id, name, picture_path, desc FROM artists ORDER BY name ASC";
+    const char* sql = "SELECT id, name, picture_path, desc FROM artists ORDER BY id ASC";
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) { lastErr = sqlite3_errmsg(db); return out; }
     while (sqlite3_step(stmt) == SQLITE_ROW) {
         int aid = static_cast<int>(sqlite3_column_int64(stmt, 0));
@@ -413,7 +413,7 @@ std::vector<music::Album> MusicDatabase::getAllAlbums() const {
     std::vector<music::Album> out;
     if (!db) { lastErr = "DB not open"; return out; }
     sqlite3_stmt* stmt = nullptr;
-    const char* sql = "SELECT id, name, year, picture_path, artist_id FROM albums ORDER BY year DESC, name ASC";
+    const char* sql = "SELECT id, name, year, picture_path, artist_id FROM albums ORDER BY id ASC";
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) { lastErr = sqlite3_errmsg(db); return out; }
     while (sqlite3_step(stmt) == SQLITE_ROW) {
         int aid = static_cast<int>(sqlite3_column_int64(stmt, 0));
@@ -456,7 +456,7 @@ std::vector<music::Playlist> MusicDatabase::getAllPlaylists() const {
     std::vector<music::Playlist> out;
     if (!db) { lastErr = "DB not open"; return out; }
     sqlite3_stmt* stmt = nullptr;
-    const char* sql = "SELECT id, name, picture_path, desc FROM playlists ORDER BY name ASC";
+    const char* sql = "SELECT id, name, picture_path, desc FROM playlists ORDER BY id ASC";
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) { lastErr = sqlite3_errmsg(db); return out; }
     while (sqlite3_step(stmt) == SQLITE_ROW) {
         int pid = static_cast<int>(sqlite3_column_int64(stmt, 0));

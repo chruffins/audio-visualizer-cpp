@@ -14,6 +14,7 @@
 #include "music_engine.hpp"
 #include "database/database.hpp"
 #include "music/library.hpp"
+#include "util/font.hpp"
 
 namespace core {
 
@@ -44,6 +45,9 @@ public:
 	ALLEGRO_TIMER* graphics_timer;
 	ALLEGRO_TIMER* discord_callback_timer;
 	ALLEGRO_EVENT event;
+
+	// FontManager
+	util::FontManager fontManager;
 
     // Database
     database::MusicDatabase db;

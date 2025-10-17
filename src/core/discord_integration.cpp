@@ -106,6 +106,11 @@ void DiscordIntegration::set_new_song(std::string& title, std::string& artist) {
 }
 
 void DiscordIntegration::setSongPresence(const music::SongView &song) {
+    if (client->GetStatus() != discordpp::Client::Status::Ready) {
+        std::cerr << "❌ Client not ready.\n";
+        return;
+    }
+
     discordpp::Activity activity;
     discordpp::ActivityAssets assets;
     discordpp::ActivityTimestamps timestamps;
