@@ -11,6 +11,10 @@
 namespace util {
 class Font {
 public:
+    Font() {
+        filename = "";
+    }
+
     Font(std::string filename) : filename(std::move(filename)) {}
     ~Font() {
         for (auto& pair : fonts) {
@@ -18,7 +22,9 @@ public:
         }
     }
 
-    ALLEGRO_FONT* getFont(const std::string& filename, int size) {
+    ALLEGRO_FONT* getFont(int size) {
+        if (filename == "") return getFallbackFont();
+
         auto it = fonts.find(size);
         if (it != fonts.end()) {
             return it->second; // Return cached font
@@ -33,6 +39,10 @@ public:
 
         fonts[size] = font; // Cache the loaded font
         return font;
+    }
+
+    ALLEGRO_FONT* getFallbackFont() {
+        return al_create_builtin_font();
     }
 private:
     std::string filename;
