@@ -88,6 +88,14 @@ void MusicEngine::stopSound() {
     }
 }
 
+double MusicEngine::getCurrentTime() const {
+    return current_time;
+}
+
+double MusicEngine::getDuration() const {
+    return duration;
+}
+
 void MusicEngine::setGain(float gain) {
     // Set gain code
     if (mixer) {

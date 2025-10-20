@@ -3,6 +3,7 @@
 #include <allegro5/allegro.h>
 
 #include <string>
+#include <cstdio> // for std::snprintf
 #include "util/font.hpp"
 #include "graphics/uv.hpp"
 
@@ -11,8 +12,10 @@ struct ALLEGRO_FONT;
 namespace ui {
 class TextDrawable {
 public:
+    TextDrawable() = default;
+
     TextDrawable(const std::string& text, graphics::UV position, int font_size)
-        : text(text), position(position), font_size(font_size), font() {}
+        : text(text), position(position), font_size(font_size), lastUsedFont(nullptr), font() {}
 
     void setText(const std::string& new_text) {
         text = new_text;
@@ -39,9 +42,29 @@ public:
         if (!lastUsedFont) {
             lastUsedFont = font.getFont(font_size);
         }
-        auto [x, y] = position.toScreenPos(); // Assuming a screen size of 800x600 for this example
+        auto [x, y] = position.toScreenPos();
 
         al_draw_text(lastUsedFont, al_map_rgb(255, 255, 255), x, y, textAlignment, text.c_str());
+    }
+
+    template <typename... Args>
+    void drawF(const char* fmt, Args&&... args) {
+        if (!lastUsedFont) {
+            lastUsedFont = font.getFont(font_size);
+        }
+        auto [x, y] = position.toScreenPos();
+
+        // Format into a temporary buffer using snprintf (two-pass)
+        int needed = std::snprintf(nullptr, 0, fmt, std::forward<Args>(args)...);
+        if (needed <= 0) {
+            return; // formatting failed or empty
+        }
+        std::string buffer;
+        buffer.resize(static_cast<size_t>(needed) + 1);
+        std::snprintf(buffer.data(), buffer.size(), fmt, std::forward<Args>(args)...);
+        buffer.resize(static_cast<size_t>(needed)); // drop trailing null for c_str safety
+
+        al_draw_text(lastUsedFont, al_map_rgb(255, 255, 255), x, y, textAlignment, buffer.c_str());
     }
 
 private:

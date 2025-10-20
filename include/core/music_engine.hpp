@@ -23,6 +23,9 @@ public:
     void resumeSound();
     void stopSound();
 
+    double getCurrentTime() const;
+    double getDuration() const;
+
     void setGain(float gain);
     void setPan(float pan);
     void setSpeed(float speed);

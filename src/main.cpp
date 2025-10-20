@@ -15,7 +15,7 @@
 #include "../include/core/app_state.hpp"
 #include "../include/core/discord_integration.hpp"
 #include "database/library_scanner.hpp"
-#include "graphics/drawables/progress_bar.hpp"
+#include "graphics/views/now_playing.hpp"
 #include "graphics/uv.hpp"
 
 // Replace with your Discord Application ID
@@ -33,11 +33,10 @@ void run_main_loop() {
   auto& appState = core::AppState::instance();
   bool finished = false;
 
+  auto nowPlayingView = ui::NowPlayingView(appState.music_engine.progressBarModel);
+
   // Example: Play a sound file (make sure the path is correct)
   std::cout << "Starting playback...\n";
-  auto progressBar = ui::ProgressBarDrawable(appState.music_engine.progressBarModel);
-  progressBar.setPosition(graphics::UV(0.2f, 0.8f, 0.0f, 0.0f));
-  progressBar.setSize(graphics::UV(0.6f, 0.05f, 0.0f, 0.0f));
 
   // lets get a random song now (SongView)
   const music::SongView* song = appState.library.getRandomSong();
@@ -47,6 +46,12 @@ void run_main_loop() {
     if (const music::Song* songModel = appState.library.getSongById(song->id)) {
       appState.music_engine.playSound(songModel->filename);
     }
+    nowPlayingView.setSongTitle(song->title);
+    nowPlayingView.setArtistName(song->artist);
+    nowPlayingView.setAlbumName(song->album);
+    nowPlayingView.setDuration(song->duration);
+    nowPlayingView.setPosition(0);
+    // appState.discord_integration.setSongPresence(*song);
   } else {
     std::cerr << "No songs in library.\n";
   }
@@ -63,11 +68,12 @@ void run_main_loop() {
     case ALLEGRO_EVENT_TIMER:
       if (appState.event.timer.source == appState.graphics_timer) {
         appState.music_engine.update(); // Update music engine (progress bar, etc.)
+        nowPlayingView.setPosition(appState.music_engine.getCurrentTime());
 
         // Handle graphics timer event
         al_clear_to_color(al_map_rgb(0, 0, 0));
         al_draw_text(appState.default_font, al_map_rgb(255, 255, 255), 200, 150, ALLEGRO_ALIGN_CENTRE, "Hello, Allegro!");
-        progressBar.draw();
+        nowPlayingView.draw();
         al_flip_display();
       } else if (appState.event.timer.source == appState.discord_callback_timer) {
         // Handle Discord callback timer event
@@ -97,6 +103,11 @@ void run_main_loop() {
         if (song) {
           if (const music::Song* songModel = appState.library.getSongById(song->id)) {
             appState.music_engine.playSound(songModel->filename);
+            nowPlayingView.setSongTitle(song->title);
+            nowPlayingView.setArtistName(song->artist);
+            nowPlayingView.setAlbumName(song->album);
+            nowPlayingView.setDuration(song->duration);
+            nowPlayingView.setPosition(0);
           }
           appState.discord_integration.setSongPresence(*song);
         }
