@@ -6,11 +6,13 @@
 #include <unordered_map>
 #include <ctime>
 
+namespace music {
 struct Song;
 struct Album;
 struct Playlist;
 struct Genre;
 struct Artist;
+}
 
 struct ALLEGRO_BITMAP;
 

@@ -4,9 +4,11 @@
 #include "graphics/models/progress_bar.hpp"
 #include <allegro5/color.h>
 
+#include "graphics/drawable.hpp"
+
 namespace ui
 {
-class ProgressBarDrawable
+class ProgressBarDrawable : public graphics::Drawable
 {
 public:
     // owns or references a ProgressBar; use shared_ptr so multiple drawables can reflect the same model
@@ -23,7 +25,7 @@ public:
     void setForegroundColor(ALLEGRO_COLOR c) noexcept { fgColor = c; }
 
     // render using your renderer implementation
-    void draw() const;
+    void draw(const graphics::RenderContext& context = {}) const override;
 private:
     std::shared_ptr<ProgressBar> model;
     graphics::UV position{0.2f, 0.8f, 0.0f, 0.0f};
@@ -32,5 +34,8 @@ private:
     ALLEGRO_COLOR fgColor = al_map_rgb(0, 191, 255);
     ALLEGRO_COLOR borderColor = al_map_rgb(255, 255, 255);
     int borderThickness = 1;
+
+    void drawSquared() const;
+    void drawRounded() const;
 };
 };

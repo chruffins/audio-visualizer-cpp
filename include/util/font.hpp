@@ -6,6 +6,7 @@
 
 #include<map>
 #include<string>
+#include<memory>
 
 // Utility function to load a TTF font with error handling
 namespace util {
@@ -52,22 +53,28 @@ private:
 class FontManager {
 public:
     FontManager() {
-        defaultFont = Font();
+        defaultFont = std::make_shared<Font>();
     }
 
-    Font& getFont(const std::string& name) {
-        return fonts[name];
-    }
-
-    Font& getDefaultFont() {
+    std::shared_ptr<Font> getFont(const std::string& name) {
+        auto it = fonts.find(name);
+        if (it != fonts.end()) {
+            return it->second;
+        }
         return defaultFont;
     }
 
-    void loadFont(const std::string& name, const std::string& filename) {
-        fonts[name] = Font(filename);
+    std::shared_ptr<Font> getDefaultFont() {
+        return defaultFont;
+    }
+
+    std::shared_ptr<Font> loadFont(const std::string& name, const std::string& filename) {
+        auto font = std::make_shared<Font>(filename);
+        fonts[name] = font;
+        return font;
     }
 private:
-    std::map<std::string, Font> fonts;
-    Font defaultFont;
+    std::map<std::string, std::shared_ptr<Font>> fonts;
+    std::shared_ptr<Font> defaultFont;
 };
 }; // namespace util

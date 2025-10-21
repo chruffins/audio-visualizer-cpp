@@ -3,13 +3,18 @@
 #include "graphics/drawables/progress_bar.hpp"
 #include "graphics/drawables/text.hpp"
 #include "graphics/uv.hpp"
+#include <memory>
+
+namespace util {
+    class FontManager;
+}
 
 namespace ui {
 
 class NowPlayingView {
 public:
     NowPlayingView() = delete;
-    NowPlayingView(std::shared_ptr<ui::ProgressBar> progressBarModel);
+    NowPlayingView(std::shared_ptr<util::FontManager> fontManager, std::shared_ptr<ui::ProgressBar> progressBarModel);
 
     void setSongTitle(const std::string& title);
     void setArtistName(const std::string& artist);
@@ -19,6 +24,8 @@ public:
 
     void draw();
 private:
+    std::shared_ptr<util::FontManager> fontManager;
+
     graphics::UV position;
     ProgressBarDrawable progressBar;
     TextDrawable songTitleText;

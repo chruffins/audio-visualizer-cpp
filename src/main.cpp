@@ -33,7 +33,7 @@ void run_main_loop() {
   auto& appState = core::AppState::instance();
   bool finished = false;
 
-  auto nowPlayingView = ui::NowPlayingView(appState.music_engine.progressBarModel);
+  auto nowPlayingView = ui::NowPlayingView(std::make_shared<util::FontManager>(appState.fontManager), appState.music_engine.progressBarModel);
 
   // Example: Play a sound file (make sure the path is correct)
   std::cout << "Starting playback...\n";
@@ -130,13 +130,12 @@ int main() {
   al_install_audio();
 
   al_init_font_addon();
+  al_init_ttf_addon();
 
   al_reserve_samples(16);
   al_init_acodec_addon();
   al_init_image_addon();
   al_init_primitives_addon();
-
-  al_set_new_bitmap_flags(ALLEGRO_MIN_LINEAR | ALLEGRO_MAG_LINEAR | ALLEGRO_VIDEO_BITMAP);
 
   appState.init();
 

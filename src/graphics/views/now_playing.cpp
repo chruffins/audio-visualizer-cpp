@@ -3,45 +3,70 @@
 
 namespace ui {
 
-NowPlayingView::NowPlayingView(std::shared_ptr<ui::ProgressBar> progressBarModel) : progressBar(progressBarModel) {
-    progressBar.setPosition(graphics::UV(0.2f, 0.5f, 0.0f, 0.0f));
-    progressBar.setSize(graphics::UV(0.6f, 0.05f, 0.0f, 0.0f));
+NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager, std::shared_ptr<ui::ProgressBar> progressBarModel)
+    : fontManager(fontManager), progressBar(progressBarModel) {
+  float progressBarStart = 0.3f;
+  float progressBarWidth = 0.4f;
+  float textOffsets = 10.0f;
 
-    songTitleText = TextDrawable("Title", graphics::UV(0.5f, 0.1f, 0.0f, 0.0f), 24);
-    artistNameText = TextDrawable("Artist", graphics::UV(0.5f, 0.2f, 0.0f, 0.0f), 20);
-    albumNameText = TextDrawable("Album", graphics::UV(0.5f, 0.3f, 0.0f, 0.0f), 20);
-    songPositionText = TextDrawable("0:00", graphics::UV(0.15f, 0.6f, 0.0f, 0.0f), 16);
-    songDurationText = TextDrawable("0:00", graphics::UV(0.8f, 0.6f, 0.0f, 0.0f), 16);
+  auto font = fontManager->getFont("courier");
+
+  progressBar.setPosition(graphics::UV(progressBarStart, 0.9f, 0.0f, 0.0f));
+  progressBar.setSize(graphics::UV(progressBarWidth, 0.05f, 0.0f, 0.0f));
+
+  songTitleText =
+      TextDrawable("Title", graphics::UV(0.0f, 0.85f, textOffsets, 0.0f), graphics::UV(0.5f, 0.1f, 0.0f, 0.0f), 16)
+          .setFont(font)
+          .setMultiline(false)
+          .setAlignment(ALLEGRO_ALIGN_LEFT);
+
+  artistNameText =
+      TextDrawable("Artist", graphics::UV(0.0f, 0.85f, textOffsets, 20.0f), graphics::UV(0.5f, 0.1f, 0.0f, 0.0f), 16)
+          .setFont(font)
+          .setMultiline(false)
+          .setAlignment(ALLEGRO_ALIGN_LEFT);
+  albumNameText =
+      TextDrawable("Album", graphics::UV(0.5f, 0.3f, 0.0f, 0.0f), graphics::UV(0.0f, 0.0f, 200.0f, 0.0f), 20);
+  songPositionText =
+      TextDrawable("0:00", graphics::UV(progressBarStart, 0.9f, -textOffsets, 0.0f), graphics::UV(0.15f, 0.05f, 0.0f, 0.0f), 16)
+          .setVerticalAlignment(graphics::VerticalAlignment::CENTER)
+          .setAlignment(ALLEGRO_ALIGN_RIGHT);
+  songDurationText =
+      TextDrawable("0:00", graphics::UV(progressBarStart + progressBarWidth, 0.9f, textOffsets, 0.0f), graphics::UV(0.15f, 0.05f, 0.0f, 0.0f), 16)
+          .setVerticalAlignment(graphics::VerticalAlignment::CENTER)
+          .setAlignment(ALLEGRO_ALIGN_LEFT);
 }
 
-void NowPlayingView::setSongTitle(const std::string& title) {
-    songTitleText.setText(title);
+void NowPlayingView::setSongTitle(const std::string &title) {
+  songTitleText.setText(title);
 }
 
-void NowPlayingView::setArtistName(const std::string& artist) {
-    artistNameText.setText(artist);
+void NowPlayingView::setArtistName(const std::string &artist) {
+  artistNameText.setText(artist);
 }
 
-void NowPlayingView::setAlbumName(const std::string& album) {
-    albumNameText.setText(album);
+void NowPlayingView::setAlbumName(const std::string &album) {
+  albumNameText.setText(album);
 }
 
 void NowPlayingView::setDuration(int duration) {
-    songDurationText.setText(util::format_mm_ss(duration));
+  songDurationText.setText(util::format_mm_ss(duration));
 }
 
 void NowPlayingView::setPosition(int position) {
-    songPositionText.setText(util::format_mm_ss(position));
+  songPositionText.setText(util::format_mm_ss(position));
 }
 
 void NowPlayingView::draw() {
-    // Draw the UI elements
-    songTitleText.draw();
-    artistNameText.draw();
-    albumNameText.draw();
-    songPositionText.draw();
-    songDurationText.draw();
-    progressBar.draw();
+  // Draw the UI elements
+  struct graphics::RenderContext context;
+
+  songTitleText.draw();
+  artistNameText.draw();
+  albumNameText.draw();
+  songPositionText.draw();
+  songDurationText.draw();
+  progressBar.draw();
 }
 
-};
+}; // namespace ui

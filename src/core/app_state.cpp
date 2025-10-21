@@ -11,8 +11,11 @@ bool AppState::init() {
 
     mp3streaming::addMP3Support();
 
+    // update some flags
+    al_set_new_bitmap_flags(ALLEGRO_MIN_LINEAR | ALLEGRO_MAG_LINEAR | ALLEGRO_VIDEO_BITMAP | ALLEGRO_MIPMAP);
+
     // Update your application state here
-    this->display = al_create_display(400, 300);
+    this->display = al_create_display(800, 300);
     this->default_font = al_create_builtin_font();
     this->event_queue = al_create_event_queue();
     this->graphics_timer = al_create_timer(1.0 / 60.0);
@@ -25,6 +28,8 @@ bool AppState::init() {
     
     al_start_timer(this->graphics_timer);
     al_start_timer(this->discord_callback_timer);
+
+    al_set_window_title(this->display, "∫");
 
     // init the music engine
     if (!this->music_engine.initialize()) {
@@ -44,6 +49,9 @@ bool AppState::init() {
     for (const auto& [id, album] : this->library.getAllAlbums()) {
         std::cout << "Loaded album: " << album.title << " (ID: " << album.id << ")\n";
     }
+
+    // load fonts
+    this->fontManager.loadFont("courier", "C:\\Windows\\Fonts\\cour.ttf");
 
     initialized = true;
     return true;
