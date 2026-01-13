@@ -4,6 +4,17 @@ project(audiovis)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+# Ensure a Debug build type by default for single-config generators and
+# add GDB-friendly debug info (-ggdb) to the debug flags for GCC/Clang.
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build." FORCE)
+endif()
+
+if(NOT MSVC)
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -ggdb -O3")
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -ggdb -O3")
+endif()
+
 # Glob all source files
 file(GLOB_RECURSE SOURCES 
     "src/*.cpp"

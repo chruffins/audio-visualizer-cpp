@@ -1,5 +1,6 @@
 #include "core/music_engine.hpp"
 #include <iostream>
+#include "core/app_state.hpp"
 
 namespace core {
 MusicEngine::MusicEngine() {
@@ -65,6 +66,20 @@ void MusicEngine::playSound(const std::string& file_path) {
         std::cout << "Loaded audio stream. Duration: " << duration << " seconds.\n";
         al_attach_audio_stream_to_mixer(current_stream, mixer);
         al_set_audio_stream_playing(current_stream, true);
+        // If possible, find Song model in the global library and notify
+        // listeners about the change.
+        // (This is best-effort: filenames may be relative or differently
+        // normalized; adjust lookup as needed.)
+        const music::Song* song = nullptr;
+        for (const auto& [sid, s] : AppState::instance().library.getAllSongs()) {
+            if (s.filename == file_path) {
+                song = &s;
+                break;
+            }
+        }
+        if (song && onSongChanged) {
+            onSongChanged(*song);
+        }
     }
 }
 
@@ -131,6 +146,27 @@ void MusicEngine::update() {
         progressBarModel->setFinishesAt(1.0f);
     }
     */
+}
+
+void MusicEngine::playNext() {
+    if (!playQueueModel) return;
+    int nextId = playQueueModel->next();
+    if (nextId < 0) {
+        // no next song
+        return;
+    }
+
+    // Look up song path from the global library (AppState owns the library)
+    const music::Song* song = AppState::instance().library.getSongById(nextId);
+    if (!song) {
+        std::cerr << "MusicEngine::playNext: song id " << nextId << " not found in library\n";
+        return;
+    }
+
+    playSound(song->filename);
+    if (onSongChanged) {
+        onSongChanged(*song);
+    }
 }
 
 };

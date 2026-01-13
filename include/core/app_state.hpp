@@ -12,6 +12,7 @@
 #include <sqlite3.h>
 #include "discord_integration.hpp"
 #include "music_engine.hpp"
+#include "music/play_queue.hpp"
 #include "database/database.hpp"
 #include "music/library.hpp"
 #include "util/font.hpp"
@@ -59,6 +60,9 @@ public:
 	// Music engine
 	MusicEngine music_engine;
 
+	// Play queue
+	std::shared_ptr<music::PlayQueue> play_queue;
+
 	// Library (in-memory)
 	music::Library library;
 
@@ -70,7 +74,8 @@ private:
 		, discord_initialized(false)
 		, discord_integration(DiscordIntegration::instance())
 		, music_engine()
-		, library() {}
+		, library()
+		, play_queue(std::make_shared<music::PlayQueue>()) {}
 
 	~AppState() = default;
 };

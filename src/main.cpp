@@ -35,6 +35,18 @@ void run_main_loop() {
 
   auto nowPlayingView = ui::NowPlayingView(std::make_shared<util::FontManager>(appState.fontManager), appState.music_engine.progressBarModel);
 
+  // Register a callback so that the NowPlayingView updates automatically when
+  // MusicEngine starts a new song (e.g., via playNext or other engine-driven
+  // playback). This keeps the UI in sync without polling.
+  appState.music_engine.onSongChanged = [&](const music::Song& s) {
+    nowPlayingView.setSongTitle(s.title);
+    nowPlayingView.setArtistName(appState.library.getArtistById(s.album_id) ? appState.library.getArtistById(s.album_id)->name : "");
+    const music::Album* album = appState.library.getAlbumById(s.album_id);
+    nowPlayingView.setAlbumName(album ? album->title : "");
+    nowPlayingView.setDuration(s.duration);
+    nowPlayingView.setPosition(0);
+  };
+
   // Example: Play a sound file (make sure the path is correct)
   std::cout << "Starting playback...\n";
 

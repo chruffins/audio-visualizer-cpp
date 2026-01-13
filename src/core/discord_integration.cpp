@@ -57,12 +57,6 @@ bool DiscordIntegration::init() {
 
       if (status == discordpp::Client::Status::Ready) {
         std::cout << "✅ Client is ready! You can now call SDK functions.\n";
-
-        // Example: Set initial rich presence
-        auto title = std::string("The Remedy");
-        auto artist = std::string("Abandoned Pools");
-
-        this->set_new_song(title, artist);
       } else if (error != discordpp::Client::Error::None) {
         std::cerr << "❌ Connection Error: " << discordpp::Client::ErrorToString(error) << " - Details: " << errorDetail << std::endl;
       }

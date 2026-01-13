@@ -50,8 +50,33 @@ bool AppState::init() {
         std::cout << "Loaded album: " << album.title << " (ID: " << album.id << ")\n";
     }
 
+    // Fill the application-owned play queue with all songs from the library
+    // (enqueueing by song id). This is a simple example of populating the
+    // queue; a real app would probably use playlists or user selection.
+    std::vector<int> allSongIds;
+    for (const auto& [sid, song] : this->library.getAllSongs()) {
+        allSongIds.push_back(sid);
+        std::cout << "Loaded song: " << song.title << " (ID: " << song.id << ")\n";
+    }
+    // preserve insertion order from the map iteration
+    this->play_queue->enqueue_many(allSongIds);
+    std::cout << "Loaded " << allSongIds.size() << " songs into the play queue.\n";
+
     // load fonts
     this->fontManager.loadFont("courier", "C:\\Windows\\Fonts\\cour.ttf");
+
+    // Wire the shared play queue into the music engine so playback can operate
+    // on the application-owned queue.
+    this->music_engine.setPlayQueue(this->play_queue);
+
+    // Optionally start playback of the first song in the queue (if any)
+    int first = this->play_queue->current();
+    if (first >= 0) {
+        const music::Song* s = this->library.getSongById(first);
+        if (s) {
+            this->music_engine.playSound(s->filename);
+        }
+    }
 
     initialized = true;
     return true;
