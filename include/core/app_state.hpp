@@ -77,7 +77,7 @@ private:
 		, library()
 		, play_queue(std::make_shared<music::PlayQueue>()) {}
 
-	~AppState() = default;
+	~AppState() { shutdown(); }
 };
 
 } // namespace core

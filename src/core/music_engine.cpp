@@ -8,6 +8,7 @@ MusicEngine::MusicEngine() {
     voice = nullptr;
     mixer = nullptr;
     current_stream = nullptr;
+    is_shutdown = false;
 }
 
 MusicEngine::~MusicEngine() {
@@ -38,18 +39,25 @@ bool MusicEngine::initialize() {
 }
 
 void MusicEngine::shutdown() {
-    if (voice) {
-        al_destroy_voice(voice);
-        voice = nullptr;
+    if (is_shutdown) {
+        return; // Already shut down
+    }
+    
+    // Destroy in reverse order of creation: stream -> mixer -> voice
+    if (current_stream) {
+        al_destroy_audio_stream(current_stream);
+        current_stream = nullptr;
     }
     if (mixer) {
         al_destroy_mixer(mixer);
         mixer = nullptr;
     }
-    if (current_stream) {
-        al_destroy_audio_stream(current_stream);
-        current_stream = nullptr;
+    if (voice) {
+        al_destroy_voice(voice);
+        voice = nullptr;
     }
+    
+    is_shutdown = true;
 }
 
 void MusicEngine::playSound(const std::string& file_path) {

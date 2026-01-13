@@ -63,7 +63,7 @@ bool AppState::init() {
     std::cout << "Loaded " << allSongIds.size() << " songs into the play queue.\n";
 
     // load fonts
-    this->fontManager.loadFont("courier", "C:\\Windows\\Fonts\\cour.ttf");
+    this->fontManager.loadFont("courier", "../assets/CourierPrime-Regular.ttf");
 
     // Wire the shared play queue into the music engine so playback can operate
     // on the application-owned queue.
@@ -83,7 +83,39 @@ bool AppState::init() {
 }
 
 void AppState::shutdown() {
-    // Render your application state here
-
+    music_engine.shutdown();
+    
+    fontManager.cleanup();
+    
+    // Destroy Allegro resources in reverse order of creation
+    // Stop timers first
+    if (discord_callback_timer) {
+        al_stop_timer(discord_callback_timer);
+        al_destroy_timer(discord_callback_timer);
+        discord_callback_timer = nullptr;
+    }
+    if (graphics_timer) {
+        al_stop_timer(graphics_timer);
+        al_destroy_timer(graphics_timer);
+        graphics_timer = nullptr;
+    }
+    
+    // Destroy event queue
+    if (event_queue) {
+        al_destroy_event_queue(event_queue);
+        event_queue = nullptr;
+    }
+    
+    // Destroy fonts
+    if (default_font) {
+        al_destroy_font(default_font);
+        default_font = nullptr;
+    }
+    
+    // Destroy display last
+    if (display) {
+        al_destroy_display(display);
+        display = nullptr;
+    }
 }
 };

@@ -59,5 +59,6 @@ private:
 
     double current_time = 0.0;
     double duration = 0.0;
+    bool is_shutdown = false;
 };
 };

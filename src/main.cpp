@@ -174,7 +174,20 @@ int main() {
 
   run_main_loop();
 
+  std::cout << "Shutting down application...\n";
   appState.shutdown();
+  std::cout << "Application shutdown complete.\n";
+
+  // Shutdown Allegro addons in reverse order of initialization
+  /*
+  al_shutdown_primitives_addon();
+  al_shutdown_image_addon();
+  al_shutdown_ttf_addon();
+  al_shutdown_font_addon();
+  al_uninstall_audio();
+  al_uninstall_keyboard();
+  al_uninstall_mouse();
+  */
 
   return 0;
 }

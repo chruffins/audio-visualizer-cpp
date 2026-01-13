@@ -18,9 +18,20 @@ public:
 
     Font(std::string filename) : filename(std::move(filename)) {}
     ~Font() {
-        for (auto& pair : fonts) {
-            al_destroy_font(pair.second);
+        cleanup();
+    }
+
+    void cleanup() {
+        if (is_shutdown) {
+            return; // Already cleaned up
         }
+        for (auto& pair : fonts) {
+            if (pair.second) {
+                al_destroy_font(pair.second);
+            }
+        }
+        fonts.clear();
+        is_shutdown = true;
     }
 
     ALLEGRO_FONT* getFont(int size) {
@@ -48,6 +59,7 @@ public:
 private:
     std::string filename;
     std::map<int, ALLEGRO_FONT*> fonts;
+    bool is_shutdown = false;
 };
 
 class FontManager {
@@ -73,6 +85,19 @@ public:
         fonts[name] = font;
         return font;
     }
+
+    void cleanup() {
+        for (auto& pair : fonts) {
+            if (pair.second) {
+                pair.second->cleanup();
+            }
+        }
+        if (defaultFont) {
+            defaultFont->cleanup();
+        }
+        fonts.clear();
+    }
+
 private:
     std::map<std::string, std::shared_ptr<Font>> fonts;
     std::shared_ptr<Font> defaultFont;
