@@ -127,7 +127,7 @@ public:
     void draw(const graphics::RenderContext& context = {}) const override;
 
     template <typename... Args>
-    void drawF(const char* fmt, Args&&... args) {
+    void drawF(const graphics::RenderContext& context, const char* fmt, Args&&... args) {
         int needed = std::snprintf(nullptr, 0, fmt, std::forward<Args>(args)...);
         if (needed <= 0) {
             return; // formatting failed or empty
@@ -137,14 +137,14 @@ public:
         std::snprintf(buffer.data(), buffer.size(), fmt, std::forward<Args>(args)...);
         buffer.resize(static_cast<size_t>(needed));
 
-        drawTextInternal(buffer.c_str());
+        drawTextInternal(buffer.c_str(), context);
     }
 
 private:
     static void initializeFallbackFont();
     // Use std::once_flag to ensure thread-safe one-time initialization
     static std::once_flag fallbackInitFlag;
-    void drawTextInternal(const char* str) const;
+    void drawTextInternal(const char* str, const graphics::RenderContext& context) const;
     
     static std::shared_ptr<util::Font> fallbackFont;
     

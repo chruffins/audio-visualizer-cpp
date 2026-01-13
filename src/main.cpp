@@ -85,7 +85,12 @@ void run_main_loop() {
         // Handle graphics timer event
         al_clear_to_color(al_map_rgb(0, 0, 0));
         al_draw_text(appState.default_font, al_map_rgb(255, 255, 255), 200, 150, ALLEGRO_ALIGN_CENTRE, "Hello, Allegro!");
-        nowPlayingView.draw();
+
+        graphics::RenderContext globalContext{};
+        globalContext.screenWidth = al_get_display_width(al_get_current_display());
+        globalContext.screenHeight = al_get_display_height(al_get_current_display());
+
+        nowPlayingView.draw(globalContext);
         al_flip_display();
       } else if (appState.event.timer.source == appState.discord_callback_timer) {
         // Handle Discord callback timer event

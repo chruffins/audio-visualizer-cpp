@@ -22,7 +22,7 @@ public:
     void setDuration(int duration);
     void setPosition(int position);
 
-    void draw();
+    void draw(const graphics::RenderContext& context);
 private:
     std::shared_ptr<util::FontManager> fontManager;
 

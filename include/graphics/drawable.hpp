@@ -5,7 +5,11 @@
 
 namespace graphics {
 
-struct RenderContext {};
+struct RenderContext {
+    int screenWidth = 0;
+    int screenHeight = 0;
+    void* userData = nullptr; // optional backend-specific pointer
+};
 
 class Drawable {
 public:

@@ -4,7 +4,7 @@ using namespace ui;
 
 // Define static members
 std::shared_ptr<util::Font> TextDrawable::fallbackFont = nullptr;
-bool TextDrawable::fallbackFontInitialized = false;
+std::once_flag TextDrawable::fallbackInitFlag;
 
 namespace {
 // Helper to calculate vertical offset
@@ -22,39 +22,56 @@ float calculateVerticalOffset(graphics::VerticalAlignment alignment, float heigh
 } // anonymous namespace
 
 void TextDrawable::initializeFallbackFont() {
-  if (!fallbackFontInitialized) {
+  std::call_once(fallbackInitFlag, []() {
     fallbackFont = std::make_shared<util::Font>(); // Initialize with default constructor
-    fallbackFontInitialized = true;
-  }
+  });
 }
 
 void TextDrawable::draw(const graphics::RenderContext& context) const {
-  drawTextInternal(text.c_str());
+  drawTextInternal(text.c_str(), context);
 }
 
-template <typename... Args>
-void TextDrawable::drawF(const char *fmt, Args &&...args) {
-  int needed = std::snprintf(nullptr, 0, fmt, std::forward<Args>(args)...);
-  if (needed <= 0) {
-    return; // formatting failed or empty
+// Note: drawF is a template and is defined in the header (must be visible at
+// call sites). The implementation was moved to the header to avoid linker
+// issues.
+
+void TextDrawable::drawTextInternal(const char* str, const graphics::RenderContext& context) const {
+  auto [x, y] = position.toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
+  auto [w, h] = size.toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
+  // Obtain the actual ALLEGRO_FONT pointer at draw time. This avoids holding
+  // onto a raw pointer that could be invalidated if the Font resource is
+  // reloaded elsewhere.
+  ALLEGRO_FONT* font_ptr = nullptr;
+  if (font) {
+    font_ptr = font->getFont(font_size);
   }
-  std::string buffer;
-  buffer.resize(static_cast<size_t>(needed) + 1);
-  std::snprintf(buffer.data(), buffer.size(), fmt, std::forward<Args>(args)...);
-  buffer.resize(static_cast<size_t>(needed));
+  if (!font_ptr && fallbackFont) {
+    font_ptr = fallbackFont->getFont(font_size);
+  }
+  if (!font_ptr) {
+    return; // no font available to draw
+  }
 
-  drawTextInternal(buffer.c_str());
-}
+  int font_height = al_get_font_line_height(font_ptr);
+  float y_offset = calculateVerticalOffset(verticalAlignment, h, font_height);
 
-void TextDrawable::drawTextInternal(const char* str) const {
-  auto [x, y] = position.toScreenPos();
-  auto [w, h] = size.toScreenPos();
-  float y_offset = calculateVerticalOffset(verticalAlignment, h, _font_height);
+  int allegro_align = ALLEGRO_ALIGN_CENTER;
+  switch (textAlignment) {
+    case TextDrawable::HorizontalAlignment::Left:
+      allegro_align = ALLEGRO_ALIGN_LEFT;
+      break;
+    case TextDrawable::HorizontalAlignment::Center:
+      allegro_align = ALLEGRO_ALIGN_CENTER;
+      break;
+    case TextDrawable::HorizontalAlignment::Right:
+      allegro_align = ALLEGRO_ALIGN_RIGHT;
+      break;
+  }
 
   if (!multiline) {
-    al_draw_text(lastUsedFont, color, x, y + y_offset, textAlignment | ALLEGRO_ALIGN_INTEGER, str);
+    al_draw_text(font_ptr, color, x, y + y_offset, allegro_align | ALLEGRO_ALIGN_INTEGER, str);
   } else {
-    al_draw_multiline_text(lastUsedFont, color, x, y + y_offset, w, _font_height + line_height,
-                           textAlignment | ALLEGRO_ALIGN_INTEGER, str);
+    al_draw_multiline_text(font_ptr, color, x, y + y_offset, w, font_height + line_height,
+                           allegro_align | ALLEGRO_ALIGN_INTEGER, str);
   }
 }

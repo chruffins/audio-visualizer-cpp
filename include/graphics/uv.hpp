@@ -1,8 +1,6 @@
 #pragma once
 
 #include <utility>
-#include <allegro5/allegro.h>
-
 namespace graphics {
 struct UV {
     float abs_u;
@@ -20,12 +18,8 @@ struct UV {
         return {pix_u, pix_v};
     }
 
-    std::pair<float, float> toScreenPos(float textureWidth = 0, float textureHeight = 0) const {
-        if (textureWidth == 0 || textureHeight == 0) {
-            textureWidth = al_get_bitmap_width(al_get_target_bitmap());
-            textureHeight = al_get_bitmap_height(al_get_target_bitmap());
-        }
-        
+    // Convert normalized (abs) + pixel offset coordinates to screen pixels.
+    std::pair<float, float> toScreenPos(float textureWidth, float textureHeight) const {
         return {abs_u * textureWidth + pix_u, abs_v * textureHeight + pix_v};
     }
 };

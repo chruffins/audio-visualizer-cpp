@@ -5,20 +5,17 @@
 void ui::ProgressBarDrawable::draw(const graphics::RenderContext& context) const
 {
     // For now, just draw a squared progress bar
-    drawSquared();
+    drawSquared(context);
     // Future: could have a mode to choose rounded vs squared
 }
 
-void ui::ProgressBarDrawable::drawSquared() const
+void ui::ProgressBarDrawable::drawSquared(const graphics::RenderContext& context) const
 {
     if (!model) return;
 
-    // get screen size
-    auto screenX = al_get_display_width(al_get_current_display());
-    auto screenY = al_get_display_height(al_get_current_display());
-
-    auto size = this->size.toScreenPos(screenX, screenY);
-    auto position = this->position.toScreenPos(screenX, screenY);
+    // use sizes from context
+    auto size = this->size.toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
+    auto position = this->position.toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
 
     // draw background
     al_draw_filled_rectangle(position.first, position.second, position.first + size.first, position.second + size.second, bgColor);
@@ -33,16 +30,12 @@ void ui::ProgressBarDrawable::drawSquared() const
     al_draw_rectangle(position.first, position.second, position.first + size.first, position.second + size.second, borderColor, borderThickness);
 }
 
-void ui::ProgressBarDrawable::drawRounded() const
+void ui::ProgressBarDrawable::drawRounded(const graphics::RenderContext& context) const
 {
     if (!model) return;
 
-    // get screen size
-    auto screenX = al_get_display_width(al_get_current_display());
-    auto screenY = al_get_display_height(al_get_current_display());
-
-    auto size = this->size.toScreenPos(screenX, screenY);
-    auto position = this->position.toScreenPos(screenX, screenY);
+    auto size = this->size.toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
+    auto position = this->position.toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
 
     float radius = size.second / 2.0f;
 

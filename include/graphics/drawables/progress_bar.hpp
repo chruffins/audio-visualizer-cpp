@@ -35,7 +35,7 @@ private:
     ALLEGRO_COLOR borderColor = al_map_rgb(255, 255, 255);
     int borderThickness = 1;
 
-    void drawSquared() const;
-    void drawRounded() const;
+    void drawSquared(const graphics::RenderContext& context) const;
+    void drawRounded(const graphics::RenderContext& context) const;
 };
 };
