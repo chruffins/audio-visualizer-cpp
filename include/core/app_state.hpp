@@ -16,6 +16,7 @@
 #include "database/database.hpp"
 #include "music/library.hpp"
 #include "util/font.hpp"
+#include "util/config.hpp"
 
 namespace core {
 
@@ -50,6 +51,9 @@ public:
 	// FontManager
 	util::FontManager fontManager;
 
+	// Config
+	util::Config config;
+
     // Database
     database::MusicDatabase db;
 
@@ -75,7 +79,8 @@ private:
 		, discord_integration(DiscordIntegration::instance())
 		, music_engine()
 		, library()
-		, play_queue(std::make_shared<music::PlayQueue>()) {}
+		, play_queue(std::make_shared<music::PlayQueue>())
+		, config() {}
 
 	~AppState() { shutdown(); }
 };

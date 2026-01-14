@@ -11,6 +11,11 @@ bool AppState::init() {
 
     mp3streaming::addMP3Support();
 
+    // Load configuration first
+    if (!this->config.load("config.ini")) {
+        std::cerr << "Warning: Could not load config.ini, using defaults.\n";
+    }
+
     // update some flags
     al_set_new_bitmap_flags(ALLEGRO_MIN_LINEAR | ALLEGRO_MAG_LINEAR | ALLEGRO_VIDEO_BITMAP | ALLEGRO_MIPMAP);
 

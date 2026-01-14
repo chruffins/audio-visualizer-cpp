@@ -18,9 +18,6 @@
 #include "graphics/views/now_playing.hpp"
 #include "graphics/uv.hpp"
 
-// Replace with your Discord Application ID
-const uint64_t APPLICATION_ID = 123456789012345678;
-
 // Create a flag to stop the application
 std::atomic<bool> running = true;
 
@@ -78,7 +75,7 @@ void run_main_loop() {
       finished = true;
       break;
     case ALLEGRO_EVENT_TIMER:
-      if (appState.event.timer.source == appState.graphics_timer) {
+      if (appState.event.timer.source == appState.graphics_timer && al_is_event_queue_empty(appState.event_queue)) {
         appState.music_engine.update(); // Update music engine (progress bar, etc.)
         nowPlayingView.setPosition(appState.music_engine.getCurrentTime());
 
@@ -157,7 +154,7 @@ int main() {
   appState.init();
 
   // set icon here
-  ALLEGRO_BITMAP* icon = al_load_bitmap("../assets/logotransparent.png");
+  ALLEGRO_BITMAP* icon = al_load_bitmap(appState.config.getIconPath().c_str());
   if (icon) {
       al_set_display_icon(appState.display, icon);
       al_destroy_bitmap(icon);
@@ -167,9 +164,10 @@ int main() {
 
   std::cout << "App state initialized!\n";
 
-  // Import songs from a directory
+  // Import songs from configured directory
   database::LibraryScanner scanner;
-  auto result = scanner.scan(appState.db, "C:\\Users\\chris\\Music");
+  std::string musicDir = appState.config.getMusicDirectory();
+  auto result = scanner.scan(appState.db, musicDir);
   std::cout << "Scanned " << result.scanned << " files, imported " << result.imported << " songs, skipped " << result.skipped << " songs.\n";
 
   run_main_loop();
