@@ -2,6 +2,7 @@
 
 #include "graphics/drawables/progress_bar.hpp"
 #include "graphics/drawables/text.hpp"
+#include "graphics/drawables/frame.hpp"
 #include "graphics/uv.hpp"
 #include <memory>
 
@@ -26,13 +27,18 @@ public:
 private:
     std::shared_ptr<util::FontManager> fontManager;
 
-    graphics::UV position;
-    ProgressBarDrawable progressBar;
+    // Main container frame
+    FrameDrawable mainFrame;
+    
+    // Text drawables
     TextDrawable songTitleText;
     TextDrawable artistNameText;
     TextDrawable albumNameText;
     TextDrawable songPositionText;
     TextDrawable songDurationText;
+    
+    // Progress bar
+    ProgressBarDrawable progressBar;
 };
 
 }

@@ -16,6 +16,8 @@ void ui::ProgressBarDrawable::drawSquared(const graphics::RenderContext& context
     // use sizes from context
     auto size = this->size.toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
     auto position = this->position.toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
+    position.first += context.offsetX;
+    position.second += context.offsetY;
 
     // draw background
     al_draw_filled_rectangle(position.first, position.second, position.first + size.first, position.second + size.second, bgColor);
@@ -36,6 +38,8 @@ void ui::ProgressBarDrawable::drawRounded(const graphics::RenderContext& context
 
     auto size = this->size.toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
     auto position = this->position.toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
+    position.first += context.offsetX;
+    position.second += context.offsetY;
 
     float radius = size.second / 2.0f;
 
