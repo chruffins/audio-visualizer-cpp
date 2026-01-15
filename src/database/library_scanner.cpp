@@ -29,8 +29,9 @@ static bool ends_with_ci(const std::string &s, const std::string &suffix)
 
 bool LibraryScanner::isAudioFile(const std::string &path)
 {
-    // Use Allegro's identifers when possible
-    return al_identify_sample(path.c_str()) != nullptr;
+    const char* id = al_identify_sample(path.c_str());
+    bool result = (id != nullptr);
+    return result;
 }
 
 bool LibraryScanner::isImageFile(const std::string &path)
@@ -58,7 +59,7 @@ static int for_each_recursive_cb(ALLEGRO_FS_ENTRY *entry, void *vstate)
     if (st->cancel && st->cancel->load())
         return ALLEGRO_FOR_EACH_FS_ENTRY_STOP;
 
-    if (al_get_fs_entry_mode(entry) == ALLEGRO_FILEMODE_ISDIR)
+    if (al_get_fs_entry_mode(entry) & ALLEGRO_FILEMODE_ISDIR)
         return ALLEGRO_FOR_EACH_FS_ENTRY_OK;
 
     const char *name = al_get_fs_entry_name(entry);

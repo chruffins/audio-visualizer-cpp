@@ -8,6 +8,10 @@ namespace graphics {
 struct RenderContext {
     int screenWidth = 0;
     int screenHeight = 0;
+    // Optional translation applied by container-like drawables so children
+    // render relative to a local origin.
+    float offsetX = 0.0f;
+    float offsetY = 0.0f;
     void* userData = nullptr; // optional backend-specific pointer
 };
 
