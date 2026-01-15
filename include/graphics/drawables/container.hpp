@@ -33,9 +33,9 @@ public:
     void setBorderColor(ALLEGRO_COLOR c) noexcept { borderColor = c; }
     void setBorderThickness(int t) noexcept { borderThickness = t; }
 
-    void addChild(const graphics::DrawablePtr& child) { children.push_back(child); }
+    void addChild(graphics::Drawable* child) { children.push_back(child); }
     void clearChildren() { children.clear(); }
-    const graphics::DrawableList& getChildren() const noexcept { return children; }
+    const graphics::DrawableObserverList& getChildren() const noexcept { return children; }
 
     void draw(const graphics::RenderContext& context = {}) const override;
 
@@ -44,7 +44,7 @@ protected:
 
     graphics::UV position{0.0f, 0.0f, 0.0f, 0.0f};
     graphics::UV size{1.0f, 1.0f, 0.0f, 0.0f};
-    graphics::DrawableList children;
+    graphics::DrawableObserverList children;
 
     bool drawBackground = false;
     ALLEGRO_COLOR backgroundColor = al_map_rgba(0, 0, 0, 0);

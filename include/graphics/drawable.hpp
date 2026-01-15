@@ -23,5 +23,6 @@ public:
 
 using DrawablePtr = std::shared_ptr<Drawable>;
 using DrawableList = std::vector<DrawablePtr>;
+using DrawableObserverList = std::vector<Drawable*>;
 
 } // namespace graphics

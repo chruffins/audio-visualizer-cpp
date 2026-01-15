@@ -25,7 +25,11 @@ public:
 
     void draw(const graphics::RenderContext& context);
 private:
+    void recalculateLayout(const graphics::RenderContext& context);
+    
     std::shared_ptr<util::FontManager> fontManager;
+    int lastDisplayWidth = 0;
+    int lastDisplayHeight = 0;
 
     // Main container frame
     FrameDrawable mainFrame;
