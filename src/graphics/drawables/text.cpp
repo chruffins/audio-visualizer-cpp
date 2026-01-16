@@ -34,8 +34,11 @@ void TextDrawable::draw(const graphics::RenderContext& context) const {
 // Note: drawF is a template and is defined in the header (must be visible at
 // call sites). The implementation was moved to the header to avoid linker
 // issues.
-
 void TextDrawable::drawTextInternal(const char* str, const graphics::RenderContext& context) const {
+  if (!visible) {
+    return;
+  }
+
   auto [x, y] = position.toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
   auto [w, h] = size.toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
   x += context.offsetX;

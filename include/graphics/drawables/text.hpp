@@ -124,10 +124,22 @@ public:
         return verticalAlignment;
     }
 
+    void setVisible(bool is_visible) {
+        visible = is_visible;
+    }
+
+    bool isVisible() const {
+        return visible;
+    }
+
     void draw(const graphics::RenderContext& context = {}) const override;
 
     template <typename... Args>
     void drawF(const graphics::RenderContext& context, const char* fmt, Args&&... args) {
+        if (!visible) {
+            return;
+        }
+
         int needed = std::snprintf(nullptr, 0, fmt, std::forward<Args>(args)...);
         if (needed <= 0) {
             return; // formatting failed or empty
@@ -157,6 +169,7 @@ private:
     graphics::VerticalAlignment verticalAlignment = graphics::VerticalAlignment::CENTER;
     int line_height = 0;
     bool multiline = false;
+    bool visible = true;
     ALLEGRO_COLOR color = al_map_rgb(255, 255, 255);
 
     int font_size;

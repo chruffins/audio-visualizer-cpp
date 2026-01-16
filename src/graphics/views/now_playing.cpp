@@ -17,60 +17,59 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager, s
   mainFrame.setBorderThickness(2);
   mainFrame.setPadding(20.0f);
 
-  // Song title - large, bold, at top
   songTitleText = TextDrawable(
       "No Song Playing",
-      graphics::UV(0.5f, 0.0f, 0.0f, 10.0f),
-      graphics::UV(1.0f, 0.0f, -40.0f, 30.0f),
-      24
+      graphics::UV(0.0f, 0.0f, 64.0f, 30.0f),
+      graphics::UV(0.9f, 0.0f, 0.0f, 30.0f),
+      16
   ).setFont(font)
    .setMultiline(false)
-   .setAlignment(TextDrawable::HorizontalAlignment::Center)
+   .setAlignment(TextDrawable::HorizontalAlignment::Left)
    .setVerticalAlignment(graphics::VerticalAlignment::TOP);
 
   // Artist name - medium size, below title
   artistNameText = TextDrawable(
       "Unknown Artist",
-      graphics::UV(0.5f, 0.0f, 0.0f, 50.0f),
-      graphics::UV(1.0f, 0.0f, -40.0f, 25.0f),
-      18
+      graphics::UV(0.0f, 0.0f, 64.0f, 45.0f),
+      graphics::UV(0.9f, 0.0f, 0.0f, 25.0f),
+      16
   ).setFont(font)
    .setMultiline(false)
-   .setAlignment(TextDrawable::HorizontalAlignment::Center)
+   .setAlignment(TextDrawable::HorizontalAlignment::Left)
    .setVerticalAlignment(graphics::VerticalAlignment::TOP);
 
   // Album name - smaller, below artist
   albumNameText = TextDrawable(
       "Unknown Album",
-      graphics::UV(0.5f, 0.0f, 0.0f, 85.0f),
-      graphics::UV(1.0f, 0.0f, -40.0f, 25.0f),
-      14
+      graphics::UV(0.0f, 0.0f, 64.0f, 60.0f),
+      graphics::UV(0.9f, 0.0f, 0.0f, 25.0f),
+      16
   ).setFont(font)
    .setMultiline(false)
-   .setAlignment(TextDrawable::HorizontalAlignment::Center)
+   .setAlignment(TextDrawable::HorizontalAlignment::Left)
    .setVerticalAlignment(graphics::VerticalAlignment::TOP);
 
   // Progress bar - positioned in lower third
-  progressBar.setPosition(graphics::UV(0.0f, 1.0f, 20.0f, -65.0f));
-  progressBar.setSize(graphics::UV(1.0f, 0.0f, -40.0f, 8.0f));
+  progressBar.setPosition(graphics::UV(0.3f, 1.0f, 10.0f, 0.0f));
+  progressBar.setSize(graphics::UV(0.4f, 0.0f, 0.0f, 8.0f));
 
   // Position and duration text below progress bar
   songPositionText = TextDrawable(
       "0:00",
-      graphics::UV(0.0f, 1.0f, 20.0f, -45.0f),
-      graphics::UV(0.0f, 0.0f, 80.0f, 25.0f),
-      14
-  ).setFont(font)
-   .setAlignment(TextDrawable::HorizontalAlignment::Left)
-   .setVerticalAlignment(graphics::VerticalAlignment::TOP);
-
-  songDurationText = TextDrawable(
-      "0:00",
-      graphics::UV(1.0f, 1.0f, -20.0f, -45.0f),
+      graphics::UV(0.3f, 1.0f, -0.0f, -4.0f),
       graphics::UV(0.0f, 0.0f, 80.0f, 25.0f),
       14
   ).setFont(font)
    .setAlignment(TextDrawable::HorizontalAlignment::Right)
+   .setVerticalAlignment(graphics::VerticalAlignment::TOP);
+
+  songDurationText = TextDrawable(
+      "0:00",
+      graphics::UV(0.7f, 1.0f, 20.0f, -4.0f),
+      graphics::UV(0.0f, 0.0f, 80.0f, 25.0f),
+      14
+  ).setFont(font)
+   .setAlignment(TextDrawable::HorizontalAlignment::Left)
    .setVerticalAlignment(graphics::VerticalAlignment::TOP);
 
   // Add all elements as children of the main frame
@@ -112,11 +111,11 @@ void NowPlayingView::recalculateLayout(const graphics::RenderContext& context) {
 
   // Scale font sizes responsively based on display height
   // Title: ~6-8% of display height, clamped to reasonable range
-  int titleFontSize = static_cast<int>(std::clamp(context.screenHeight * 0.08f, 16.0f, 48.0f));
+  int titleFontSize = static_cast<int>(std::clamp(context.screenHeight * 0.04f, 12.0f, 48.0f));
   // Artist: ~4-5% of display height
-  int artistFontSize = static_cast<int>(std::clamp(context.screenHeight * 0.08f, 12.0f, 32.0f));
+  int artistFontSize = static_cast<int>(std::clamp(context.screenHeight * 0.04f, 12.0f, 32.0f));
   // Album: ~3-4% of display height
-  int albumFontSize = static_cast<int>(std::clamp(context.screenHeight * 0.04f, 10.0f, 24.0f));
+  int albumFontSize = static_cast<int>(std::clamp(context.screenHeight * 0.04f, 12.0f, 24.0f));
   // Time labels: ~2-3% of display height
   int timeFontSize = static_cast<int>(std::clamp(context.screenHeight * 0.05f, 8.0f, 18.0f));
 
