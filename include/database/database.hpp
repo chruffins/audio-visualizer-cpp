@@ -39,7 +39,7 @@ public:
     std::optional<int64_t> addGenre(const std::string& name);
     std::optional<int64_t> addArtist(const std::string& name, const std::string& picture_path = "", const std::string& description = "");
     std::optional<int64_t> addPlaylist(const std::string& name, const std::string& picture_path = "", const std::string& description = "");
-    std::optional<int64_t> addAlbum(const std::string& album_name, int64_t artist_id, const std::string& picture_path = "", std::optional<int> year = std::nullopt);
+    std::optional<int64_t> addAlbum(const std::string& album_name, int64_t artist_id, const std::string& picture_path = "", std::optional<int> year = std::nullopt, const std::vector<unsigned char>* cover_art_data = nullptr, const std::string& cover_art_mime = "");
     std::optional<int64_t> addSong(const std::string& song_path, const std::string& title, int64_t album_id, int track, const std::string& comment, int duration);
 
     // Associations

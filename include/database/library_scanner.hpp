@@ -29,6 +29,10 @@ struct SongMetadata {
     uint32_t duration;
 
     float bpm;
+
+    // Album art data
+    std::vector<unsigned char> cover_art_data;
+    std::string cover_art_mime;
 };
 }
 

@@ -9,6 +9,17 @@
 
 #include <taglib/tag.h>
 #include <taglib/fileref.h>
+#include <taglib/mpegfile.h>
+#include <taglib/id3v2tag.h>
+#include <taglib/id3v2frame.h>
+#include <taglib/attachedpictureframe.h>
+#include <taglib/flacfile.h>
+#include <taglib/flacpicture.h>
+#include <taglib/mp4file.h>
+#include <taglib/mp4coverart.h>
+#include <taglib/oggfile.h>
+#include <taglib/vorbisfile.h>
+#include <taglib/xiphcomment.h>
 #include <allegro5/allegro_audio.h>
 
 using namespace database;
@@ -159,7 +170,9 @@ ScanResult LibraryScanner::scan(MusicDatabase &db,
         std::optional<int64_t> album_id_opt;
         if (!rep.album.empty())
         {
-            album_id_opt = db.addAlbum(rep.album, static_cast<int>(artist_id), "");
+            // Pass cover art data if available from the representative track
+            const std::vector<unsigned char>* cover_art_ptr = rep.cover_art_data.empty() ? nullptr : &rep.cover_art_data;
+            album_id_opt = db.addAlbum(rep.album, static_cast<int>(artist_id), "", std::optional<int>(rep.year), cover_art_ptr, rep.cover_art_mime);
         }
         int64_t album_id = album_id_opt ? *album_id_opt : 0;
 
@@ -229,5 +242,100 @@ music::SongMetadata LibraryScanner::readSongMetadata(const std::string &path)
         meta.duration = f.audioProperties()->lengthInSeconds();
         // meta.bpm = f.audioProperties()->bpm();
     }
+
+    // Extract album_artist and cover art based on file type
+    // MP3/ID3v2
+    if (auto* mpegFile = dynamic_cast<TagLib::MPEG::File*>(f.file())) {
+        if (mpegFile->ID3v2Tag()) {
+            // Extract album artist (TPE2 frame)
+            auto albumArtistFrames = mpegFile->ID3v2Tag()->frameListMap()["TPE2"];
+            if (!albumArtistFrames.isEmpty()) {
+                meta.album_artist = albumArtistFrames.front()->toString().to8Bit(true);
+            }
+            
+            // Extract cover art
+            auto frameList = mpegFile->ID3v2Tag()->frameListMap()["APIC"];
+            if (!frameList.isEmpty()) {
+                auto* coverFrame = static_cast<TagLib::ID3v2::AttachedPictureFrame*>(frameList.front());
+                auto picture = coverFrame->picture();
+                meta.cover_art_data.assign(picture.data(), picture.data() + picture.size());
+                meta.cover_art_mime = coverFrame->mimeType().to8Bit(true);
+            }
+        }
+    }
+    // FLAC
+    else if (auto* flacFile = dynamic_cast<TagLib::FLAC::File*>(f.file())) {
+        // Extract album artist from Xiph comment
+        if (flacFile->xiphComment()) {
+            auto fieldMap = flacFile->xiphComment()->fieldListMap();
+            if (fieldMap.contains("ALBUMARTIST")) {
+                meta.album_artist = fieldMap["ALBUMARTIST"].front().to8Bit(true);
+            }
+        }
+        
+        // Extract cover art
+        auto picList = flacFile->pictureList();
+        if (!picList.isEmpty()) {
+            auto* pic = picList.front();
+            auto data = pic->data();
+            meta.cover_art_data.assign(data.data(), data.data() + data.size());
+            meta.cover_art_mime = pic->mimeType().to8Bit(true);
+        }
+    }
+    // MP4/M4A
+    else if (auto* mp4File = dynamic_cast<TagLib::MP4::File*>(f.file())) {
+        if (mp4File->tag()) {
+            auto itemMap = mp4File->tag()->itemMap();
+            
+            // Extract album artist
+            if (itemMap.contains("aART")) {
+                meta.album_artist = itemMap["aART"].toStringList().front().to8Bit(true);
+            }
+            
+            // Extract cover art
+            if (itemMap.contains("covr")) {
+                auto coverList = itemMap["covr"].toCoverArtList();
+                if (!coverList.isEmpty()) {
+                    auto cover = coverList.front();
+                    auto data = cover.data();
+                    meta.cover_art_data.assign(data.data(), data.data() + data.size());
+                    // MP4 cover art format detection
+                    switch (cover.format()) {
+                        case TagLib::MP4::CoverArt::JPEG:
+                            meta.cover_art_mime = "image/jpeg";
+                            break;
+                        case TagLib::MP4::CoverArt::PNG:
+                            meta.cover_art_mime = "image/png";
+                            break;
+                        default:
+                            meta.cover_art_mime = "image/jpeg"; // fallback
+                            break;
+                    }
+                }
+            }
+        }
+    }
+    // OGG Vorbis
+    else if (auto* vorbisFile = dynamic_cast<TagLib::Ogg::Vorbis::File*>(f.file())) {
+        if (vorbisFile->tag()) {
+            auto xiphComment = vorbisFile->tag();
+            
+            // Extract album artist from Xiph comment
+            auto fieldMap = xiphComment->fieldListMap();
+            if (fieldMap.contains("ALBUMARTIST")) {
+                meta.album_artist = fieldMap["ALBUMARTIST"].front().to8Bit(true);
+            }
+            
+            // Extract cover art
+            auto picList = xiphComment->pictureList();
+            if (!picList.isEmpty()) {
+                auto* pic = picList.front();
+                auto data = pic->data();
+                meta.cover_art_data.assign(data.data(), data.data() + data.size());
+                meta.cover_art_mime = pic->mimeType().to8Bit(true);
+            }
+        }
+    }
+
     return meta;
 }

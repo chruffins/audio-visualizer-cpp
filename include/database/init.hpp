@@ -22,6 +22,8 @@ const char* INIT_SQL = "CREATE TABLE IF NOT EXISTS songs (" \
     "name TEXT NOT NULL, " \
     "year INTEGER, " \
     "picture_path TEXT, " \
+    "cover_art_block BLOB, " \
+    "cover_art_mime TEXT, " \
     "artist_id INTEGER, " \
     "FOREIGN KEY(artist_id) REFERENCES artists(id) ON DELETE CASCADE);" \
     \
