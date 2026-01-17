@@ -5,6 +5,8 @@
 #include <memory>
 #include <unordered_map>
 
+#define EMBEDDED_IMAGE_PATH "#embedded"
+
 namespace ui {
 
 /**
@@ -33,6 +35,8 @@ public:
      * @return Pointer to the loaded bitmap, or nullptr on failure
      */
     ALLEGRO_BITMAP* load(const std::string& filepath, bool cache = true);
+
+    ALLEGRO_BITMAP* loadFromMemory(const void* data, size_t size, const std::string& mimeType);
 
     /**
      * @brief Get a cached bitmap

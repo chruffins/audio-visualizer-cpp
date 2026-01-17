@@ -118,10 +118,11 @@ void Library::recreateViews() {
         
         // load artwork (lazy-loaded via cache when needed)
         std::shared_ptr<Artwork> artwork = nullptr;
+        /*
         if (!album.cover_image.empty()) {
             // TODO: artwork loading would happen here with ArtworkCache
         }
-        
+        */
         albumViews.emplace_back(
             album.id,
             album.year,

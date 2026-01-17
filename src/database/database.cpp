@@ -350,8 +350,14 @@ std::optional<music::Album> MusicDatabase::getAlbumById(int64_t id) const {
         if (mimeTxt) {
             cover_art_mime = reinterpret_cast<const char*>(mimeTxt);
         }
+
+        // TODO: fix this later???
+        ui::ImageModel cover_art_model;
+        if (!cover_art_data.empty()) {
+            cover_art_model.loadFromMemory(cover_art_data.data(), cover_art_data.size(), cover_art_mime);
+        }
         
-        result = music::Album(aid, title, year, pic, artist_id, cover_art_data, cover_art_mime);
+        result = music::Album(aid, title, year, pic, artist_id, std::move(cover_art_model), cover_art_mime);
     }
     sqlite3_finalize(stmt);
     return result;
@@ -474,8 +480,13 @@ std::vector<music::Album> MusicDatabase::getAllAlbums() const {
         if (mimeTxt) {
             cover_art_mime = reinterpret_cast<const char*>(mimeTxt);
         }
+
+        auto cover_art_model = ui::ImageModel();
+        if (!cover_art_data.empty()) {
+            cover_art_model.loadFromMemory(cover_art_data.data(), cover_art_data.size(), cover_art_mime);
+        }
         
-        out.emplace_back(aid, title, year, pic, artist_id, cover_art_data, cover_art_mime);
+        out.emplace_back(aid, title, year, pic, artist_id, std::move(cover_art_model), cover_art_mime);
     }
     sqlite3_finalize(stmt);
     return out;

@@ -3,6 +3,7 @@
 #include "graphics/drawables/progress_bar.hpp"
 #include "graphics/drawables/text.hpp"
 #include "graphics/drawables/frame.hpp"
+#include "graphics/drawables/image.hpp"
 #include "graphics/uv.hpp"
 #include <memory>
 
@@ -22,6 +23,7 @@ public:
     void setAlbumName(const std::string& album);
     void setDuration(int duration);
     void setPosition(int position);
+    void setAlbumArt(ALLEGRO_BITMAP* bitmap);
 
     void draw(const graphics::RenderContext& context);
 private:
@@ -40,6 +42,9 @@ private:
     TextDrawable albumNameText;
     TextDrawable songPositionText;
     TextDrawable songDurationText;
+
+    // Album drawable
+    ImageDrawable albumArtImage;
     
     // Progress bar
     ProgressBarDrawable progressBar;

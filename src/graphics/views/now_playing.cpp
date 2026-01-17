@@ -53,6 +53,11 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager, s
   progressBar.setPosition(graphics::UV(0.3f, 1.0f, 10.0f, 0.0f));
   progressBar.setSize(graphics::UV(0.4f, 0.0f, 0.0f, 8.0f));
 
+  // Album art image - left side
+  albumArtImage.setPosition(graphics::UV(0.0f, 0.0f, 0.0f, 0.0f))
+  .setSize(graphics::UV(0.0f, 0.0f, 64.0f, 64.0f))
+  .setScaleMode(ImageDrawable::ScaleMode::STRETCH);
+
   // Position and duration text below progress bar
   songPositionText = TextDrawable(
       "0:00",
@@ -79,6 +84,7 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager, s
   mainFrame.addChild(&progressBar);
   mainFrame.addChild(&songPositionText);
   mainFrame.addChild(&songDurationText);
+  mainFrame.addChild(&albumArtImage);
 }
 
 void NowPlayingView::setSongTitle(const std::string &title) {
@@ -99,6 +105,10 @@ void NowPlayingView::setDuration(int duration) {
 
 void NowPlayingView::setPosition(int position) {
   songPositionText.setText(util::format_mm_ss(position));
+}
+
+void NowPlayingView::setAlbumArt(ALLEGRO_BITMAP *bitmap) {
+  albumArtImage.setBitmap(bitmap);
 }
 
 void NowPlayingView::recalculateLayout(const graphics::RenderContext& context) {

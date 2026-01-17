@@ -40,6 +40,13 @@ void run_main_loop() {
     nowPlayingView.setArtistName(appState.library.getArtistById(s.album_id) ? appState.library.getArtistById(s.album_id)->name : "");
     const music::Album* album = appState.library.getAlbumById(s.album_id);
     nowPlayingView.setAlbumName(album ? album->title : "");
+    if (album) {
+      auto albumArt = album->getAlbumArt();
+      nowPlayingView.setAlbumArt(albumArt);
+      if (!albumArt) {
+        std::cerr << "Warning: Failed to load album art for album: " << album->title << "\n";
+      }
+    }
     nowPlayingView.setDuration(s.duration);
     nowPlayingView.setPosition(0);
   };
