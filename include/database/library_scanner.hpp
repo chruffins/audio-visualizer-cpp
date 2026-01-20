@@ -68,6 +68,7 @@ public:
 	static bool isImageFile(const std::string& path);
 private:
     music::SongMetadata readSongMetadata(const std::string& path);
+    std::optional<std::pair<std::vector<unsigned char>, std::string>> findAlbumCoverInFolder(const std::string& folder_path);
 };
 
 } // namespace database

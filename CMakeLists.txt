@@ -10,7 +10,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build." FORCE)
 endif()
 
-if(NOT MSVC)
+if(NOT MSVC AND NOT WIN32)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -ggdb -O0 -fsanitize=address -fno-omit-frame-pointer")
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -ggdb -O0 -fsanitize=address -fno-omit-frame-pointer")
     set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -fsanitize=address")
@@ -53,7 +53,7 @@ target_link_libraries(audiovis PRIVATE ${DISCORD_LIB_PATH})
 
 # Link Allegro 5 libraries
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(ALLEGRO5 REQUIRED allegro-5 allegro_main-5 allegro_image-5 allegro_font-5 allegro_ttf-5 allegro_primitives-5 allegro_audio-5 allegro_acodec-5 allegro_dialog-5)
+pkg_check_modules(ALLEGRO5 REQUIRED allegro-5 allegro_main-5 allegro_image-5 allegro_font-5 allegro_ttf-5 allegro_primitives-5 allegro_audio-5 allegro_acodec-5 allegro_dialog-5 allegro_memfile-5)
 target_include_directories(audiovis PRIVATE ${ALLEGRO5_INCLUDE_DIRS})
 target_link_libraries(audiovis PRIVATE ${ALLEGRO5_LIBRARIES})
 target_compile_options(audiovis PRIVATE ${ALLEGRO5_CFLAGS_OTHER})

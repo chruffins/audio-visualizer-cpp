@@ -172,7 +172,23 @@ ScanResult LibraryScanner::scan(MusicDatabase &db,
         {
             // Pass cover art data if available from the representative track
             const std::vector<unsigned char>* cover_art_ptr = rep.cover_art_data.empty() ? nullptr : &rep.cover_art_data;
-            album_id_opt = db.addAlbum(rep.album, static_cast<int>(artist_id), "", std::optional<int>(rep.year), cover_art_ptr, rep.cover_art_mime);
+            std::string cover_mime = rep.cover_art_mime;
+            
+            // If no embedded cover art, try to find cover image in the album folder
+            std::vector<unsigned char> folder_cover_data;
+            if (!cover_art_ptr && !rep.filepath.empty())
+            {
+                std::string folder_path = std::filesystem::path(rep.filepath).parent_path().string();
+                auto folder_cover = st.scanner->findAlbumCoverInFolder(folder_path);
+                if (folder_cover)
+                {
+                    folder_cover_data = std::move(folder_cover->first);
+                    cover_mime = std::move(folder_cover->second);
+                    cover_art_ptr = &folder_cover_data;
+                }
+            }
+            
+            album_id_opt = db.addAlbum(rep.album, static_cast<int>(artist_id), "", std::optional<int>(rep.year), cover_art_ptr, cover_mime);
         }
         int64_t album_id = album_id_opt ? *album_id_opt : 0;
 
@@ -338,4 +354,126 @@ music::SongMetadata LibraryScanner::readSongMetadata(const std::string &path)
     }
 
     return meta;
+}
+
+std::optional<std::pair<std::vector<unsigned char>, std::string>> LibraryScanner::findAlbumCoverInFolder(const std::string &folder_path)
+{
+    // Common album cover filenames (case-insensitive)
+    const std::vector<std::string> cover_names = {
+        "cover", "folder", "front", "album", "albumart", "albumartsmall"
+    };
+    
+    const std::vector<std::string> image_extensions = {
+        ".jpg", ".jpeg", ".png", ".bmp", ".gif"
+    };
+    
+    // Try to open the directory
+    ALLEGRO_FS_ENTRY *dir = al_create_fs_entry(folder_path.c_str());
+    if (!dir || !al_fs_entry_exists(dir) || !(al_get_fs_entry_mode(dir) & ALLEGRO_FILEMODE_ISDIR))
+    {
+        if (dir)
+            al_destroy_fs_entry(dir);
+        return std::nullopt;
+    }
+    
+    if (!al_open_directory(dir))
+    {
+        al_destroy_fs_entry(dir);
+        return std::nullopt;
+    }
+    
+    std::optional<std::pair<std::vector<unsigned char>, std::string>> result;
+    
+    // Iterate through directory entries
+    while (ALLEGRO_FS_ENTRY *entry = al_read_directory(dir))
+    {
+        if (al_get_fs_entry_mode(entry) & ALLEGRO_FILEMODE_ISDIR)
+        {
+            al_destroy_fs_entry(entry);
+            continue;
+        }
+        
+        const char *entry_name = al_get_fs_entry_name(entry);
+        std::string filename(entry_name);
+        std::string basename = std::filesystem::path(filename).stem().string();
+        std::string extension = std::filesystem::path(filename).extension().string();
+        
+        // Convert to lowercase for comparison
+        std::string basename_lower = basename;
+        std::string extension_lower = extension;
+        for (auto &c : basename_lower)
+            c = tolower(c);
+        for (auto &c : extension_lower)
+            c = tolower(c);
+        
+        // Check if extension is an image
+        bool is_image_ext = false;
+        for (const auto &ext : image_extensions)
+        {
+            if (extension_lower == ext)
+            {
+                is_image_ext = true;
+                break;
+            }
+        }
+        
+        if (!is_image_ext)
+        {
+            al_destroy_fs_entry(entry);
+            continue;
+        }
+        
+        // Check if filename matches common cover names
+        bool is_cover = false;
+        for (const auto &cover_name : cover_names)
+        {
+            if (basename_lower == cover_name)
+            {
+                is_cover = true;
+                break;
+            }
+        }
+        
+        if (is_cover)
+        {
+            // Read the image file
+            ALLEGRO_FILE *file = al_fopen(filename.c_str(), "rb");
+            if (file)
+            {
+                int64_t file_size = al_fsize(file);
+                if (file_size > 0 && file_size < 10 * 1024 * 1024) // Limit to 10MB
+                {
+                    std::vector<unsigned char> data(file_size);
+                    if (al_fread(file, data.data(), file_size) == static_cast<size_t>(file_size))
+                    {
+                        // Determine MIME type from extension
+                        std::string mime_type;
+                        if (extension_lower == ".jpg" || extension_lower == ".jpeg")
+                            mime_type = "image/jpeg";
+                        else if (extension_lower == ".png")
+                            mime_type = "image/png";
+                        else if (extension_lower == ".bmp")
+                            mime_type = "image/bmp";
+                        else if (extension_lower == ".gif")
+                            mime_type = "image/gif";
+                        else
+                            mime_type = "application/octet-stream"; // fallback
+                        
+                        result = std::make_pair(std::move(data), std::move(mime_type));
+                        al_fclose(file);
+                        al_destroy_fs_entry(entry);
+                        break;
+                    }
+                }
+                al_fclose(file);
+            }
+        }
+        
+        al_destroy_fs_entry(entry);
+    }
+    
+    al_close_directory(dir);
+    al_destroy_fs_entry(dir);
+    
+    return result;
 }
