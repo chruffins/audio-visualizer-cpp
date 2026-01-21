@@ -2,6 +2,7 @@
 #include "music/library_views.hpp"
 #include <fstream>
 #include <filesystem>
+#include <chrono>
 
 const std::string token_file = "discord_tokens.txt";
 
@@ -100,6 +101,14 @@ void DiscordIntegration::set_new_song(std::string& title, std::string& artist) {
 }
 
 void DiscordIntegration::setSongPresence(const music::SongView &song) {
+    // Rate-limiting: only allow updates every 1 second
+    static auto last_update = std::chrono::steady_clock::now();
+    auto now = std::chrono::steady_clock::now();
+    if (std::chrono::duration_cast<std::chrono::seconds>(now - last_update).count() < 5) {
+        return; // Skip update if called too soon
+    }
+    last_update = now;
+
     if (client->GetStatus() != discordpp::Client::Status::Ready) {
         std::cerr << "❌ Client not ready.\n";
         return;

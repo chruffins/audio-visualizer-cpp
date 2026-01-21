@@ -51,9 +51,11 @@ bool AppState::init() {
         return false; // Failed to load library from database
     }
 
+    /*
     for (const auto& [id, album] : this->library.getAllAlbums()) {
         std::cout << "Loaded album: " << album.title << " (ID: " << album.id << ")\n";
     }
+    */
 
     // Fill the application-owned play queue with all songs from the library
     // (enqueueing by song id). This is a simple example of populating the
@@ -61,7 +63,7 @@ bool AppState::init() {
     std::vector<int> allSongIds;
     for (const auto& [sid, song] : this->library.getAllSongs()) {
         allSongIds.push_back(sid);
-        std::cout << "Loaded song: " << song.title << " (ID: " << song.id << ")\n";
+        // std::cout << "Loaded song: " << song.title << " (ID: " << song.id << ")\n";
     }
     // preserve insertion order from the map iteration
     this->play_queue->enqueue_many(allSongIds);

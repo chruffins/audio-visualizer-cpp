@@ -1,6 +1,7 @@
 #include "graphics/models/image.hpp"
 
 #include <allegro5/allegro_memfile.h>
+#include <iostream>
 
 using namespace ui;
 
@@ -39,6 +40,10 @@ ALLEGRO_BITMAP* ImageModel::load(const std::string& filepath, bool doCache) {
         cache[filepath] = bitmap;
     }
 
+    if (!bitmap) {
+        std::cerr << "Failed to load bitmap from file: " << filepath << std::endl;
+    }
+
     return bitmap;
 }
 
@@ -51,17 +56,31 @@ ALLEGRO_BITMAP *ui::ImageModel::loadFromMemory(const void *data, size_t size,
     // Create a memory file interface
     ALLEGRO_FILE* memfile = al_open_memfile(const_cast<void*>(data), size, "r");
     if (!memfile) {
+        std::cerr << "Failed to create memory file for image data!\n";
+
         return nullptr;
     }
 
+    // get the ident from mimeType
+    const char* ident = nullptr;
+    if (mimeType == "image/png") {
+        ident = ".png";
+    } else if (mimeType == "image/jpeg") {
+        ident = ".jpg";
+    } else if (mimeType == "image/bmp") {
+        ident = ".bmp";
+    }
+
     // Load the bitmap from the memory file
-    ALLEGRO_BITMAP* bitmap = al_load_bitmap_f(memfile, NULL);
+    ALLEGRO_BITMAP* bitmap = al_load_bitmap_f(memfile, ident);
     
     // Close the memory file
     al_fclose(memfile);
 
     if (bitmap) {
         cache[EMBEDDED_IMAGE_PATH] = bitmap;
+    } else {
+        std::cerr << "Failed to load bitmap from memory data!\n";
     }
 
     return bitmap;

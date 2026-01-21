@@ -19,6 +19,7 @@
 #include <taglib/mp4coverart.h>
 #include <taglib/oggfile.h>
 #include <taglib/vorbisfile.h>
+#include <taglib/opusfile.h>
 #include <taglib/xiphcomment.h>
 #include <allegro5/allegro_audio.h>
 
@@ -276,6 +277,7 @@ music::SongMetadata LibraryScanner::readSongMetadata(const std::string &path)
                 auto picture = coverFrame->picture();
                 meta.cover_art_data.assign(picture.data(), picture.data() + picture.size());
                 meta.cover_art_mime = coverFrame->mimeType().to8Bit(true);
+                // std::cout << "extracted cover art of type " << meta.cover_art_mime << " from file " << path << "\n";
             }
         }
     }
@@ -351,6 +353,24 @@ music::SongMetadata LibraryScanner::readSongMetadata(const std::string &path)
                 meta.cover_art_mime = pic->mimeType().to8Bit(true);
             }
         }
+    } else if (auto* opusFile = dynamic_cast<TagLib::Ogg::Opus::File*>(f.file())) {
+        if (opusFile->tag()) {
+            auto xiphComment = opusFile->tag();
+            
+            auto fieldMap = xiphComment->fieldListMap();
+            if (fieldMap.contains("ALBUMARTIST")) {
+                meta.album_artist = fieldMap["ALBUMARTIST"].front().to8Bit(true);
+            }
+
+            // Extract cover art
+            auto picList = xiphComment->pictureList();
+            if (!picList.isEmpty()) {
+                auto* pic = picList.front();
+                auto data = pic->data();
+                meta.cover_art_data.assign(data.data(), data.data() + data.size());
+                meta.cover_art_mime = pic->mimeType().to8Bit(true);
+            }
+        }   
     }
 
     return meta;

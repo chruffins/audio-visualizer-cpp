@@ -483,6 +483,7 @@ std::vector<music::Album> MusicDatabase::getAllAlbums() const {
 
         auto cover_art_model = ui::ImageModel();
         if (!cover_art_data.empty()) {
+            std::cout << "Loading cover art for " << title << "\n";
             cover_art_model.loadFromMemory(cover_art_data.data(), cover_art_data.size(), cover_art_mime);
         }
         
