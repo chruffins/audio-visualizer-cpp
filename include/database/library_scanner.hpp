@@ -7,8 +7,6 @@
 #include <optional>
 #include <cstdint>
 
-#include <allegro5/allegro.h>
-
 namespace database {
     class MusicDatabase;
 }

@@ -5,12 +5,10 @@
 #pragma once
 
 #include <atomic>
-#include <mutex>
 #include <string>
 #include <memory>
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_font.h>
-#include <sqlite3.h>
 #include "discord_integration.hpp"
 #include "music_engine.hpp"
 #include "music/play_queue.hpp"

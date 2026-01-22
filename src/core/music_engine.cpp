@@ -1,4 +1,7 @@
 #include "core/music_engine.hpp"
+#include <allegro5/allegro.h>
+#include <allegro5/allegro_acodec.h>
+#include <allegro5/allegro_audio.h>
 #include <iostream>
 #include "core/app_state.hpp"
 

@@ -1,15 +1,15 @@
 #pragma once
 
-#include <string>
-#include <memory>
 #include <functional>
-
-#include <allegro5/allegro.h>
-#include <allegro5/allegro_audio.h>
-#include <allegro5/allegro_acodec.h>
+#include <memory>
+#include <string>
 
 #include "graphics/models/progress_bar.hpp"
 #include "music/play_queue.hpp"
+
+struct ALLEGRO_AUDIO_STREAM;
+struct ALLEGRO_MIXER;
+struct ALLEGRO_VOICE;
 
 // forward-declare Song
 namespace music { struct Song; }

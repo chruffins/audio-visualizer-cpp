@@ -1,11 +1,8 @@
 #pragma once
-#include <string>
-#include <queue>
+
 #include <deque>
-#include <vector>
-#include <mutex>
-#include <algorithm>
 #include <random>
+#include <vector>
 
 namespace music {
 struct PlayQueue {
