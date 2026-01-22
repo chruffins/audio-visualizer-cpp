@@ -84,6 +84,20 @@ public:
      */
     size_t getCachedCount() const { return cache.size(); }
 
+    /**
+     * @brief Get the primary bitmap (first in cache or embedded image)
+     * @return Pointer to a bitmap, or nullptr if cache is empty
+     * 
+     * Useful when the model manages a single bitmap and you don't know its key.
+     * Prioritizes embedded images, then returns first available bitmap.
+     */
+    ALLEGRO_BITMAP* getPrimaryBitmap() const;
+
+    /**
+     * @brief Check if the model has any cached bitmaps
+     */
+    bool hasBitmap() const { return !cache.empty(); }
+
 private:
     std::unordered_map<std::string, ALLEGRO_BITMAP*> cache;
 };

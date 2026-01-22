@@ -151,3 +151,18 @@ ALLEGRO_BITMAP* ImageModel::createSubBitmap(ALLEGRO_BITMAP* source, int x, int y
 
     return al_create_sub_bitmap(source, x, y, width, height);
 }
+
+ALLEGRO_BITMAP* ImageModel::getPrimaryBitmap() const {
+    if (cache.empty()) {
+        return nullptr;
+    }
+    
+    // First check for embedded image (loaded from memory)
+    auto it = cache.find(EMBEDDED_IMAGE_PATH);
+    if (it != cache.end()) {
+        return it->second;
+    }
+    
+    // Otherwise return the first available bitmap
+    return cache.begin()->second;
+}

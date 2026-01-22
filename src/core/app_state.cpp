@@ -47,7 +47,7 @@ bool AppState::init() {
     }
 
     // init the library
-    if (!this->library.loadFromDatabase(this->db)) {
+    if (!this->library->loadFromDatabase(this->db)) {
         return false; // Failed to load library from database
     }
 
@@ -61,7 +61,7 @@ bool AppState::init() {
     // (enqueueing by song id). This is a simple example of populating the
     // queue; a real app would probably use playlists or user selection.
     std::vector<int> allSongIds;
-    for (const auto& [sid, song] : this->library.getAllSongs()) {
+    for (const auto& [sid, song] : this->library->getAllSongs()) {
         allSongIds.push_back(sid);
         // std::cout << "Loaded song: " << song.title << " (ID: " << song.id << ")\n";
     }
@@ -70,7 +70,7 @@ bool AppState::init() {
     std::cout << "Loaded " << allSongIds.size() << " songs into the play queue.\n";
 
     // load fonts
-    this->fontManager.loadFont("courier", "../assets/CourierPrime-Regular.ttf");
+    this->fontManager->loadFont("courier", "../assets/CourierPrime-Regular.ttf");
 
     // Wire the shared play queue into the music engine so playback can operate
     // on the application-owned queue.
@@ -79,7 +79,7 @@ bool AppState::init() {
     // Optionally start playback of the first song in the queue (if any)
     int first = this->play_queue->current();
     if (first >= 0) {
-        const music::Song* s = this->library.getSongById(first);
+        const music::Song* s = this->library->getSongById(first);
         if (s) {
             this->music_engine.playSound(s->filename);
         }
@@ -92,7 +92,9 @@ bool AppState::init() {
 void AppState::shutdown() {
     music_engine.shutdown();
     
-    fontManager.cleanup();
+    if (fontManager) {
+        fontManager->cleanup();
+    }
     
     // Destroy Allegro resources in reverse order of creation
     // Stop timers first

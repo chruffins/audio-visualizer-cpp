@@ -7,6 +7,7 @@
 #include <atomic>
 #include <mutex>
 #include <string>
+#include <memory>
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_font.h>
 #include <sqlite3.h>
@@ -49,7 +50,7 @@ public:
 	ALLEGRO_EVENT event;
 
 	// FontManager
-	util::FontManager fontManager;
+	std::shared_ptr<util::FontManager> fontManager;
 
 	// Config
 	util::Config config;
@@ -68,7 +69,7 @@ public:
 	std::shared_ptr<music::PlayQueue> play_queue;
 
 	// Library (in-memory)
-	music::Library library;
+	std::shared_ptr<music::Library> library;
 
 private:
 	AppState()
@@ -78,8 +79,9 @@ private:
 		, discord_initialized(false)
 		, discord_integration(DiscordIntegration::instance())
 		, music_engine()
-		, library()
+		, library(std::make_shared<music::Library>())
 		, play_queue(std::make_shared<music::PlayQueue>())
+		, fontManager(std::make_shared<util::FontManager>())
 		, config() {}
 
 	~AppState() { shutdown(); }

@@ -17,6 +17,7 @@
 #include "database/library_scanner.hpp"
 #include "graphics/views/now_playing.hpp"
 #include "graphics/uv.hpp"
+#include "graphics/views/album_list.hpp"
 
 // Create a flag to stop the application
 std::atomic<bool> running = true;
@@ -30,15 +31,16 @@ void run_main_loop() {
   auto& appState = core::AppState::instance();
   bool finished = false;
 
-  auto nowPlayingView = ui::NowPlayingView(std::make_shared<util::FontManager>(appState.fontManager), appState.music_engine.progressBarModel);
+  auto nowPlayingView = ui::NowPlayingView(appState.fontManager, appState.music_engine.progressBarModel);
+    auto albumListView = ui::AlbumListView(appState.fontManager, appState.library);
 
   // Register a callback so that the NowPlayingView updates automatically when
   // MusicEngine starts a new song (e.g., via playNext or other engine-driven
   // playback). This keeps the UI in sync without polling.
   appState.music_engine.onSongChanged = [&](const music::Song& s) {
     nowPlayingView.setSongTitle(s.title);
-    nowPlayingView.setArtistName(appState.library.getArtistById(s.album_id) ? appState.library.getArtistById(s.album_id)->name : "");
-    const music::Album* album = appState.library.getAlbumById(s.album_id);
+    nowPlayingView.setArtistName(appState.library->getArtistById(s.album_id) ? appState.library->getArtistById(s.album_id)->name : "");
+    const music::Album* album = appState.library->getAlbumById(s.album_id);
     nowPlayingView.setAlbumName(album ? album->title : "");
     if (album) {
       auto albumArt = album->getAlbumArt();
@@ -55,11 +57,11 @@ void run_main_loop() {
   std::cout << "Starting playback...\n";
 
   // lets get a random song now (SongView)
-  const music::SongView* song = appState.library.getRandomSong();
+  const music::SongView* song = appState.library->getRandomSong();
   if (song) {
     std::cout << "Playing random song: " << song->title << "\n";
     // Look up the concrete Song for filename using ID from SongView
-    if (const music::Song* songModel = appState.library.getSongById(song->id)) {
+    if (const music::Song* songModel = appState.library->getSongById(song->id)) {
       appState.music_engine.playSound(songModel->filename);
     }
     nowPlayingView.setSongTitle(song->title);
@@ -95,6 +97,7 @@ void run_main_loop() {
         globalContext.screenHeight = al_get_display_height(al_get_current_display());
 
         nowPlayingView.draw(globalContext);
+        albumListView.draw(globalContext);
         al_flip_display();
       } else if (appState.event.timer.source == appState.discord_callback_timer) {
         // Handle Discord callback timer event
@@ -120,9 +123,9 @@ void run_main_loop() {
           appState.music_engine.resumeSound();
         }
       } else if (appState.event.keyboard.keycode == ALLEGRO_KEY_RIGHT) {
-        song = appState.library.getRandomSong();
+        song = appState.library->getRandomSong();
         if (song) {
-          if (const music::Song* songModel = appState.library.getSongById(song->id)) {
+          if (const music::Song* songModel = appState.library->getSongById(song->id)) {
             appState.music_engine.playSound(songModel->filename);
             nowPlayingView.setSongTitle(song->title);
             nowPlayingView.setArtistName(song->artist);

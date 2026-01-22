@@ -79,7 +79,7 @@ void MusicEngine::playSound(const std::string& file_path) {
         // (This is best-effort: filenames may be relative or differently
         // normalized; adjust lookup as needed.)
         const music::Song* song = nullptr;
-        for (const auto& [sid, s] : AppState::instance().library.getAllSongs()) {
+        for (const auto& [sid, s] : AppState::instance().library->getAllSongs()) {
             if (s.filename == file_path) {
                 song = &s;
                 break;
@@ -165,7 +165,7 @@ void MusicEngine::playNext() {
     }
 
     // Look up song path from the global library (AppState owns the library)
-    const music::Song* song = AppState::instance().library.getSongById(nextId);
+    const music::Song* song = AppState::instance().library->getSongById(nextId);
     if (!song) {
         std::cerr << "MusicEngine::playNext: song id " << nextId << " not found in library\n";
         return;

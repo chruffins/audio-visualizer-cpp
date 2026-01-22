@@ -1,8 +1,16 @@
 #include "graphics/drawables/image.hpp"
+#include "graphics/models/image.hpp"
 #include <algorithm>
 #include <cmath>
 
 using namespace ui;
+
+void ImageDrawable::updateBitmapFromModel() {
+    if (imageModel && imageModel->hasBitmap()) {
+        bitmap = imageModel->getPrimaryBitmap();
+        ownsBitmap = false; // ImageModel owns the bitmap
+    }
+}
 
 void ImageDrawable::draw(const graphics::RenderContext& context) const {
     if (!visible || !bitmap) {

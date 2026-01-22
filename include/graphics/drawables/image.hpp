@@ -9,6 +9,8 @@
 #include "graphics/alignment.hpp"
 
 namespace ui {
+class ImageModel;
+
 
 /**
  * @brief A drawable for rendering ALLEGRO_BITMAP images
@@ -129,6 +131,15 @@ public:
         return *this;
     }
 
+    // Set an ImageModel to get bitmap from (doesn't take ownership)
+    ImageDrawable& setImageModel(std::shared_ptr<ImageModel> model) {
+        imageModel = model;
+        updateBitmapFromModel();
+        return *this;
+    }
+
+    std::shared_ptr<ImageModel> getImageModel() const { return imageModel; }
+
     // Getters
     ALLEGRO_BITMAP* getBitmap() const { return bitmap; }
     graphics::UV getPosition() const { return position; }
@@ -152,8 +163,11 @@ public:
     void draw(const graphics::RenderContext& context) const override;
 
 private:
+    void updateBitmapFromModel();
+
     ALLEGRO_BITMAP* bitmap = nullptr;
     bool ownsBitmap = false;
+    std::shared_ptr<ImageModel> imageModel;
 
     graphics::UV position{0.0f, 0.0f, 0.0f, 0.0f}; // default to top-left
     graphics::UV size{1.0f, 1.0f, 0.0f, 0.0f};     // default to full screen
