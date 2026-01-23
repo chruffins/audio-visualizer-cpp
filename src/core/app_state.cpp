@@ -92,6 +92,15 @@ bool AppState::init() {
 void AppState::shutdown() {
     music_engine.shutdown();
     
+    // Clear library (destroys album cover ImageModels) before destroying display
+    // This is critical because Allegro bitmaps must be destroyed before the display
+    if (library) {
+        library.reset();
+    }
+    if (play_queue) {
+        play_queue.reset();
+    }
+    
     if (fontManager) {
         fontManager->cleanup();
     }

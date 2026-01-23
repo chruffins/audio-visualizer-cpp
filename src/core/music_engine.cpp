@@ -175,9 +175,6 @@ void MusicEngine::playNext() {
     }
 
     playSound(song->filename);
-    if (onSongChanged) {
-        onSongChanged(*song);
-    }
 }
 
 };

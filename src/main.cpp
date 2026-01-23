@@ -75,6 +75,11 @@ void run_main_loop() {
     std::cerr << "No songs in library.\n";
   }
 
+  // Cache display dimensions for render context (avoids recalculating every frame)
+  graphics::RenderContext globalContext{};
+  globalContext.screenWidth = al_get_display_width(al_get_current_display());
+  globalContext.screenHeight = al_get_display_height(al_get_current_display());
+
   std::cout << "Starting graphics...\n";
   while (!finished) {
     al_wait_for_event(appState.event_queue, &appState.event);
@@ -89,13 +94,9 @@ void run_main_loop() {
         appState.music_engine.update(); // Update music engine (progress bar, etc.)
         nowPlayingView.setPosition(appState.music_engine.getCurrentTime());
 
-        // Handle graphics timer event
+        // Render frame
         al_clear_to_color(al_map_rgb(0, 0, 0));
         al_draw_text(appState.default_font, al_map_rgb(255, 255, 255), 200, 150, ALLEGRO_ALIGN_CENTRE, "Hello, Allegro!");
-
-        graphics::RenderContext globalContext{};
-        globalContext.screenWidth = al_get_display_width(al_get_current_display());
-        globalContext.screenHeight = al_get_display_height(al_get_current_display());
 
         nowPlayingView.draw(globalContext);
         albumListView.draw(globalContext);
@@ -124,15 +125,11 @@ void run_main_loop() {
           appState.music_engine.resumeSound();
         }
       } else if (appState.event.keyboard.keycode == ALLEGRO_KEY_RIGHT) {
+        // Play random song (onSongChanged callback handles UI updates)
         song = appState.library->getRandomSong();
         if (song) {
           if (const music::Song* songModel = appState.library->getSongById(song->id)) {
             appState.music_engine.playSound(songModel->filename);
-            nowPlayingView.setSongTitle(song->title);
-            nowPlayingView.setArtistName(song->artist);
-            nowPlayingView.setAlbumName(song->album);
-            nowPlayingView.setDuration(song->duration);
-            nowPlayingView.setPosition(0);
           }
           appState.discord_integration.setSongPresence(*song);
         }
