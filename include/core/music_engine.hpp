@@ -42,6 +42,9 @@ public:
     // handler to update UI (NowPlayingView) or other systems.
     std::function<void(const music::Song&)> onSongChanged;
 
+    // Callback invoked when the current song finishes playing.
+    std::function<void()> onSongFinished;
+
     // Advance to the next song in the injected play queue and start playback.
     // If there is no next song, this is a no-op.
     void playNext();
@@ -60,5 +63,6 @@ private:
     double current_time = 0.0;
     double duration = 0.0;
     bool is_shutdown = false;
+    bool song_finished_fired = false; // Track if we already fired the callback
 };
 };

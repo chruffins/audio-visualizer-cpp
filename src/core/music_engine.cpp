@@ -12,6 +12,7 @@ MusicEngine::MusicEngine() {
     mixer = nullptr;
     current_stream = nullptr;
     is_shutdown = false;
+    song_finished_fired = false;
 }
 
 MusicEngine::~MusicEngine() {
@@ -74,6 +75,7 @@ void MusicEngine::playSound(const std::string& file_path) {
         current_time = 0.0;
         duration = al_get_audio_stream_length_secs(current_stream);
         progressBarModel->setFinishesAt(duration);
+        song_finished_fired = false; // Reset the flag for the new song
         std::cout << "Loaded audio stream. Duration: " << duration << " seconds.\n";
         al_attach_audio_stream_to_mixer(current_stream, mixer);
         al_set_audio_stream_playing(current_stream, true);
@@ -148,6 +150,18 @@ void MusicEngine::update() {
     if (current_stream) {
         current_time = al_get_audio_stream_position_secs(current_stream);
         progressBarModel->setProgress(current_time);
+        
+        // Check if the song has finished playing
+        // A song is finished when it's no longer playing and we have a valid stream
+        bool stream_stopped = !al_get_audio_stream_playing(current_stream);
+        bool reached_end = (duration > 0.0 && current_time >= duration - 0.1); // Small threshold for timing
+        
+        if ((stream_stopped || reached_end) && !song_finished_fired) {
+            song_finished_fired = true;
+            if (onSongFinished) {
+                onSongFinished();
+            }
+        }
     } 
     /*
     else {

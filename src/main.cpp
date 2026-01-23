@@ -54,6 +54,12 @@ void run_main_loop() {
     nowPlayingView.setPosition(0);
   };
 
+  // Register a callback to automatically play the next song when current finishes
+  appState.music_engine.onSongFinished = [&]() {
+    std::cout << "Song finished, playing next...\n";
+    appState.music_engine.playNext();
+  };
+
   // Example: Play a sound file (make sure the path is correct)
   std::cout << "Starting playback...\n";
 
