@@ -38,11 +38,12 @@ void run_main_loop() {
   // Register a callback so that the NowPlayingView updates automatically when
   // MusicEngine starts a new song (e.g., via playNext or other engine-driven
   // playback). This keeps the UI in sync without polling.
-  appState.music_engine.onSongChanged = [&](const music::Song& s) {
+  appState.music_engine.onSongChanged = [&](const music::SongView& s) {
     nowPlayingView.setSongTitle(s.title);
-    nowPlayingView.setArtistName(appState.library->getArtistById(s.album_id) ? appState.library->getArtistById(s.album_id)->name : "");
+    nowPlayingView.setArtistName(s.artist);
+    nowPlayingView.setAlbumName(s.album);
+
     const music::Album* album = appState.library->getAlbumById(s.album_id);
-    nowPlayingView.setAlbumName(album ? album->title : "");
     if (album) {
       auto albumArt = album->getAlbumArt();
       nowPlayingView.setAlbumArt(albumArt);
@@ -52,6 +53,7 @@ void run_main_loop() {
     }
     nowPlayingView.setDuration(s.duration);
     nowPlayingView.setPosition(0);
+    appState.discord_integration.setSongPresence(s);
   };
 
   // Register a callback to automatically play the next song when current finishes
@@ -68,15 +70,9 @@ void run_main_loop() {
   if (song) {
     std::cout << "Playing random song: " << song->title << "\n";
     // Look up the concrete Song for filename using ID from SongView
-    if (const music::Song* songModel = appState.library->getSongById(song->id)) {
+    if (const music::SongView* songModel = appState.library->getSongById(song->id)) {
       appState.music_engine.playSound(songModel->filename);
     }
-    nowPlayingView.setSongTitle(song->title);
-    nowPlayingView.setArtistName(song->artist);
-    nowPlayingView.setAlbumName(song->album);
-    nowPlayingView.setDuration(song->duration);
-    nowPlayingView.setPosition(0);
-    // appState.discord_integration.setSongPresence(*song);
   } else {
     std::cerr << "No songs in library.\n";
   }
@@ -92,6 +88,12 @@ void run_main_loop() {
 
     switch (appState.event.type)
     {
+    case ALLEGRO_EVENT_AUDIO_STREAM_FINISHED:
+      // TODO: expose currentStream so that we can verify it's the current stream
+      if (appState.music_engine.onSongFinished) {
+        appState.music_engine.onSongFinished();
+      }
+      break;
     case ALLEGRO_EVENT_DISPLAY_CLOSE:
       finished = true;
       break;
@@ -134,10 +136,9 @@ void run_main_loop() {
         // Play random song (onSongChanged callback handles UI updates)
         song = appState.library->getRandomSong();
         if (song) {
-          if (const music::Song* songModel = appState.library->getSongById(song->id)) {
+          if (const music::SongView* songModel = appState.library->getSongById(song->id)) {
             appState.music_engine.playSound(songModel->filename);
           }
-          appState.discord_integration.setSongPresence(*song);
         }
       }
       break;

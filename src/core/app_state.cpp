@@ -39,6 +39,8 @@ bool AppState::init() {
     // init the music engine
     if (!this->music_engine.initialize()) {
         return false; // Failed to initialize music engine
+    } else {
+        this->music_engine.setEventQueue(this->event_queue);
     }
 
     // init the database
@@ -79,7 +81,7 @@ bool AppState::init() {
     // Optionally start playback of the first song in the queue (if any)
     int first = this->play_queue->current();
     if (first >= 0) {
-        const music::Song* s = this->library->getSongById(first);
+        const music::SongView* s = this->library->getSongById(first);
         if (s) {
             this->music_engine.playSound(s->filename);
         }
@@ -91,7 +93,7 @@ bool AppState::init() {
 
 void AppState::shutdown() {
     music_engine.shutdown();
-    
+
     // Clear library (destroys album cover ImageModels) before destroying display
     // This is critical because Allegro bitmaps must be destroyed before the display
     if (library) {

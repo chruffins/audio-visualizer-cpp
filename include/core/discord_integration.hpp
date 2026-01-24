@@ -50,6 +50,7 @@ private:
 	~DiscordIntegration() = default;
 
 	const uint64_t APPLICATION_ID = 1362371550275174512;
+	std::chrono::steady_clock::time_point last_update_time = std::chrono::steady_clock::now();
 };
 
 } // namespace core

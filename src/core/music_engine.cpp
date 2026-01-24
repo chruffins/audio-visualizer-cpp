@@ -77,14 +77,25 @@ void MusicEngine::playSound(const std::string& file_path) {
         progressBarModel->setFinishesAt(duration);
         song_finished_fired = false; // Reset the flag for the new song
         std::cout << "Loaded audio stream. Duration: " << duration << " seconds.\n";
-        al_attach_audio_stream_to_mixer(current_stream, mixer);
-        al_set_audio_stream_playing(current_stream, true);
+        auto attachResult = al_attach_audio_stream_to_mixer(current_stream, mixer);
+        auto playResult = al_set_audio_stream_playing(current_stream, true);
+
+        if (!attachResult || !playResult) {
+            std::cerr << "Failed to play audio stream: attachResult=" << attachResult
+                      << ", playResult=" << playResult << "\n";
+        }
+
+        if (event_queue) {
+            al_register_event_source(event_queue, al_get_audio_stream_event_source(current_stream));
+        }
+
+        al_get_audio_stream_event_source(current_stream); // ensure event source is valid
         // If possible, find Song model in the global library and notify
         // listeners about the change.
         // (This is best-effort: filenames may be relative or differently
         // normalized; adjust lookup as needed.)
-        const music::Song* song = nullptr;
-        for (const auto& [sid, s] : AppState::instance().library->getAllSongs()) {
+        const music::SongView* song = nullptr;
+        for (const auto& s : AppState::instance().library->getSongViews()) {
             if (s.filename == file_path) {
                 song = &s;
                 break;
@@ -150,18 +161,6 @@ void MusicEngine::update() {
     if (current_stream) {
         current_time = al_get_audio_stream_position_secs(current_stream);
         progressBarModel->setProgress(current_time);
-        
-        // Check if the song has finished playing
-        // A song is finished when it's no longer playing and we have a valid stream
-        bool stream_stopped = !al_get_audio_stream_playing(current_stream);
-        bool reached_end = (duration > 0.0 && current_time >= duration - 0.1); // Small threshold for timing
-        
-        if ((stream_stopped || reached_end) && !song_finished_fired) {
-            song_finished_fired = true;
-            if (onSongFinished) {
-                onSongFinished();
-            }
-        }
     } 
     /*
     else {
@@ -182,7 +181,7 @@ void MusicEngine::playNext() {
     }
 
     // Look up song path from the global library (AppState owns the library)
-    const music::Song* song = AppState::instance().library->getSongById(nextId);
+    const music::SongView* song = AppState::instance().library->getSongById(nextId);
     if (!song) {
         std::cerr << "MusicEngine::playNext: song id " << nextId << " not found in library\n";
         return;

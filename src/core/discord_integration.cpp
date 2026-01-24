@@ -1,5 +1,6 @@
 #include "core/discord_integration.hpp"
 #include "music/library_views.hpp"
+#include "music/song.hpp"
 #include <fstream>
 #include <filesystem>
 #include <chrono>
@@ -102,12 +103,11 @@ void DiscordIntegration::set_new_song(std::string& title, std::string& artist) {
 
 void DiscordIntegration::setSongPresence(const music::SongView &song) {
     // Rate-limiting: only allow updates every 1 second
-    static auto last_update = std::chrono::steady_clock::now();
     auto now = std::chrono::steady_clock::now();
-    if (std::chrono::duration_cast<std::chrono::seconds>(now - last_update).count() < 5) {
+    if (std::chrono::duration_cast<std::chrono::seconds>(now - last_update_time).count() < 5) {
         return; // Skip update if called too soon
     }
-    last_update = now;
+    last_update_time = now;
 
     if (client->GetStatus() != discordpp::Client::Status::Ready) {
         std::cerr << "❌ Client not ready.\n";
@@ -125,7 +125,7 @@ void DiscordIntegration::setSongPresence(const music::SongView &song) {
     // activity.SetName("Audio Visualizer C++"); this does nothing
     activity.SetType(discordpp::ActivityTypes::Listening);
     activity.SetDetails(song.title);
-    activity.SetState(song.artist);
+    activity.SetState(song.title + " - " + song.artist);
     activity.SetApplicationId(APPLICATION_ID);
     activity.SetStatusDisplayType(discordpp::StatusDisplayTypes::State);
     activity.SetAssets(assets);

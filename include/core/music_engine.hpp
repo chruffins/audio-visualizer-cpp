@@ -10,9 +10,10 @@
 struct ALLEGRO_AUDIO_STREAM;
 struct ALLEGRO_MIXER;
 struct ALLEGRO_VOICE;
+struct ALLEGRO_EVENT_QUEUE;
 
 // forward-declare Song
-namespace music { struct Song; }
+namespace music { struct SongView; }
 
 namespace core {
 class MusicEngine {
@@ -38,9 +39,13 @@ public:
         playQueueModel = playQueue;
     }
 
+    void setEventQueue(ALLEGRO_EVENT_QUEUE* queue) {
+        event_queue = queue;
+    }
+
     // Callback invoked when a new song begins playback. User can assign a
     // handler to update UI (NowPlayingView) or other systems.
-    std::function<void(const music::Song&)> onSongChanged;
+    std::function<void(const music::SongView&)> onSongChanged;
 
     // Callback invoked when the current song finishes playing.
     std::function<void()> onSongFinished;
@@ -59,6 +64,7 @@ private:
     ALLEGRO_VOICE* voice = nullptr;
     ALLEGRO_MIXER* mixer = nullptr;
     ALLEGRO_AUDIO_STREAM* current_stream = nullptr;
+    ALLEGRO_EVENT_QUEUE* event_queue = nullptr;
 
     double current_time = 0.0;
     double duration = 0.0;

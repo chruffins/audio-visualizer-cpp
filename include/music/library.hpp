@@ -45,7 +45,7 @@ public:
     const std::unordered_map<int, Song>& getAllSongs() const { return songs; }
 
     // Get entities by ID (returns pointer; nullptr if not found)
-    const Song* getSongById(int id) const;
+    const SongView* getSongById(int id) const;
     const Album* getAlbumById(int id) const;
     const Artist* getArtistById(int id) const;
     const Genre* getGenreById(int id) const;
@@ -69,5 +69,4 @@ private:
     std::vector<AlbumView> albumViews;
     std::vector<PlaylistView> playlistViews;
 };
-
-}
+};

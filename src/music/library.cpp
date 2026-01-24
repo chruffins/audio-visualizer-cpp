@@ -90,7 +90,8 @@ void Library::recreateViews() {
             disc,
             year,
             song.duration,
-            song.filename
+            song.filename,
+            song.album_id
         );
     }
 
@@ -101,7 +102,7 @@ void Library::recreateViews() {
         // find all songs for this album
         for (const auto& songView : songViews) {
             // check if the original song belongs to this album
-            const Song* song = getSongById(songView.id);
+            const Song* song = songs.find(songView.id) != songs.end() ? &songs.at(songView.id) : nullptr;
             if (song && song->album_id == albumId) {
                 albumSongs.push_back(songView);
             }
@@ -152,9 +153,10 @@ void Library::recreateViews() {
     }
 }
 
-const Song* Library::getSongById(int id) const {
-    auto it = songs.find(id);
-    return (it != songs.end()) ? &it->second : nullptr;
+const SongView* Library::getSongById(int id) const {
+    // TODO: i think songViews should just be a map for efficiency
+    auto it = std::find_if(songViews.begin(), songViews.end(), [id](const SongView& sv) { return sv.id == id; });
+    return (it != songViews.end()) ? &(*it) : nullptr;
 }
 
 const Album* Library::getAlbumById(int id) const {
