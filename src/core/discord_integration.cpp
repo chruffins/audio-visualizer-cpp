@@ -118,7 +118,7 @@ void DiscordIntegration::setSongPresence(const music::SongView &song) {
     discordpp::ActivityAssets assets;
     discordpp::ActivityTimestamps timestamps;
     assets.SetSmallImage("logo");
-    assets.SetSmallText("Audio Visualizer C++");
+    assets.SetSmallText("∫orte player");
     assets.SetLargeImage("https://coverartarchive.org/release-group/3c7430a6-798f-3060-8539-4d22a92aaffe/front");
     // assets.SetLargeText("Abandoned Pools - Humanistic");
 
