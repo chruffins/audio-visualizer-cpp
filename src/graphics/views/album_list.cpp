@@ -64,16 +64,24 @@ void AlbumListView::rebuildItemList() {
 
         float yPos = static_cast<float>(idx) * (ITEM_HEIGHT + ITEM_SPACING);
         
+        // Set up frame with margin to prevent overlap
+        item.frame.setPosition(graphics::UV(0.0f, 0.0f, 0.0f, yPos));
+        item.frame.setSize(graphics::UV(1.0f, 0.0f, 0.0f, ITEM_HEIGHT - ITEM_SPACING / 2.0f));
+        item.frame.setPadding(5.0f);
+        item.frame.setBackgroundColor(al_map_rgba(30, 30, 40, 200));
+        item.frame.setBorderColor(al_map_rgba(60, 60, 80, 150));
+        item.frame.setBorderThickness(1);
+        
         // Album art
-        item.albumArt.setPosition(graphics::UV(0.0f, 0.0f, 0.0f, yPos));
-        item.albumArt.setSize(graphics::UV(0.0f, 0.0f, ALBUM_ART_SIZE, ALBUM_ART_SIZE));
-        item.albumArt.setScaleMode(ImageDrawable::ScaleMode::STRETCH);
-        item.albumArt.setImageModel(album->cover_art_model);
+        item.albumArt->setPosition(graphics::UV(0.0f, 0.0f, 0.0f, 0.0f));
+        item.albumArt->setSize(graphics::UV(0.0f, 0.0f, ALBUM_ART_SIZE, ALBUM_ART_SIZE));
+        item.albumArt->setScaleMode(ImageDrawable::ScaleMode::STRETCH);
+        item.albumArt->setImageModel(album->cover_art_model);
         
         // Title text
-        item.titleText = TextDrawable(
+        *item.titleText = TextDrawable(
             album->title,
-            graphics::UV(0.0f, 0.0f, TEXT_OFFSET_X, yPos + 5.0f),
+            graphics::UV(0.0f, 0.0f, TEXT_OFFSET_X, 5.0f),
             graphics::UV(1.0f, 0.0f, -TEXT_OFFSET_X - 20.0f, 24.0f),
             16
         ).setFont(font)
@@ -84,9 +92,9 @@ void AlbumListView::rebuildItemList() {
         // Artist text (we'd need to look up artist name from library)
         std::string artistText = library->getArtistById(album->artist_id) ? 
                                  library->getArtistById(album->artist_id)->name : "Unknown Artist";
-        item.artistText = TextDrawable(
+        *item.artistText = TextDrawable(
             artistText,
-            graphics::UV(0.0f, 0.0f, TEXT_OFFSET_X, yPos + 30.0f),
+            graphics::UV(0.0f, 0.0f, TEXT_OFFSET_X, 30.0f),
             graphics::UV(1.0f, 0.0f, -TEXT_OFFSET_X - 20.0f, 20.0f),
             14
         ).setFont(font)
@@ -96,9 +104,9 @@ void AlbumListView::rebuildItemList() {
         
         // Year text
         std::string yearStr = album->year > 0 ? std::to_string(album->year) : "Unknown";
-        item.yearText = TextDrawable(
+        *item.yearText = TextDrawable(
             yearStr,
-            graphics::UV(0.0f, 0.0f, TEXT_OFFSET_X, yPos + 50.0f),
+            graphics::UV(0.0f, 0.0f, TEXT_OFFSET_X, 50.0f),
             graphics::UV(1.0f, 0.0f, -TEXT_OFFSET_X - 20.0f, 20.0f),
             12
         ).setFont(font)
@@ -107,11 +115,8 @@ void AlbumListView::rebuildItemList() {
          .setVerticalAlignment(graphics::VerticalAlignment::TOP)
          .setColor(al_map_rgb(180, 180, 180));
         
-        // Add drawables as children of the main frame (pointers stay valid because we emplaced in vector)
-        mainFrame->addChild(&item.albumArt);
-        mainFrame->addChild(&item.titleText);
-        mainFrame->addChild(&item.artistText);
-        mainFrame->addChild(&item.yearText);
+        // Add frame as child of the main frame (contains all UI elements)
+        mainFrame->addChild(&item.frame);
         ++idx;
     }
     
@@ -206,41 +211,6 @@ void AlbumListView::draw(const graphics::RenderContext& context) {
     // Check if we need to recalculate layout
     if (context.screenWidth != lastDisplayWidth || context.screenHeight != lastDisplayHeight) {
         recalculateLayout(context);
-    }
-    
-    // Draw selection highlight before drawing the frame
-    if (selectedIndex >= 0 && selectedIndex < static_cast<int>(items.size())) {
-        auto sizePx = mainFrame->getSize().toScreenPos(
-            static_cast<float>(context.screenWidth), 
-            static_cast<float>(context.screenHeight)
-        );
-        auto posPx = mainFrame->getPosition().toScreenPos(
-            static_cast<float>(context.screenWidth), 
-            static_cast<float>(context.screenHeight)
-        );
-        
-        float frameX = posPx.first + context.offsetX;
-        float frameY = posPx.second + context.offsetY;
-        float frameWidth = sizePx.first;
-        float padding = mainFrame->getPadding();
-        float scrollOffset = mainFrame->getScrollOffset();
-        
-        // Calculate selected item position within the frame
-        float itemY = selectedIndex * (ITEM_HEIGHT + ITEM_SPACING) - scrollOffset + padding;
-        
-        // Only draw if visible within frame
-        if (itemY + ITEM_HEIGHT >= padding && itemY < sizePx.second - padding) {
-            float highlightY = frameY + itemY;
-            float highlightWidth = frameWidth - 2 * padding;
-            
-            al_draw_filled_rectangle(
-                frameX + padding,
-                highlightY,
-                frameX + padding + highlightWidth,
-                highlightY + ITEM_HEIGHT,
-                selectedColor
-            );
-        }
     }
     
     // Draw the main frame with all children

@@ -172,6 +172,14 @@ void MusicEngine::update() {
     */
 }
 
+void MusicEngine::setProgress(double position) {
+    if (current_stream) {
+        al_seek_audio_stream_secs(current_stream, position);
+        current_time = position;
+        progressBarModel->setProgress(current_time);
+    }
+}
+
 void MusicEngine::playNext() {
     if (!playQueueModel) return;
     int nextId = playQueueModel->next();

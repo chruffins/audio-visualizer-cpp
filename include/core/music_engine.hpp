@@ -35,6 +35,7 @@ public:
     void setGain(float gain);
     void setPan(float pan);
     void setSpeed(float speed);
+    void setProgress(double position); // position in seconds
     void setPlayQueue(std::shared_ptr<music::PlayQueue> playQueue) {
         playQueueModel = playQueue;
     }

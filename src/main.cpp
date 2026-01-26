@@ -32,7 +32,7 @@ void run_main_loop() {
   auto& appState = core::AppState::instance();
   bool finished = false;
 
-  auto nowPlayingView = ui::NowPlayingView(appState.fontManager, appState.music_engine.progressBarModel, appState.event_dispatcher);
+  auto nowPlayingView = ui::NowPlayingView(appState.fontManager, appState.music_engine.progressBarModel, appState.event_dispatcher, &appState.music_engine);
   auto albumListView = ui::AlbumListView(appState.fontManager, appState.library, appState.event_dispatcher);
 
   // Register a callback so that the NowPlayingView updates automatically when
@@ -104,10 +104,12 @@ void run_main_loop() {
 
         // Render frame
         al_clear_to_color(al_map_rgb(0, 0, 0));
-        al_draw_text(appState.default_font, al_map_rgb(255, 255, 255), 200, 150, ALLEGRO_ALIGN_CENTRE, "Hello, Allegro!");
+        //al_hold_bitmap_drawing(true);
+        //al_draw_text(appState.default_font, al_map_rgb(255, 255, 255), 200, 150, ALLEGRO_ALIGN_CENTRE, "Hello, Allegro!");
 
         nowPlayingView.draw(globalContext);
         albumListView.draw(globalContext);
+        //al_hold_bitmap_drawing(false);
         al_flip_display();
       } else if (appState.event.timer.source == appState.discord_callback_timer) {
         // Handle Discord callback timer event

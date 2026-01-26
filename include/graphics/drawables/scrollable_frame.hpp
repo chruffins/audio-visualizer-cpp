@@ -9,7 +9,7 @@ namespace ui {
 // scrolling capabilities. Content is clipped to the frame viewport while
 // maintaining padding offsets. A scrollbar indicator is drawn when content
 // exceeds the available viewport height.
-class ScrollableFrameDrawable : public FrameDrawable, public graphics::IEventHandler {
+class ScrollableFrameDrawable : public FrameDrawable {
 public:
     ScrollableFrameDrawable() = default;
     ScrollableFrameDrawable(graphics::UV position, graphics::UV size)

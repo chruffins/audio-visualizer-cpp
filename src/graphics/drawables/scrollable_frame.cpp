@@ -53,7 +53,7 @@ void ScrollableFrameDrawable::draw(const graphics::RenderContext& context) const
         const float indicatorHeight = std::max(10.0f, viewportHeight * ratio);
         const float scrollRatio = clampedScroll / maxScroll;
         const float indicatorY = absY + padding + scrollRatio * (viewportHeight - indicatorHeight);
-        const float indicatorX = absX + width - padding - scrollbarWidth;
+        const float indicatorX = absX + width - scrollbarWidth; // - padding
         al_draw_filled_rectangle(indicatorX, indicatorY, indicatorX + scrollbarWidth, indicatorY + indicatorHeight, scrollbarColor);
     }
 

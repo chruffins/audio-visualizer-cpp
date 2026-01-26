@@ -4,12 +4,17 @@
 #include "graphics/drawables/text.hpp"
 #include "graphics/drawables/frame.hpp"
 #include "graphics/drawables/image.hpp"
+#include "graphics/drawables/button.hpp"
 #include "graphics/event_handler.hpp"
 #include "graphics/uv.hpp"
 #include <memory>
 
 namespace util {
     class FontManager;
+}
+
+namespace core {
+    class MusicEngine;
 }
 
 namespace ui {
@@ -19,7 +24,8 @@ public:
     NowPlayingView() = delete;
     NowPlayingView(std::shared_ptr<util::FontManager> fontManager, 
         std::shared_ptr<ui::ProgressBar> progressBarModel,
-        graphics::EventDispatcher& eventDispatcher);
+        graphics::EventDispatcher& eventDispatcher,
+        core::MusicEngine* musicEngine);
 
     void setSongTitle(const std::string& title);
     void setArtistName(const std::string& artist);
@@ -29,15 +35,19 @@ public:
     void setAlbumArt(ALLEGRO_BITMAP* bitmap);
 
     void draw(const graphics::RenderContext& context);
+    void updatePlayPauseButton();
 private:
     void recalculateLayout(const graphics::RenderContext& context);
     
     std::shared_ptr<util::FontManager> fontManager;
+    core::MusicEngine* musicEngine;
     int lastDisplayWidth = 0;
     int lastDisplayHeight = 0;
 
-    // Main container frame
-    FrameDrawable mainFrame;
+    ButtonDrawable playPauseButton;
+    ButtonDrawable rewindButton;
+    ButtonDrawable skipButton;
+    std::shared_ptr<FrameDrawable> mainFrame;
     
     // Text drawables
     TextDrawable songTitleText;

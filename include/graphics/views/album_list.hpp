@@ -1,6 +1,7 @@
 #pragma once
 
 #include "graphics/drawables/scrollable_frame.hpp"
+#include "graphics/drawables/frame.hpp"
 #include "graphics/drawables/text.hpp"
 #include "graphics/drawables/image.hpp"
 #include "graphics/uv.hpp"
@@ -21,13 +22,26 @@ namespace ui {
 
 // Individual album item in the list
 struct AlbumListItem {
-    ImageDrawable albumArt;
-    TextDrawable titleText;
-    TextDrawable artistText;
-    TextDrawable yearText;
+    FrameDrawable frame;
+    std::unique_ptr<ImageDrawable> albumArt;
+    std::unique_ptr<TextDrawable> titleText;
+    std::unique_ptr<TextDrawable> artistText;
+    std::unique_ptr<TextDrawable> yearText;
     
     // Reference to the album data
     const music::Album* album = nullptr;
+    
+    AlbumListItem() {
+        albumArt = std::make_unique<ImageDrawable>();
+        titleText = std::make_unique<TextDrawable>();
+        artistText = std::make_unique<TextDrawable>();
+        yearText = std::make_unique<TextDrawable>();
+        
+        frame.addChild(albumArt.get());
+        frame.addChild(titleText.get());
+        frame.addChild(artistText.get());
+        frame.addChild(yearText.get());
+    }
 };
 
 // View for displaying a scrollable list of albums
