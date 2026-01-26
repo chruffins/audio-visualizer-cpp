@@ -16,6 +16,7 @@
 #include "music/library.hpp"
 #include "util/font.hpp"
 #include "util/config.hpp"
+#include "graphics/event_handler.hpp"
 
 namespace core {
 
@@ -39,7 +40,7 @@ public:
 	// Shutdown/cleanup. Safe to call multiple times.
 	void shutdown();
 
-    // Some really basic Allegro resources
+    // Some basic Allegro resources
     ALLEGRO_DISPLAY* display;
     ALLEGRO_FONT* default_font;
 	ALLEGRO_EVENT_QUEUE* event_queue;
@@ -69,6 +70,8 @@ public:
 	// Library (in-memory)
 	std::shared_ptr<music::Library> library;
 
+	// Event dispatcher
+	graphics::EventDispatcher event_dispatcher;
 private:
 	AppState()
 		: display(nullptr)
@@ -80,7 +83,8 @@ private:
 		, library(std::make_shared<music::Library>())
 		, play_queue(std::make_shared<music::PlayQueue>())
 		, fontManager(std::make_shared<util::FontManager>())
-		, config() {}
+		, config()
+		, event_dispatcher() {}
 
 	~AppState() { shutdown(); }
 };

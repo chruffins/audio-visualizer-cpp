@@ -32,8 +32,8 @@ void run_main_loop() {
   auto& appState = core::AppState::instance();
   bool finished = false;
 
-  auto nowPlayingView = ui::NowPlayingView(appState.fontManager, appState.music_engine.progressBarModel);
-    auto albumListView = ui::AlbumListView(appState.fontManager, appState.library);
+  auto nowPlayingView = ui::NowPlayingView(appState.fontManager, appState.music_engine.progressBarModel, appState.event_dispatcher);
+  auto albumListView = ui::AlbumListView(appState.fontManager, appState.library, appState.event_dispatcher);
 
   // Register a callback so that the NowPlayingView updates automatically when
   // MusicEngine starts a new song (e.g., via playNext or other engine-driven
@@ -124,6 +124,14 @@ void run_main_loop() {
       }
       break;
     case ALLEGRO_EVENT_KEY_DOWN:
+    case ALLEGRO_EVENT_KEY_UP:
+    case ALLEGRO_EVENT_KEY_CHAR:
+    case ALLEGRO_EVENT_MOUSE_AXES:
+    case ALLEGRO_EVENT_MOUSE_BUTTON_DOWN:
+    case ALLEGRO_EVENT_MOUSE_BUTTON_UP:
+      appState.event_dispatcher.dispatchEvent(appState.event);
+      break;
+      /*
       if (appState.event.keyboard.keycode == ALLEGRO_KEY_ESCAPE) {
         finished = true;
       } else if (appState.event.keyboard.keycode == ALLEGRO_KEY_SPACE) {
@@ -134,14 +142,17 @@ void run_main_loop() {
         }
       } else if (appState.event.keyboard.keycode == ALLEGRO_KEY_RIGHT) {
         // Play random song (onSongChanged callback handles UI updates)
+        appState.music_engine.playNext();
+        /*
         song = appState.library->getRandomSong();
         if (song) {
           if (const music::SongView* songModel = appState.library->getSongById(song->id)) {
             appState.music_engine.playSound(songModel->filename);
           }
         }
+          
       }
-      break;
+      */
     default:
       break;
     }
@@ -167,15 +178,6 @@ int main() {
   al_init_primitives_addon();
 
   appState.init();
-
-  // set icon here
-  ALLEGRO_BITMAP* icon = al_load_bitmap(appState.config.getIconPath().c_str());
-  if (icon) {
-      al_set_display_icon(appState.display, icon);
-      al_destroy_bitmap(icon);
-  } else {
-      std::cerr << "Warning: Failed to load icon image.\n";
-  }
 
   std::cout << "App state initialized!\n";
 

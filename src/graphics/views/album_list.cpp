@@ -9,19 +9,23 @@
 namespace ui {
 
 AlbumListView::AlbumListView(std::shared_ptr<util::FontManager> fontManager,
-                             std::shared_ptr<music::Library> library)
-    : fontManager(std::move(fontManager)), library(std::move(library)) {
+                             std::shared_ptr<music::Library> library,
+                             graphics::EventDispatcher& eventDispatcher)
+    : fontManager(std::move(fontManager)), library(std::move(library)),
+      mainFrame(std::make_shared<ScrollableFrameDrawable>()) {
     
     // Configure main scrollable frame
-    mainFrame.setPosition(graphics::UV(0.0f, 0.0f, 0.0f, 00.0f));
-    mainFrame.setSize(graphics::UV(1.0f, 1.0f, 0.0f, -100.0f));
-    mainFrame.setBackgroundColor(al_map_rgba(20, 20, 30, 240));
-    mainFrame.setBorderColor(al_map_rgb(80, 80, 100));
-    mainFrame.setBorderThickness(2);
-    mainFrame.setPadding(15.0f);
-    mainFrame.setScrollbarColor(al_map_rgb(120, 120, 140));
-    mainFrame.setScrollbarWidth(8.0f);
-    mainFrame.enableScrollbar(true);
+    mainFrame->setPosition(graphics::UV(0.0f, 0.0f, 0.0f, 00.0f));
+    mainFrame->setSize(graphics::UV(1.0f, 1.0f, 0.0f, -100.0f));
+    mainFrame->setBackgroundColor(al_map_rgba(20, 20, 30, 240));
+    mainFrame->setBorderColor(al_map_rgb(80, 80, 100));
+    mainFrame->setBorderThickness(2);
+    mainFrame->setPadding(15.0f);
+    mainFrame->setScrollbarColor(al_map_rgb(120, 120, 140));
+    mainFrame->setScrollbarWidth(8.0f);
+    mainFrame->enableScrollbar(true);
+
+    eventDispatcher.addEventTarget(mainFrame);
 
     refresh();
 }
@@ -33,7 +37,7 @@ void AlbumListView::refresh() {
 
 void AlbumListView::rebuildItemList() {
     // Remove old children so we don't keep pointers to destroyed items
-    mainFrame.clearChildren();
+    mainFrame->clearChildren();
 
     items.clear();
     if (library) {
@@ -43,7 +47,7 @@ void AlbumListView::rebuildItemList() {
     auto font = fontManager->getFont("courier");
     
     if (!library) {
-        mainFrame.setContentHeight(0.0f);
+        mainFrame->setContentHeight(0.0f);
         lastDisplayWidth = 0;
         lastDisplayHeight = 0;
         return;
@@ -104,16 +108,16 @@ void AlbumListView::rebuildItemList() {
          .setColor(al_map_rgb(180, 180, 180));
         
         // Add drawables as children of the main frame (pointers stay valid because we emplaced in vector)
-        mainFrame.addChild(&item.albumArt);
-        mainFrame.addChild(&item.titleText);
-        mainFrame.addChild(&item.artistText);
-        mainFrame.addChild(&item.yearText);
+        mainFrame->addChild(&item.albumArt);
+        mainFrame->addChild(&item.titleText);
+        mainFrame->addChild(&item.artistText);
+        mainFrame->addChild(&item.yearText);
         ++idx;
     }
     
     // Update content height for scrolling
     float contentHeight = calculateContentHeight();
-    mainFrame.setContentHeight(contentHeight);
+    mainFrame->setContentHeight(contentHeight);
     
     // Need to rebuild layout on next draw
     lastDisplayWidth = 0;
@@ -128,15 +132,15 @@ float AlbumListView::calculateContentHeight() const {
 }
 
 void AlbumListView::scrollBy(float delta) {
-    mainFrame.scrollBy(delta);
+    mainFrame->scrollBy(delta);
 }
 
 void AlbumListView::scrollTo(float offset) {
-    mainFrame.setScrollOffset(offset);
+    mainFrame->setScrollOffset(offset);
 }
 
 float AlbumListView::getScrollOffset() const {
-    return mainFrame.getScrollOffset();
+    return mainFrame->getScrollOffset();
 }
 
 void AlbumListView::setSelectedIndex(int index) {
@@ -155,11 +159,11 @@ const music::Album* AlbumListView::getSelectedAlbum() const {
 int AlbumListView::handleClick(float x, float y, const graphics::RenderContext& context) {
     // Calculate which item was clicked based on y position
     // Need to account for scroll offset and padding
-    auto sizePx = mainFrame.getSize().toScreenPos(
+    auto sizePx = mainFrame->getSize().toScreenPos(
         static_cast<float>(context.screenWidth), 
         static_cast<float>(context.screenHeight)
     );
-    auto posPx = mainFrame.getPosition().toScreenPos(
+    auto posPx = mainFrame->getPosition().toScreenPos(
         static_cast<float>(context.screenWidth), 
         static_cast<float>(context.screenHeight)
     );
@@ -175,8 +179,8 @@ int AlbumListView::handleClick(float x, float y, const graphics::RenderContext& 
     }
     
     // Adjust for padding and scroll offset
-    float padding = mainFrame.getPadding();
-    float relativeY = y - frameY - padding + mainFrame.getScrollOffset();
+    float padding = mainFrame->getPadding();
+    float relativeY = y - frameY - padding + mainFrame->getScrollOffset();
     
     // Calculate which item
     int clickedIndex = static_cast<int>(relativeY / (ITEM_HEIGHT + ITEM_SPACING));
@@ -206,11 +210,11 @@ void AlbumListView::draw(const graphics::RenderContext& context) {
     
     // Draw selection highlight before drawing the frame
     if (selectedIndex >= 0 && selectedIndex < static_cast<int>(items.size())) {
-        auto sizePx = mainFrame.getSize().toScreenPos(
+        auto sizePx = mainFrame->getSize().toScreenPos(
             static_cast<float>(context.screenWidth), 
             static_cast<float>(context.screenHeight)
         );
-        auto posPx = mainFrame.getPosition().toScreenPos(
+        auto posPx = mainFrame->getPosition().toScreenPos(
             static_cast<float>(context.screenWidth), 
             static_cast<float>(context.screenHeight)
         );
@@ -218,8 +222,8 @@ void AlbumListView::draw(const graphics::RenderContext& context) {
         float frameX = posPx.first + context.offsetX;
         float frameY = posPx.second + context.offsetY;
         float frameWidth = sizePx.first;
-        float padding = mainFrame.getPadding();
-        float scrollOffset = mainFrame.getScrollOffset();
+        float padding = mainFrame->getPadding();
+        float scrollOffset = mainFrame->getScrollOffset();
         
         // Calculate selected item position within the frame
         float itemY = selectedIndex * (ITEM_HEIGHT + ITEM_SPACING) - scrollOffset + padding;
@@ -240,7 +244,7 @@ void AlbumListView::draw(const graphics::RenderContext& context) {
     }
     
     // Draw the main frame with all children
-    mainFrame.draw(context);
+    mainFrame->draw(context);
 }
 
 } // namespace ui

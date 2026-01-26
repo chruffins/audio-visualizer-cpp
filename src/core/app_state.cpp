@@ -30,11 +30,20 @@ bool AppState::init() {
     al_register_event_source(this->event_queue, al_get_timer_event_source(this->graphics_timer));
     al_register_event_source(this->event_queue, al_get_timer_event_source(this->discord_callback_timer));
     al_register_event_source(this->event_queue, al_get_keyboard_event_source());
+    al_register_event_source(this->event_queue, al_get_mouse_event_source());
     
     al_start_timer(this->graphics_timer);
     al_start_timer(this->discord_callback_timer);
 
     al_set_window_title(this->display, "∫");
+
+    // set icon here
+    ALLEGRO_BITMAP* icon = al_load_bitmap(this->config.getIconPath().c_str());
+    if (icon) {
+        al_set_display_icon(this->display, icon);
+    } else {
+        std::cerr << "Warning: Failed to load icon image.\n";
+    }
 
     // init the music engine
     if (!this->music_engine.initialize()) {

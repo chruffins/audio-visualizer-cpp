@@ -5,7 +5,9 @@
 
 namespace ui {
 
-NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager, std::shared_ptr<ui::ProgressBar> progressBarModel)
+NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager, 
+  std::shared_ptr<ui::ProgressBar> progressBarModel,
+  graphics::EventDispatcher& eventDispatcher)
     : fontManager(fontManager), progressBar(progressBarModel) {
   
   auto font = fontManager->getFont("courier");

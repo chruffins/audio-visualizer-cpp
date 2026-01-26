@@ -118,14 +118,17 @@ void DiscordIntegration::setSongPresence(const music::SongView &song) {
     discordpp::ActivityAssets assets;
     discordpp::ActivityTimestamps timestamps;
     assets.SetSmallImage("logo");
+    assets.SetSmallUrl("https://github.com/chruffins/audio-visualizer-cpp");
     assets.SetSmallText("∫orte player");
+    // TODO: dynamically get a URL for album art... like from coverartarchive.org
     assets.SetLargeImage("https://coverartarchive.org/release-group/3c7430a6-798f-3060-8539-4d22a92aaffe/front");
-    // assets.SetLargeText("Abandoned Pools - Humanistic");
+    assets.SetLargeText(song.album);
+
 
     // activity.SetName("Audio Visualizer C++"); this does nothing
     activity.SetType(discordpp::ActivityTypes::Listening);
     activity.SetDetails(song.title);
-    activity.SetState(song.title + " - " + song.artist);
+    activity.SetState(song.artist);
     activity.SetApplicationId(APPLICATION_ID);
     activity.SetStatusDisplayType(discordpp::StatusDisplayTypes::State);
     activity.SetAssets(assets);

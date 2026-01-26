@@ -1,6 +1,8 @@
 #include "graphics/drawables/scrollable_frame.hpp"
 
 #include <algorithm>
+#include <allegro5/allegro.h>
+#include <iostream>
 
 namespace ui {
 
@@ -56,6 +58,36 @@ void ScrollableFrameDrawable::draw(const graphics::RenderContext& context) const
     }
 
     al_set_clipping_rectangle(oldClipX, oldClipY, oldClipW, oldClipH);
+}
+
+bool ScrollableFrameDrawable::onMouseScroll(float /*dx*/, float dy) {
+    // Allegro: positive dy means scroll up; decrease offset to move content down
+    float displayW = static_cast<float>(al_get_display_width(al_get_current_display()));
+    float displayH = static_cast<float>(al_get_display_height(al_get_current_display()));
+    const float maxScroll = computeMaxScroll(displayW, displayH);
+
+    scrollOffset -= dy * scrollStep;
+    if (scrollOffset < 0.0f) scrollOffset = 0.0f;
+    if (scrollOffset > maxScroll) scrollOffset = maxScroll;
+
+    return true; // consume scroll
+}
+
+bool ScrollableFrameDrawable::hitTest(float x, float y) const {
+    float displayW = static_cast<float>(al_get_display_width(al_get_current_display()));
+    float displayH = static_cast<float>(al_get_display_height(al_get_current_display()));
+    auto posPx = position.toScreenPos(displayW, displayH);
+    auto sizePx = size.toScreenPos(displayW, displayH);
+    const float absX = posPx.first;
+    const float absY = posPx.second;
+    return x >= absX && x <= absX + sizePx.first && y >= absY && y <= absY + sizePx.second;
+}
+
+float ScrollableFrameDrawable::computeMaxScroll(float screenW, float screenH) const noexcept {
+    auto sizePx = size.toScreenPos(screenW, screenH);
+    const float viewportHeight = sizePx.second - 2 * padding;
+    const float effectiveContentHeight = contentHeight > 0.0f ? contentHeight : viewportHeight;
+    return std::max(0.0f, effectiveContentHeight - viewportHeight);
 }
 
 } // namespace ui

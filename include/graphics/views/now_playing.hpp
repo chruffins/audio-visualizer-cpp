@@ -4,6 +4,7 @@
 #include "graphics/drawables/text.hpp"
 #include "graphics/drawables/frame.hpp"
 #include "graphics/drawables/image.hpp"
+#include "graphics/event_handler.hpp"
 #include "graphics/uv.hpp"
 #include <memory>
 
@@ -16,7 +17,9 @@ namespace ui {
 class NowPlayingView {
 public:
     NowPlayingView() = delete;
-    NowPlayingView(std::shared_ptr<util::FontManager> fontManager, std::shared_ptr<ui::ProgressBar> progressBarModel);
+    NowPlayingView(std::shared_ptr<util::FontManager> fontManager, 
+        std::shared_ptr<ui::ProgressBar> progressBarModel,
+        graphics::EventDispatcher& eventDispatcher);
 
     void setSongTitle(const std::string& title);
     void setArtistName(const std::string& artist);

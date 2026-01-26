@@ -35,7 +35,8 @@ class AlbumListView {
 public:
     AlbumListView() = delete;
     AlbumListView(std::shared_ptr<util::FontManager> fontManager,
-                  std::shared_ptr<music::Library> library);
+                  std::shared_ptr<music::Library> library,
+                  graphics::EventDispatcher& eventDispatcher);
 
     // Reload albums from the library
     void refresh();
@@ -71,7 +72,7 @@ private:
     int lastDisplayHeight = 0;
 
     // Main scrollable container
-    ScrollableFrameDrawable mainFrame;
+    std::shared_ptr<ScrollableFrameDrawable> mainFrame;
     
     // Album items
     std::vector<AlbumListItem> items;

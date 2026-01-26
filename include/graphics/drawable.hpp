@@ -19,6 +19,8 @@ class Drawable {
 public:
     virtual ~Drawable() = default;
     virtual void draw(const RenderContext& context) const = 0;
+protected:
+    bool enabled = true;
 };
 
 using DrawablePtr = std::shared_ptr<Drawable>;
