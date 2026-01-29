@@ -29,7 +29,15 @@ public:
     void draw(const graphics::RenderContext& context = {}) const override;
 
     // graphics::IEventHandler
+    bool onMouseDown(const graphics::MouseEvent& event) override;
+    bool onMouseUp(const graphics::MouseEvent& event) override;
+    bool onMouseMove(const graphics::MouseEvent& event) override;
+    bool onMouseEnter(const graphics::MouseEvent& event) override;
+    bool onMouseLeave(const graphics::MouseEvent& event) override;
     bool onMouseScroll(float dx, float dy) override;
+    bool onKeyDown(const graphics::KeyboardEvent& event) override;
+    bool onKeyUp(const graphics::KeyboardEvent& event) override;
+    bool onKeyChar(const graphics::KeyboardEvent& event) override;
     bool hitTest(float x, float y) const override;
     bool isEnabled() const override { return true; }
 

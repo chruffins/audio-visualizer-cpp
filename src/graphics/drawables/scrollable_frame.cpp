@@ -60,6 +60,144 @@ void ScrollableFrameDrawable::draw(const graphics::RenderContext& context) const
     al_set_clipping_rectangle(oldClipX, oldClipY, oldClipW, oldClipH);
 }
 
+bool ScrollableFrameDrawable::onMouseDown(const graphics::MouseEvent& event) {
+    // First check if click is within frame bounds
+    if (!hitTest(event.x, event.y)) {
+        return graphics::IEventHandler::onMouseDown(event);
+    }
+    
+    // Get viewport bounds
+    float displayW = static_cast<float>(al_get_display_width(al_get_current_display()));
+    float displayH = static_cast<float>(al_get_display_height(al_get_current_display()));
+    auto posPx = position.toScreenPos(displayW, displayH);
+    auto sizePx = size.toScreenPos(displayW, displayH);
+    const float viewportHeight = sizePx.second - 2 * padding;
+    const float maxScroll = computeMaxScroll(displayW, displayH);
+    float clampedScroll = std::min(std::max(0.0f, scrollOffset), maxScroll);
+    
+    // Transform coordinates to account for scroll offset
+    graphics::MouseEvent scrolledEvent = event;
+    scrolledEvent.y += clampedScroll;
+    scrolledEvent.localY += clampedScroll;
+    
+    // Check children in reverse order (top-most first)
+    for (auto it = children.rbegin(); it != children.rend(); ++it) {
+        auto handler = dynamic_cast<graphics::IEventHandler*>(*it);
+        if (!handler) continue;
+        
+        if (handler->hitTest(scrolledEvent.x, scrolledEvent.y)) {
+            if (handler->onMouseDown(scrolledEvent)) {
+                return true;
+            }
+        }
+    }
+    return graphics::IEventHandler::onMouseDown(event);
+}
+
+bool ScrollableFrameDrawable::onMouseUp(const graphics::MouseEvent& event) {
+    // Get viewport bounds for scroll calculation
+    float displayW = static_cast<float>(al_get_display_width(al_get_current_display()));
+    float displayH = static_cast<float>(al_get_display_height(al_get_current_display()));
+    const float maxScroll = computeMaxScroll(displayW, displayH);
+    float clampedScroll = std::min(std::max(0.0f, scrollOffset), maxScroll);
+    
+    // Transform coordinates to account for scroll offset
+    graphics::MouseEvent scrolledEvent = event;
+    scrolledEvent.y += clampedScroll;
+    scrolledEvent.localY += clampedScroll;
+    
+    // Check children in reverse order (top-most first)
+    for (auto it = children.rbegin(); it != children.rend(); ++it) {
+        auto handler = dynamic_cast<graphics::IEventHandler*>(*it);
+        if (!handler) continue;
+        
+        if (handler->hitTest(scrolledEvent.x, scrolledEvent.y)) {
+            if (handler->onMouseUp(scrolledEvent)) {
+                return true;
+            }
+        }
+    }
+    return graphics::IEventHandler::onMouseUp(event);
+}
+
+bool ScrollableFrameDrawable::onMouseMove(const graphics::MouseEvent& event) {
+    // Get viewport bounds for scroll calculation
+    float displayW = static_cast<float>(al_get_display_width(al_get_current_display()));
+    float displayH = static_cast<float>(al_get_display_height(al_get_current_display()));
+    const float maxScroll = computeMaxScroll(displayW, displayH);
+    float clampedScroll = std::min(std::max(0.0f, scrollOffset), maxScroll);
+    
+    // Transform coordinates to account for scroll offset
+    graphics::MouseEvent scrolledEvent = event;
+    scrolledEvent.y += clampedScroll;
+    scrolledEvent.localY += clampedScroll;
+    
+    // Check children in reverse order (top-most first)
+    for (auto it = children.rbegin(); it != children.rend(); ++it) {
+        auto handler = dynamic_cast<graphics::IEventHandler*>(*it);
+        if (!handler) continue;
+        
+        if (handler->hitTest(scrolledEvent.x, scrolledEvent.y)) {
+            if (handler->onMouseMove(scrolledEvent)) {
+                return true;
+            }
+        }
+    }
+    return graphics::IEventHandler::onMouseMove(event);
+}
+
+bool ScrollableFrameDrawable::onMouseEnter(const graphics::MouseEvent& event) {
+    // Get viewport bounds for scroll calculation
+    float displayW = static_cast<float>(al_get_display_width(al_get_current_display()));
+    float displayH = static_cast<float>(al_get_display_height(al_get_current_display()));
+    const float maxScroll = computeMaxScroll(displayW, displayH);
+    float clampedScroll = std::min(std::max(0.0f, scrollOffset), maxScroll);
+    
+    // Transform coordinates to account for scroll offset
+    graphics::MouseEvent scrolledEvent = event;
+    scrolledEvent.y += clampedScroll;
+    scrolledEvent.localY += clampedScroll;
+    
+    // Check children in reverse order (top-most first)
+    for (auto it = children.rbegin(); it != children.rend(); ++it) {
+        auto handler = dynamic_cast<graphics::IEventHandler*>(*it);
+        if (!handler) continue;
+        
+        if (handler->hitTest(scrolledEvent.x, scrolledEvent.y)) {
+            if (handler->onMouseEnter(scrolledEvent)) {
+                return true;
+            }
+        }
+    }
+    return graphics::IEventHandler::onMouseEnter(event);
+}
+
+bool ScrollableFrameDrawable::onMouseLeave(const graphics::MouseEvent& event) {
+    // Get viewport bounds for scroll calculation
+    float displayW = static_cast<float>(al_get_display_width(al_get_current_display()));
+    float displayH = static_cast<float>(al_get_display_height(al_get_current_display()));
+    const float maxScroll = computeMaxScroll(displayW, displayH);
+    float clampedScroll = std::min(std::max(0.0f, scrollOffset), maxScroll);
+    
+    // Transform coordinates to account for scroll offset
+    graphics::MouseEvent scrolledEvent = event;
+    scrolledEvent.y += clampedScroll;
+    scrolledEvent.localY += clampedScroll;
+    
+    // Check children in reverse order (top-most first)
+    for (auto it = children.rbegin(); it != children.rend(); ++it) {
+        auto handler = dynamic_cast<graphics::IEventHandler*>(*it);
+        if (!handler) continue;
+        
+        if (handler->hitTest(scrolledEvent.x, scrolledEvent.y)) {
+            if (handler->onMouseLeave(scrolledEvent)) {
+                return true;
+            }
+        }
+    }
+    return graphics::IEventHandler::onMouseLeave(event);
+}
+
 bool ScrollableFrameDrawable::onMouseScroll(float /*dx*/, float dy) {
     // Allegro: positive dy means scroll up; decrease offset to move content down
     float displayW = static_cast<float>(al_get_display_width(al_get_current_display()));
@@ -71,6 +209,42 @@ bool ScrollableFrameDrawable::onMouseScroll(float /*dx*/, float dy) {
     if (scrollOffset > maxScroll) scrollOffset = maxScroll;
 
     return true; // consume scroll
+}
+
+bool ScrollableFrameDrawable::onKeyDown(const graphics::KeyboardEvent& event) {
+    for (auto it = children.rbegin(); it != children.rend(); ++it) {
+        auto handler = dynamic_cast<graphics::IEventHandler*>(*it);
+        if (!handler || !handler->isFocusable()) continue;
+        
+        if (handler->onKeyDown(event)) {
+            return true;
+        }
+    }
+    return graphics::IEventHandler::onKeyDown(event);
+}
+
+bool ScrollableFrameDrawable::onKeyUp(const graphics::KeyboardEvent& event) {
+    for (auto it = children.rbegin(); it != children.rend(); ++it) {
+        auto handler = dynamic_cast<graphics::IEventHandler*>(*it);
+        if (!handler || !handler->isFocusable()) continue;
+        
+        if (handler->onKeyUp(event)) {
+            return true;
+        }
+    }
+    return graphics::IEventHandler::onKeyUp(event);
+}
+
+bool ScrollableFrameDrawable::onKeyChar(const graphics::KeyboardEvent& event) {
+    for (auto it = children.rbegin(); it != children.rend(); ++it) {
+        auto handler = dynamic_cast<graphics::IEventHandler*>(*it);
+        if (!handler || !handler->isFocusable()) continue;
+        
+        if (handler->onKeyChar(event)) {
+            return true;
+        }
+    }
+    return graphics::IEventHandler::onKeyChar(event);
 }
 
 bool ScrollableFrameDrawable::hitTest(float x, float y) const {
