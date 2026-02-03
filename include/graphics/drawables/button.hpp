@@ -28,7 +28,7 @@ public:
     bool onMouseUp(const graphics::MouseEvent& event) override;
     bool onMouseEnter(const graphics::MouseEvent& event) override;
     bool onMouseLeave(const graphics::MouseEvent& event) override;
-    bool hitTest(float x, float y) const override;
+    bool hitTest(float x, float y, const graphics::RenderContext& context) const override;
     bool isFocusable() const override { return true; }
     bool isEnabled() const override { return m_enabled; }
     
@@ -54,16 +54,6 @@ public:
     void setOnClick(ClickCallback callback) { m_onClick = callback; }
     
 private:
-    void updateBounds(const graphics::RenderContext& context) const;
-    
-    // Cached screen-space bounds (mutable for lazy evaluation)
-    mutable float m_cachedX = 0.0f;
-    mutable float m_cachedY = 0.0f;
-    mutable float m_cachedWidth = 0.0f;
-    mutable float m_cachedHeight = 0.0f;
-    mutable int m_lastScreenWidth = 0;
-    mutable int m_lastScreenHeight = 0;
-    
     // Visual properties
     std::string m_label;
     ALLEGRO_FONT* m_font = nullptr;

@@ -88,11 +88,16 @@ bool EventDispatcher::dispatchMouseEvent(const ALLEGRO_EVENT& event) {
     float mouseX = 0.0f;
     float mouseY = 0.0f;
     
+    // Create base render context for event dispatching
+    int displayW = al_get_display_width(al_get_current_display());
+    int displayH = al_get_display_height(al_get_current_display());
+    RenderContext baseContext{displayW, displayH, 0.0f, 0.0f, nullptr};
+    
     switch (event.type) {
         case ALLEGRO_EVENT_MOUSE_BUTTON_DOWN: {
             mouseX = event.mouse.x;
             mouseY = event.mouse.y;
-            auto target = findTargetAt(mouseX, mouseY);
+            auto target = findTargetAt(mouseX, mouseY, baseContext);
             
             if (target && target->isEnabled()) {
                 // Store the target where mouse was pressed
@@ -103,7 +108,7 @@ bool EventDispatcher::dispatchMouseEvent(const ALLEGRO_EVENT& event) {
                     setFocus(target);
                 }
                 
-                MouseEvent mouseEvent(mouseX, mouseY, event.mouse.button);
+                MouseEvent mouseEvent(mouseX, mouseY, event.mouse.button, false, &baseContext);
                 return target->onMouseDown(mouseEvent);
             }
             
@@ -119,7 +124,7 @@ bool EventDispatcher::dispatchMouseEvent(const ALLEGRO_EVENT& event) {
             // Mouse up goes to the element where mouse was originally pressed
             auto target = m_mouseDownTarget.lock();
             if (target && target->isEnabled()) {
-                MouseEvent mouseEvent(mouseX, mouseY, event.mouse.button);
+                MouseEvent mouseEvent(mouseX, mouseY, event.mouse.button, false, &baseContext);
                 bool handled = target->onMouseUp(mouseEvent);
                 m_mouseDownTarget.reset();
                 return handled;
@@ -135,7 +140,7 @@ bool EventDispatcher::dispatchMouseEvent(const ALLEGRO_EVENT& event) {
             
             // Handle mouse wheel scrolling
             if (event.mouse.dz != 0 || event.mouse.dw != 0) {
-                auto target = findTargetAt(mouseX, mouseY);
+                auto target = findTargetAt(mouseX, mouseY, baseContext);
                 if (target && target->isEnabled()) {
                     return target->onMouseScroll(event.mouse.dw, event.mouse.dz);
                 }
@@ -155,18 +160,23 @@ bool EventDispatcher::dispatchMouseMove(float x, float y) {
     m_lastMouseX = x;
     m_lastMouseY = y;
     
-    auto newTarget = findTargetAt(x, y);
+    // Create base render context for event dispatching
+    int displayW = al_get_display_width(al_get_current_display());
+    int displayH = al_get_display_height(al_get_current_display());
+    RenderContext baseContext{displayW, displayH, 0.0f, 0.0f, nullptr};
+    
+    auto newTarget = findTargetAt(x, y, baseContext);
     auto oldTarget = m_hoveredElement.lock();
     
     // Handle hover state changes
     if (newTarget != oldTarget) {
         if (oldTarget) {
-            MouseEvent leaveEvent(x, y);
+            MouseEvent leaveEvent(x, y, 1, false, &baseContext);
             oldTarget->onMouseLeave(leaveEvent);
         }
         
         if (newTarget) {
-            MouseEvent enterEvent(x, y);
+            MouseEvent enterEvent(x, y, 1, false, &baseContext);
             newTarget->onMouseEnter(enterEvent);
         }
         
@@ -175,7 +185,7 @@ bool EventDispatcher::dispatchMouseMove(float x, float y) {
     
     // Send move event to current target
     if (newTarget && newTarget->isEnabled()) {
-        MouseEvent moveEvent(x, y);
+        MouseEvent moveEvent(x, y, 1, false, &baseContext);
         return newTarget->onMouseMove(moveEvent);
     }
     
@@ -206,14 +216,14 @@ bool EventDispatcher::dispatchKeyboardEvent(const ALLEGRO_EVENT& event) {
     }
 }
 
-std::shared_ptr<IEventHandler> EventDispatcher::findTargetAt(float x, float y) {
+std::shared_ptr<IEventHandler> EventDispatcher::findTargetAt(float x, float y, const RenderContext& context) {
     // Cleanup expired targets periodically
     cleanupExpiredTargets();
     
     // Search in reverse order (top to bottom) to find the topmost element
     for (auto it = m_eventTargets.rbegin(); it != m_eventTargets.rend(); ++it) {
         auto target = it->lock();
-        if (target && target->isEnabled() && target->hitTest(x, y)) {
+        if (target && target->isEnabled() && target->hitTest(x, y, context)) {
             return target;
         }
     }

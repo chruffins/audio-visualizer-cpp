@@ -38,7 +38,7 @@ public:
     bool onKeyDown(const graphics::KeyboardEvent& event) override;
     bool onKeyUp(const graphics::KeyboardEvent& event) override;
     bool onKeyChar(const graphics::KeyboardEvent& event) override;
-    bool hitTest(float x, float y) const override;
+    bool hitTest(float x, float y, const graphics::RenderContext& context) const override;
     bool isEnabled() const override { return true; }
 
     void setScrollStep(float step) noexcept { scrollStep = step; }

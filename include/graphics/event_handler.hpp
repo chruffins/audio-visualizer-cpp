@@ -1,14 +1,15 @@
 #pragma once
 
 #include <allegro5/allegro.h>
+#include "graphics/drawable.hpp"
 #include <functional>
 #include <memory>
 
 namespace graphics {
 
-// Forward declarations
-struct RenderContext;
 class Drawable;
+
+// RenderContext is defined in drawable.hpp
 
 /**
  * Mouse event data passed to event handlers
@@ -20,9 +21,16 @@ struct MouseEvent {
     float localY;
     int button;        // Mouse button (1=left, 2=right, 3=middle)
     bool doubleClick;  // True if this was a double-click
+    const RenderContext* context;  // Pointer to current render context
     
-    MouseEvent(float x_, float y_, int button_ = 1, bool doubleClick_ = false)
-        : x(x_), y(y_), localX(x_), localY(y_), button(button_), doubleClick(doubleClick_) {}
+    MouseEvent(float x_, float y_, int button_ = 1, bool doubleClick_ = false, const RenderContext* ctx = nullptr)
+        : x(x_), y(y_), localX(x_), localY(y_), button(button_), doubleClick(doubleClick_), context(ctx) {
+        // Compute local coordinates if context is provided
+        if (context) {
+            localX = x_ - context->offsetX;
+            localY = y_ - context->offsetY;
+        }
+    }
 };
 
 /**
@@ -60,7 +68,8 @@ public:
     std::function<void()> m_onFocusGained;
     std::function<void()> m_onFocusLost;
     
-    std::function<bool(float, float)> m_hitTest;
+    // hitTest callback now takes RenderContext as well
+    std::function<bool(float, float, const RenderContext&)> m_hitTest;
     std::function<bool()> m_isFocusable;
     std::function<bool()> m_isEnabled;
     
@@ -101,8 +110,8 @@ public:
         if (m_onFocusLost) m_onFocusLost();
     }
     
-    virtual bool hitTest(float x, float y) const {
-        return m_hitTest && m_hitTest(x, y);
+    virtual bool hitTest(float x, float y, const RenderContext& context) const {
+        return m_hitTest && m_hitTest(x, y, context);
     }
     
     virtual bool isFocusable() const {
@@ -154,7 +163,7 @@ private:
     bool dispatchKeyboardEvent(const ALLEGRO_EVENT& event);
     bool dispatchMouseMove(float x, float y);
     
-    std::shared_ptr<IEventHandler> findTargetAt(float x, float y);
+    std::shared_ptr<IEventHandler> findTargetAt(float x, float y, const RenderContext& context);
     void cleanupExpiredTargets();  // Remove dead weak_ptrs
     
     std::vector<std::weak_ptr<IEventHandler>> m_eventTargets;

@@ -28,17 +28,43 @@ public:
     // Event delegation to children
     bool onMouseDown(const graphics::MouseEvent& event) override {
         // First check if click is within frame bounds
-        if (!hitTest(event.x, event.y)) {
+        graphics::RenderContext baseContext;
+        if (event.context) {
+            baseContext = *event.context;
+        } else {
+            int displayW = al_get_display_width(al_get_current_display());
+            int displayH = al_get_display_height(al_get_current_display());
+            baseContext = graphics::RenderContext{displayW, displayH, 0.0f, 0.0f, nullptr};
+        }
+        
+        if (!hitTest(event.x, event.y, baseContext)) {
             return graphics::IEventHandler::onMouseDown(event);
         }
+        
+        // Compute child context (same as in draw())
+        auto sizePx = getSize().toScreenPos(static_cast<float>(baseContext.screenWidth), static_cast<float>(baseContext.screenHeight));
+        auto posPx = getPosition().toScreenPos(static_cast<float>(baseContext.screenWidth), static_cast<float>(baseContext.screenHeight));
+        const float absX = posPx.first + baseContext.offsetX;
+        const float absY = posPx.second + baseContext.offsetY;
+        const float width = sizePx.first;
+        const float height = sizePx.second;
+        
+        graphics::RenderContext childContext = baseContext;
+        childContext.screenWidth = static_cast<int>(width - 2 * padding);
+        childContext.screenHeight = static_cast<int>(height - 2 * padding);
+        childContext.offsetX = absX + padding;
+        childContext.offsetY = absY + padding;
         
         // Check children in reverse order (top-most first)
         for (auto it = children.rbegin(); it != children.rend(); ++it) {
             auto handler = dynamic_cast<graphics::IEventHandler*>(*it);
             if (!handler) continue;
             
-            if (handler->hitTest(event.x, event.y)) {
+            if (handler->hitTest(event.x, event.y, childContext)) {
                 graphics::MouseEvent localEvent = event;
+                localEvent.context = &childContext;
+                localEvent.localX = event.x - childContext.offsetX;
+                localEvent.localY = event.y - childContext.offsetY;
                 if (handler->onMouseDown(localEvent)) {
                     return true;
                 }
@@ -48,13 +74,39 @@ public:
     }
 
     bool onMouseUp(const graphics::MouseEvent& event) override {
+        // Compute child context
+        graphics::RenderContext baseContext;
+        if (event.context) {
+            baseContext = *event.context;
+        } else {
+            int displayW = al_get_display_width(al_get_current_display());
+            int displayH = al_get_display_height(al_get_current_display());
+            baseContext = graphics::RenderContext{displayW, displayH, 0.0f, 0.0f, nullptr};
+        }
+        
+        auto sizePx = getSize().toScreenPos(static_cast<float>(baseContext.screenWidth), static_cast<float>(baseContext.screenHeight));
+        auto posPx = getPosition().toScreenPos(static_cast<float>(baseContext.screenWidth), static_cast<float>(baseContext.screenHeight));
+        const float absX = posPx.first + baseContext.offsetX;
+        const float absY = posPx.second + baseContext.offsetY;
+        const float width = sizePx.first;
+        const float height = sizePx.second;
+        
+        graphics::RenderContext childContext = baseContext;
+        childContext.screenWidth = static_cast<int>(width - 2 * padding);
+        childContext.screenHeight = static_cast<int>(height - 2 * padding);
+        childContext.offsetX = absX + padding;
+        childContext.offsetY = absY + padding;
+        
         // Check children in reverse order (top-most first)
         for (auto it = children.rbegin(); it != children.rend(); ++it) {
             auto handler = dynamic_cast<graphics::IEventHandler*>(*it);
             if (!handler) continue;
             
-            if (handler->hitTest(event.x, event.y)) {
+            if (handler->hitTest(event.x, event.y, childContext)) {
                 graphics::MouseEvent localEvent = event;
+                localEvent.context = &childContext;
+                localEvent.localX = event.x - childContext.offsetX;
+                localEvent.localY = event.y - childContext.offsetY;
                 if (handler->onMouseUp(localEvent)) {
                     return true;
                 }
@@ -64,13 +116,39 @@ public:
     }
 
     bool onMouseMove(const graphics::MouseEvent& event) override {
+        // Compute child context
+        graphics::RenderContext baseContext;
+        if (event.context) {
+            baseContext = *event.context;
+        } else {
+            int displayW = al_get_display_width(al_get_current_display());
+            int displayH = al_get_display_height(al_get_current_display());
+            baseContext = graphics::RenderContext{displayW, displayH, 0.0f, 0.0f, nullptr};
+        }
+        
+        auto sizePx = getSize().toScreenPos(static_cast<float>(baseContext.screenWidth), static_cast<float>(baseContext.screenHeight));
+        auto posPx = getPosition().toScreenPos(static_cast<float>(baseContext.screenWidth), static_cast<float>(baseContext.screenHeight));
+        const float absX = posPx.first + baseContext.offsetX;
+        const float absY = posPx.second + baseContext.offsetY;
+        const float width = sizePx.first;
+        const float height = sizePx.second;
+        
+        graphics::RenderContext childContext = baseContext;
+        childContext.screenWidth = static_cast<int>(width - 2 * padding);
+        childContext.screenHeight = static_cast<int>(height - 2 * padding);
+        childContext.offsetX = absX + padding;
+        childContext.offsetY = absY + padding;
+        
         // Check children in reverse order (top-most first)
         for (auto it = children.rbegin(); it != children.rend(); ++it) {
             auto handler = dynamic_cast<graphics::IEventHandler*>(*it);
             if (!handler) continue;
             
-            if (handler->hitTest(event.x, event.y)) {
+            if (handler->hitTest(event.x, event.y, childContext)) {
                 graphics::MouseEvent localEvent = event;
+                localEvent.context = &childContext;
+                localEvent.localX = event.x - childContext.offsetX;
+                localEvent.localY = event.y - childContext.offsetY;
                 if (handler->onMouseMove(localEvent)) {
                     return true;
                 }
@@ -103,13 +181,13 @@ public:
         return graphics::IEventHandler::onKeyUp(event);
     }
     
-    bool hitTest(float x, float y) const override {
+    bool hitTest(float x, float y, const graphics::RenderContext& context) const override {
         float displayW = static_cast<float>(al_get_display_width(al_get_current_display()));
         float displayH = static_cast<float>(al_get_display_height(al_get_current_display()));
         auto sizePx = size.toScreenPos(displayW, displayH);
         auto posPx = position.toScreenPos(displayW, displayH);
-        float absX = posPx.first;
-        float absY = posPx.second;
+        float absX = posPx.first + context.offsetX;
+        float absY = posPx.second + context.offsetY;
         return x >= absX && x <= absX + sizePx.first && y >= absY && y <= absY + sizePx.second;
     }
 
