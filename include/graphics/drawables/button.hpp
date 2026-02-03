@@ -56,10 +56,6 @@ public:
 private:
     void updateBounds(const graphics::RenderContext& context) const;
     
-    // Position and size
-    graphics::UV m_position;
-    graphics::UV m_size;
-    
     // Cached screen-space bounds (mutable for lazy evaluation)
     mutable float m_cachedX = 0.0f;
     mutable float m_cachedY = 0.0f;

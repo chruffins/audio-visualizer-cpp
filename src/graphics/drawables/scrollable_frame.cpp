@@ -7,8 +7,8 @@
 namespace ui {
 
 void ScrollableFrameDrawable::draw(const graphics::RenderContext& context) const {
-    auto sizePx = size.toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
-    auto posPx = position.toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
+    auto sizePx = getSize().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
+    auto posPx = getPosition().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
 
     const float absX = posPx.first + context.offsetX;
     const float absY = posPx.second + context.offsetY;
@@ -69,8 +69,8 @@ bool ScrollableFrameDrawable::onMouseDown(const graphics::MouseEvent& event) {
     // Get viewport bounds
     float displayW = static_cast<float>(al_get_display_width(al_get_current_display()));
     float displayH = static_cast<float>(al_get_display_height(al_get_current_display()));
-    auto posPx = position.toScreenPos(displayW, displayH);
-    auto sizePx = size.toScreenPos(displayW, displayH);
+    auto posPx = getPosition().toScreenPos(displayW, displayH);
+    auto sizePx = getSize().toScreenPos(displayW, displayH);
     const float viewportHeight = sizePx.second - 2 * padding;
     const float maxScroll = computeMaxScroll(displayW, displayH);
     float clampedScroll = std::min(std::max(0.0f, scrollOffset), maxScroll);
@@ -250,15 +250,15 @@ bool ScrollableFrameDrawable::onKeyChar(const graphics::KeyboardEvent& event) {
 bool ScrollableFrameDrawable::hitTest(float x, float y) const {
     float displayW = static_cast<float>(al_get_display_width(al_get_current_display()));
     float displayH = static_cast<float>(al_get_display_height(al_get_current_display()));
-    auto posPx = position.toScreenPos(displayW, displayH);
-    auto sizePx = size.toScreenPos(displayW, displayH);
+    auto posPx = getPosition().toScreenPos(displayW, displayH);
+    auto sizePx = getSize().toScreenPos(displayW, displayH);
     const float absX = posPx.first;
     const float absY = posPx.second;
     return x >= absX && x <= absX + sizePx.first && y >= absY && y <= absY + sizePx.second;
 }
 
 float ScrollableFrameDrawable::computeMaxScroll(float screenW, float screenH) const noexcept {
-    auto sizePx = size.toScreenPos(screenW, screenH);
+    auto sizePx = getSize().toScreenPos(screenW, screenH);
     const float viewportHeight = sizePx.second - 2 * padding;
     const float effectiveContentHeight = contentHeight > 0.0f ? contentHeight : viewportHeight;
     return std::max(0.0f, effectiveContentHeight - viewportHeight);

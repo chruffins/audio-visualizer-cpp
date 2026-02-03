@@ -4,7 +4,9 @@
 namespace ui {
 
 ButtonDrawable::ButtonDrawable(graphics::UV position, graphics::UV size, const std::string& label)
-    : m_position(position), m_size(size), m_label(label) {
+    : m_label(label) {
+    setPosition(position);
+    setSize(size);
 }
 
 void ButtonDrawable::updateBounds(const graphics::RenderContext& context) const {
@@ -17,8 +19,8 @@ void ButtonDrawable::updateBounds(const graphics::RenderContext& context) const 
     m_lastScreenHeight = context.screenHeight;
     
     // Calculate absolute position and size from UV coordinates
-    auto pos = m_position.toScreenPos(context.screenWidth, context.screenHeight);
-    auto size = m_size.toScreenPos(context.screenWidth, context.screenHeight);
+    auto pos = getPosition().toScreenPos(context.screenWidth, context.screenHeight);
+    auto size = getSize().toScreenPos(context.screenWidth, context.screenHeight);
     
     m_cachedX = pos.first + context.offsetX;
     m_cachedY = pos.second + context.offsetY;

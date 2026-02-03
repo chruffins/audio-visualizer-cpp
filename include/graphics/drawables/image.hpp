@@ -36,7 +36,10 @@ public:
 
     // Constructor with position and size
     ImageDrawable(ALLEGRO_BITMAP* bitmap, graphics::UV position, graphics::UV size, bool owned = false)
-        : bitmap(bitmap), position(position), size(size), ownsBitmap(owned) {}
+        : bitmap(bitmap), ownsBitmap(owned) {
+        setPosition(position);
+        setSize(size);
+    }
 
     ~ImageDrawable() override {
         if (ownsBitmap && bitmap) {
@@ -50,8 +53,7 @@ public:
 
     // Enable move
     ImageDrawable(ImageDrawable&& other) noexcept
-        : bitmap(other.bitmap), ownsBitmap(other.ownsBitmap),
-          position(other.position), size(other.size),
+        : graphics::Drawable(std::move(other)), bitmap(other.bitmap), ownsBitmap(other.ownsBitmap),
           tint(other.tint), scaleMode(other.scaleMode),
           rotation(other.rotation), visible(other.visible),
           horizontalAlign(other.horizontalAlign),
@@ -65,10 +67,9 @@ public:
             if (ownsBitmap && bitmap) {
                 al_destroy_bitmap(bitmap);
             }
+            graphics::Drawable::operator=(std::move(other));
             bitmap = other.bitmap;
             ownsBitmap = other.ownsBitmap;
-            position = other.position;
-            size = other.size;
             tint = other.tint;
             scaleMode = other.scaleMode;
             rotation = other.rotation;
@@ -92,12 +93,12 @@ public:
     }
 
     ImageDrawable& setPosition(graphics::UV pos) {
-        position = pos;
+        graphics::Drawable::setPosition(pos);
         return *this;
     }
 
     ImageDrawable& setSize(graphics::UV sz) {
-        size = sz;
+        graphics::Drawable::setSize(sz);
         return *this;
     }
 
@@ -142,8 +143,8 @@ public:
 
     // Getters
     ALLEGRO_BITMAP* getBitmap() const { return bitmap; }
-    graphics::UV getPosition() const { return position; }
-    graphics::UV getSize() const { return size; }
+    graphics::UV getPosition() const { return graphics::Drawable::getPosition(); }
+    graphics::UV getSize() const { return graphics::Drawable::getSize(); }
     ALLEGRO_COLOR getTint() const { return tint; }
     ScaleMode getScaleMode() const { return scaleMode; }
     float getRotation() const { return rotation; }
@@ -169,8 +170,6 @@ private:
     bool ownsBitmap = false;
     std::shared_ptr<ImageModel> imageModel;
 
-    graphics::UV position{0.0f, 0.0f, 0.0f, 0.0f}; // default to top-left
-    graphics::UV size{1.0f, 1.0f, 0.0f, 0.0f};     // default to full screen
     ALLEGRO_COLOR tint = al_map_rgb(255, 255, 255); // white = no tint
     ScaleMode scaleMode = ScaleMode::STRETCH;
     float rotation = 0.0f; // radians

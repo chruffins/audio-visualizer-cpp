@@ -5,8 +5,8 @@
 namespace ui {
 
 void FrameDrawable::draw(const graphics::RenderContext& context) const {
-    auto sizePx = size.toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
-    auto posPx = position.toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
+    auto sizePx = getSize().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
+    auto posPx = getPosition().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
 
     const float absX = posPx.first + context.offsetX;
     const float absY = posPx.second + context.offsetY;

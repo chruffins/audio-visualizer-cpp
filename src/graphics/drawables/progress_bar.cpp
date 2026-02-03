@@ -14,8 +14,8 @@ void ui::ProgressBarDrawable::drawSquared(const graphics::RenderContext& context
     if (!model) return;
 
     // use sizes from context
-    auto size = this->size.toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
-    auto position = this->position.toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
+    auto size = getSize().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
+    auto position = getPosition().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
     position.first += context.offsetX;
     position.second += context.offsetY;
 
@@ -36,8 +36,8 @@ void ui::ProgressBarDrawable::drawRounded(const graphics::RenderContext& context
 {
     if (!model) return;
 
-    auto size = this->size.toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
-    auto position = this->position.toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
+    auto size = getSize().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
+    auto position = getPosition().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
     position.first += context.offsetX;
     position.second += context.offsetY;
 

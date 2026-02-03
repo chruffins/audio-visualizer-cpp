@@ -15,14 +15,12 @@ namespace ui {
 class ContainerDrawable : public graphics::Drawable {
 public:
     ContainerDrawable() = default;
-    ContainerDrawable(graphics::UV position, graphics::UV size)
-        : position(position), size(size) {}
+    ContainerDrawable(graphics::UV position, graphics::UV size) {
+        setPosition(position);
+        setSize(size);
+    }
 
-    void setPosition(const graphics::UV& p) noexcept { position = p; }
-    graphics::UV getPosition() const noexcept { return position; }
-
-    void setSize(const graphics::UV& s) noexcept { size = s; }
-    graphics::UV getSize() const noexcept { return size; }
+    // setPosition and setSize inherited from Drawable
 
     void setBackgroundColor(ALLEGRO_COLOR c) noexcept {
         backgroundColor = c;
@@ -42,8 +40,6 @@ public:
 protected:
     virtual void drawChildren(const graphics::RenderContext& childContext) const;
 
-    graphics::UV position{0.0f, 0.0f, 0.0f, 0.0f};
-    graphics::UV size{1.0f, 1.0f, 0.0f, 0.0f};
     graphics::DrawableObserverList children;
 
     bool drawBackground = false;

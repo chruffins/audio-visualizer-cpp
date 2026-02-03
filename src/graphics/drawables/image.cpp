@@ -48,9 +48,9 @@ ImageDrawable::DrawParams ImageDrawable::calculateDrawParams(const graphics::Ren
     DrawParams params;
 
     // Convert UV to screen coordinates
-    auto [x, y] = position.toScreenPos(static_cast<float>(context.screenWidth), 
+    auto [x, y] = getPosition().toScreenPos(static_cast<float>(context.screenWidth), 
                                        static_cast<float>(context.screenHeight));
-    auto [w, h] = size.toScreenPos(static_cast<float>(context.screenWidth), 
+    auto [w, h] = getSize().toScreenPos(static_cast<float>(context.screenWidth), 
                                     static_cast<float>(context.screenHeight));
     
     // Apply container offset

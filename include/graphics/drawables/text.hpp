@@ -27,7 +27,9 @@ public:
 
     // Main constructor
     TextDrawable(const std::string& text, graphics::UV position, graphics::UV size, int font_size)
-        : text(text), position(position), size(size), font_size(font_size) {
+        : text(text), font_size(font_size) {
+        setPosition(position);
+        setSize(size);
         initializeFallbackFont();
         font = fallbackFont;
         setFontSize(font_size);
@@ -43,7 +45,7 @@ public:
     }
 
     TextDrawable& setPosition(graphics::UV new_position) {
-        position = new_position;
+        graphics::Drawable::setPosition(new_position);
         return *this;
     }
 
@@ -92,12 +94,12 @@ public:
     }
 
     TextDrawable& setSize(const graphics::UV& new_size) {
-        size = new_size;
+        graphics::Drawable::setSize(new_size);
         return *this;
     }
 
-    const graphics::UV& getSize() const {
-        return size;
+    graphics::UV getSize() const {
+        return graphics::Drawable::getSize();
     }
 
     enum class HorizontalAlignment {
@@ -161,9 +163,6 @@ private:
     static std::shared_ptr<util::Font> fallbackFont;
     
     std::string text;
-
-    graphics::UV position;
-    graphics::UV size;
 
     HorizontalAlignment textAlignment = HorizontalAlignment::Center;
     graphics::VerticalAlignment verticalAlignment = graphics::VerticalAlignment::CENTER;

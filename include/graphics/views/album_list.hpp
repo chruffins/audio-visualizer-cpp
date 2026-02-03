@@ -4,6 +4,7 @@
 #include "graphics/drawables/frame.hpp"
 #include "graphics/drawables/text.hpp"
 #include "graphics/drawables/image.hpp"
+#include "graphics/drawables/button.hpp"
 #include "graphics/uv.hpp"
 #include <memory>
 #include <vector>
@@ -27,6 +28,7 @@ struct AlbumListItem {
     std::unique_ptr<TextDrawable> titleText;
     std::unique_ptr<TextDrawable> artistText;
     std::unique_ptr<TextDrawable> yearText;
+    std::unique_ptr<ButtonDrawable> actionButton;
     
     // Reference to the album data
     const music::Album* album = nullptr;
@@ -36,11 +38,17 @@ struct AlbumListItem {
         titleText = std::make_unique<TextDrawable>();
         artistText = std::make_unique<TextDrawable>();
         yearText = std::make_unique<TextDrawable>();
+        actionButton = std::make_unique<ButtonDrawable>(
+            graphics::UV(0.0f, 0.0f, 0.0f, 0.0f),
+            graphics::UV(0.0f, 0.0f, 70.0f, 30.0f),
+            "►"
+        );
         
         frame.addChild(albumArt.get());
         frame.addChild(titleText.get());
         frame.addChild(artistText.get());
         frame.addChild(yearText.get());
+        frame.addChild(actionButton.get());
     }
 };
 

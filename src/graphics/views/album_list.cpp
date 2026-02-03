@@ -115,6 +115,15 @@ void AlbumListView::rebuildItemList() {
          .setVerticalAlignment(graphics::VerticalAlignment::TOP)
          .setColor(al_map_rgb(180, 180, 180));
         
+        // Action button (right side)
+        item.actionButton->setPosition(graphics::UV(1.0f, 0.0f, -75.0f, 25.0f));
+        item.actionButton->setSize(graphics::UV(0.0f, 0.0f, 70.0f, 30.0f));
+        item.actionButton->setColors(
+            al_map_rgb(80, 120, 180),
+            al_map_rgb(100, 140, 200),
+            al_map_rgb(60, 100, 160)
+        );
+        
         // Add frame as child of the main frame (contains all UI elements)
         mainFrame->addChild(&item.frame);
         ++idx;

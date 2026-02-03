@@ -39,8 +39,8 @@ void TextDrawable::drawTextInternal(const char* str, const graphics::RenderConte
     return;
   }
 
-  auto [x, y] = position.toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
-  auto [w, h] = size.toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
+  auto [x, y] = getPosition().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
+  auto [w, h] = getSize().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
   x += context.offsetX;
   y += context.offsetY;
   // Obtain the actual ALLEGRO_FONT pointer at draw time. This avoids holding
