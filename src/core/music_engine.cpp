@@ -198,4 +198,21 @@ void MusicEngine::playNext() {
     playSound(song->filename);
 }
 
+void MusicEngine::playPrevious() {
+    if (!playQueueModel) return;
+    int prevId = playQueueModel->previous();
+    if (prevId < 0) {
+        // no previous song
+        return;
+    }
+
+    const music::SongView* song = AppState::instance().library->getSongById(prevId);
+    if (!song) {
+        std::cerr << "MusicEngine::playPrevious: song id " << prevId << " not found in library\n";
+        return;
+    }
+
+    playSound(song->filename);
+}
+
 };

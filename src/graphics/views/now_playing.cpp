@@ -119,7 +119,13 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
   );
   rewindButton.setOnClick([this]() {
     if (this->musicEngine) {
-      this->musicEngine->setProgress(0.0);
+      // smarter rewind
+      constexpr double REWIND_THRESHOLD = 3.0; // seconds
+      if (this->musicEngine->getCurrentTime() < REWIND_THRESHOLD) {
+        this->musicEngine->playPrevious();
+      } else {
+        this->musicEngine->setProgress(0.0);
+      }
     }
   });
   

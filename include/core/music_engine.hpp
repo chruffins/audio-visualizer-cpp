@@ -55,6 +55,10 @@ public:
     // If there is no next song, this is a no-op.
     void playNext();
 
+    // Play the previous song from the injected play queue.
+    // If there is no previous song, this is a no-op.
+    void playPrevious();
+
     bool isPlaying() const;
 
     std::shared_ptr<ui::ProgressBar> progressBarModel = std::make_shared<ui::ProgressBar>();

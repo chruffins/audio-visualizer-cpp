@@ -6,27 +6,31 @@
 
 namespace music {
 struct PlayQueue {
-    PlayQueue() : current_index(0), is_shuffled(false), is_repeating(false), song_ids() {}
+    PlayQueue() : current_index(0), is_shuffled(false), is_repeating(false), song_ids(), played_indices() {}
 
-    // Enqueue a single song id
+    // enqueue a single song id
     void enqueue(int song_id) {
         song_ids.push_back(song_id);
     }
 
-    // Enqueue multiple song ids
+    // enqueue multiple song ids
     void enqueue_many(const std::vector<int>& ids) {
         for (int id : ids) song_ids.push_back(id);
     }
 
-    // Get current song id (does not advance). Returns -1 if empty.
+    // get current song id (does not advance). Returns -1 if empty.
     int current() const {
         if (song_ids.empty() || current_index >= song_ids.size()) return -1;
         return song_ids[current_index];
     }
 
-    // Advance to next song and return its id. Returns -1 if there is no next song.
+    // advance to next song and return its id. Returns -1 if there is no next song.
     int next() {
         if (song_ids.empty()) return -1;
+        
+        // record current index in play history before advancing
+        played_indices.push_back(current_index);
+        
         if (is_shuffled) {
             // pick a random index
             std::uniform_int_distribution<size_t> dist(0, song_ids.size() - 1);
@@ -45,9 +49,19 @@ struct PlayQueue {
         return -1;
     }
 
-    // Move to previous song and return its id. Returns -1 if none.
+    // move to previous song and return its id. Returns -1 if none.
+    // uses play history to return to previously played songs.
     int previous() {
         if (song_ids.empty()) return -1;
+        
+        // if we have play history, go back to the last played index
+        if (!played_indices.empty()) {
+            current_index = played_indices.back();
+            played_indices.pop_back();
+            return song_ids[current_index];
+        }
+        
+        // fallback: no play history, try to move back in queue
         if (current_index == 0) {
             if (is_repeating) {
                 current_index = song_ids.size() - 1;
@@ -61,6 +75,7 @@ struct PlayQueue {
 
     void clear() {
         song_ids.clear();
+        played_indices.clear();
         current_index = 0;
     }
 
@@ -74,10 +89,10 @@ struct PlayQueue {
 
     void repeat(bool on) {
         is_repeating = on;
-        is_repeating = on;
     }
 
     std::deque<int> song_ids;
+    std::deque<size_t> played_indices;  // track indices that were actually played for reverse navigation
     size_t current_index;
     bool is_shuffled;
     bool is_repeating;
