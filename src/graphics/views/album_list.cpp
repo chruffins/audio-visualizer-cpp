@@ -1,6 +1,7 @@
 #include "graphics/views/album_list.hpp"
 #include "music/album.hpp"
 #include "music/library.hpp"
+#include "core/music_engine.hpp"
 #include "util/font.hpp"
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
@@ -10,8 +11,10 @@ namespace ui {
 
 AlbumListView::AlbumListView(std::shared_ptr<util::FontManager> fontManager,
                              std::shared_ptr<music::Library> library,
+                             core::MusicEngine* musicEngine,
                              graphics::EventDispatcher& eventDispatcher)
     : fontManager(std::move(fontManager)), library(std::move(library)),
+      musicEngine(musicEngine),
       mainFrame(std::make_shared<ScrollableFrameDrawable>()) {
     
     // Configure main scrollable frame
@@ -123,6 +126,12 @@ void AlbumListView::rebuildItemList() {
             al_map_rgb(100, 140, 200),
             al_map_rgb(60, 100, 160)
         );
+        item.actionButton->setLabel("Play");
+        item.actionButton->setOnClick([this, album]() {
+            if (musicEngine && album) {
+                musicEngine->playAlbum(album->id);
+            }
+        });
         
         // Add frame as child of the main frame (contains all UI elements)
         mainFrame->addChild(&item.frame);

@@ -2,6 +2,7 @@
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_acodec.h>
 #include <allegro5/allegro_audio.h>
+#include <algorithm>
 #include <iostream>
 #include "core/app_state.hpp"
 
@@ -213,6 +214,46 @@ void MusicEngine::playPrevious() {
     }
 
     playSound(song->filename);
+}
+
+void MusicEngine::playAlbum(int album_id) {
+    if (!library) {
+        std::cerr << "MusicEngine::playAlbum: library not set\n";
+        return;
+    }
+
+    // Collect all songs for this album
+    std::vector<const music::Song*> albumSongs;
+    for (const auto& [id, song] : library->getAllSongs()) {
+        if (song.album_id == album_id) {
+            albumSongs.push_back(&song);
+        }
+    }
+
+    if (albumSongs.empty()) {
+        std::cerr << "MusicEngine::playAlbum: no songs found for album " << album_id << "\n";
+        return;
+    }
+
+    // Sort by track number
+    std::sort(albumSongs.begin(), albumSongs.end(),
+        [](const music::Song* a, const music::Song* b) {
+            return a->track_number < b->track_number;
+        });
+
+    // Clear current play queue and enqueue album songs
+    if (playQueueModel) {
+        playQueueModel->clear();
+        for (const auto& song : albumSongs) {
+            playQueueModel->enqueue(song->id);
+        }
+    }
+    
+    // Play the first song directly (don't use playNext which advances first)
+    const music::SongView* firstSong = library->getSongById(albumSongs[0]->id);
+    if (firstSong) {
+        playSound(firstSong->filename);
+    }
 }
 
 };

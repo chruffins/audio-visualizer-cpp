@@ -5,6 +5,8 @@
 #include <functional>
 #include <memory>
 
+#define ALLEGRO_EVENT_UI ALLEGRO_GET_EVENT_TYPE('U','I','E','V')
+
 namespace graphics {
 
 class Drawable;
@@ -130,7 +132,12 @@ public:
 class EventDispatcher {
 public:
     EventDispatcher();
-    ~EventDispatcher() = default;
+    ~EventDispatcher();
+
+    EventDispatcher(const EventDispatcher&) = delete;
+    EventDispatcher& operator=(const EventDispatcher&) = delete;
+    EventDispatcher(EventDispatcher&&) = delete;
+    EventDispatcher& operator=(EventDispatcher&&) = delete;
     
     /**
      * Process an Allegro event and dispatch to appropriate handlers.
@@ -145,6 +152,17 @@ public:
     void addEventTarget(std::shared_ptr<IEventHandler> target);
     void removeEventTarget(std::shared_ptr<IEventHandler> target);
     void clearEventTargets();
+
+    /**
+     * Pass user-generated events to an Allegro queue
+     */
+    void registerEventSource(ALLEGRO_EVENT_QUEUE* queue) {
+        al_register_event_source(queue, &eventSource);
+    }
+
+    const ALLEGRO_EVENT_SOURCE* getEventSource() const {
+        return &eventSource;
+    }
     
     /**
      * Focus management
@@ -170,6 +188,8 @@ private:
     std::weak_ptr<IEventHandler> m_focusedElement;
     std::weak_ptr<IEventHandler> m_hoveredElement;
     std::weak_ptr<IEventHandler> m_mouseDownTarget; // Track element where mouse was pressed
+
+    ALLEGRO_EVENT_SOURCE eventSource;
     
     float m_lastMouseX = 0.0f;
     float m_lastMouseY = 0.0f;

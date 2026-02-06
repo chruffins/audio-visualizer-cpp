@@ -13,7 +13,10 @@ struct ALLEGRO_VOICE;
 struct ALLEGRO_EVENT_QUEUE;
 
 // forward-declare Song
-namespace music { struct SongView; }
+namespace music { 
+    struct SongView;
+    class Library;
+}
 
 namespace core {
 class MusicEngine {
@@ -40,6 +43,13 @@ public:
         playQueueModel = playQueue;
     }
 
+    void setLibrary(music::Library* lib) {
+        library = lib;
+    }
+
+    // Play all songs in the specified album
+    void playAlbum(int album_id);
+
     void setEventQueue(ALLEGRO_EVENT_QUEUE* queue) {
         event_queue = queue;
     }
@@ -63,6 +73,7 @@ public:
 
     std::shared_ptr<ui::ProgressBar> progressBarModel = std::make_shared<ui::ProgressBar>();
     std::shared_ptr<music::PlayQueue> playQueueModel = nullptr; // starts null
+    music::Library* library = nullptr;
 
     void update(); // Call periodically to update progress among other things
 private:

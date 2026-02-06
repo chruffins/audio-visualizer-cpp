@@ -14,6 +14,10 @@ namespace util {
     class FontManager;
 }
 
+namespace core {
+    class MusicEngine;
+}
+
 namespace music {
     struct Album;
     class Library;
@@ -58,6 +62,7 @@ public:
     AlbumListView() = delete;
     AlbumListView(std::shared_ptr<util::FontManager> fontManager,
                   std::shared_ptr<music::Library> library,
+                  core::MusicEngine* musicEngine,
                   graphics::EventDispatcher& eventDispatcher);
 
     // Reload albums from the library
@@ -90,6 +95,7 @@ private:
     
     std::shared_ptr<util::FontManager> fontManager;
     std::shared_ptr<music::Library> library;
+    core::MusicEngine* musicEngine = nullptr;
     int lastDisplayWidth = 0;
     int lastDisplayHeight = 0;
 

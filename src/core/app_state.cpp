@@ -86,6 +86,7 @@ bool AppState::init() {
     // Wire the shared play queue into the music engine so playback can operate
     // on the application-owned queue.
     this->music_engine.setPlayQueue(this->play_queue);
+    this->music_engine.setLibrary(this->library.get());
 
     // Optionally start playback of the first song in the queue (if any)
     int first = this->play_queue->current();

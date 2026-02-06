@@ -7,6 +7,11 @@ namespace graphics {
 
 EventDispatcher::EventDispatcher() 
     : m_lastMouseX(0.0f), m_lastMouseY(0.0f) {
+    al_init_user_event_source(&eventSource);
+}
+
+EventDispatcher::~EventDispatcher() {
+    al_destroy_user_event_source(&eventSource);
 }
 
 void EventDispatcher::addEventTarget(std::shared_ptr<IEventHandler> target) {
