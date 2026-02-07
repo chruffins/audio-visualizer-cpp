@@ -105,6 +105,13 @@ void MusicEngine::playSound(const std::string& file_path) {
         if (song && onSongChanged) {
             onSongChanged(*song);
         }
+        
+        // If not playing from a queue context (album/playlist), mark as individual song
+        if (playQueueModel && playQueueModel->context_type != music::PlaybackContextType::Album &&
+            playQueueModel->context_type != music::PlaybackContextType::Playlist) {
+            playQueueModel->context_type = music::PlaybackContextType::Individual;
+            playQueueModel->context_id = -1;
+        }
     }
 }
 
@@ -244,6 +251,9 @@ void MusicEngine::playAlbum(int album_id) {
     // Clear current play queue and enqueue album songs
     if (playQueueModel) {
         playQueueModel->clear();
+        // Set context to Album with the album ID
+        playQueueModel->context_type = music::PlaybackContextType::Album;
+        playQueueModel->context_id = album_id;
         for (const auto& song : albumSongs) {
             playQueueModel->enqueue(song->id);
         }
@@ -254,6 +264,35 @@ void MusicEngine::playAlbum(int album_id) {
     if (firstSong) {
         playSound(firstSong->filename);
     }
+}
+
+void MusicEngine::playPlaylist(int playlist_id) {
+    if (!library) {
+        std::cerr << "MusicEngine::playPlaylist: library not set\n";
+        return;
+    }
+
+    // TODO: Fetch playlist songs from database when playlist support is fully implemented
+    // For now, this is a stub that sets up the context
+    if (playQueueModel) {
+        playQueueModel->clear();
+        playQueueModel->context_type = music::PlaybackContextType::Playlist;
+        playQueueModel->context_id = playlist_id;
+    }
+}
+
+music::PlaybackContextType MusicEngine::getCurrentContextType() const {
+    if (!playQueueModel) {
+        return music::PlaybackContextType::Individual;
+    }
+    return playQueueModel->context_type;
+}
+
+int MusicEngine::getCurrentContextId() const {
+    if (!playQueueModel) {
+        return -1;
+    }
+    return playQueueModel->context_id;
 }
 
 };

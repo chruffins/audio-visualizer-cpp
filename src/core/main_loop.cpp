@@ -2,6 +2,7 @@
 #include "core/app_state.hpp"
 #include "graphics/views/now_playing.hpp"
 #include "graphics/views/album_list.hpp"
+#include "graphics/views/play_queue.hpp"
 #include "graphics/uv.hpp"
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_audio.h>
@@ -15,6 +16,7 @@ void runMainLoop() {
 
     auto nowPlayingView = ui::NowPlayingView(appState.fontManager, appState.music_engine.progressBarModel, appState.event_dispatcher, &appState.music_engine);
     auto albumListView = ui::AlbumListView(appState.fontManager, appState.library, &appState.music_engine, appState.event_dispatcher);
+    auto playQueueView = ui::PlayQueueView(appState.fontManager, appState.event_dispatcher, &appState.music_engine, appState.library.get());
 
     // Register a callback so that the NowPlayingView updates automatically when
     // MusicEngine starts a new song (e.g., via playNext or other engine-driven
@@ -34,6 +36,8 @@ void runMainLoop() {
         }
         nowPlayingView.setDuration(s.duration);
         nowPlayingView.setPosition(0);
+        playQueueView.refresh(); // Refresh the queue view to highlight the current song
+
         appState.discord_integration.setSongPresence(s);
     };
 
@@ -90,6 +94,7 @@ void runMainLoop() {
 
                 nowPlayingView.draw(globalContext);
                 albumListView.draw(globalContext);
+                playQueueView.draw(globalContext);
                 //al_hold_bitmap_drawing(false);
                 al_flip_display();
             } else if (appState.event.timer.source == appState.discord_callback_timer) {

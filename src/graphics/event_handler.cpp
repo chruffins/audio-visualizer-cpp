@@ -147,7 +147,8 @@ bool EventDispatcher::dispatchMouseEvent(const ALLEGRO_EVENT& event) {
             if (event.mouse.dz != 0 || event.mouse.dw != 0) {
                 auto target = findTargetAt(mouseX, mouseY, baseContext);
                 if (target && target->isEnabled()) {
-                    return target->onMouseScroll(event.mouse.dw, event.mouse.dz);
+                    graphics::ScrollEvent scrollEvent(event.mouse.dw, event.mouse.dz, &baseContext);
+                    return target->onMouseScroll(scrollEvent);
                 }
                 return false;
             }

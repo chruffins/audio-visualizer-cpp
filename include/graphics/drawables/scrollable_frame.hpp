@@ -34,7 +34,7 @@ public:
     bool onMouseMove(const graphics::MouseEvent& event) override;
     bool onMouseEnter(const graphics::MouseEvent& event) override;
     bool onMouseLeave(const graphics::MouseEvent& event) override;
-    bool onMouseScroll(float dx, float dy) override;
+    bool onMouseScroll(const graphics::ScrollEvent& event) override;
     bool onKeyDown(const graphics::KeyboardEvent& event) override;
     bool onKeyUp(const graphics::KeyboardEvent& event) override;
     bool onKeyChar(const graphics::KeyboardEvent& event) override;
@@ -46,6 +46,7 @@ public:
 private:
     float scrollOffset = 0.0f;
     float contentHeight = 0.0f;
+    float cachedViewportHeight = 0.0f;  // Cache viewport height from draw() for use in event handlers
     ALLEGRO_COLOR scrollbarColor = al_map_rgb(160, 160, 160);
     float scrollbarWidth = 6.0f;
     bool showScrollbar = true;

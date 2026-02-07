@@ -30,6 +30,10 @@ void ScrollableFrameDrawable::draw(const graphics::RenderContext& context) const
     // Calculate viewport dimensions accounting for padding
     const float viewportWidth = width - 2 * padding;
     const float viewportHeight = height - 2 * padding;
+    
+    // Cache viewport height for use in event handlers
+    const_cast<ScrollableFrameDrawable*>(this)->cachedViewportHeight = viewportHeight;
+    
     const float effectiveContentHeight = contentHeight > 0.0f ? contentHeight : viewportHeight;
     const float maxScroll = std::max(0.0f, effectiveContentHeight - viewportHeight);
     
@@ -304,13 +308,13 @@ bool ScrollableFrameDrawable::onMouseLeave(const graphics::MouseEvent& event) {
     return graphics::IEventHandler::onMouseLeave(event);
 }
 
-bool ScrollableFrameDrawable::onMouseScroll(float /*dx*/, float dy) {
-    // Allegro: positive dy means scroll up; decrease offset to move content down
-    float displayW = static_cast<float>(al_get_display_width(al_get_current_display()));
-    float displayH = static_cast<float>(al_get_display_height(al_get_current_display()));
-    const float maxScroll = computeMaxScroll(displayW, displayH);
+bool ScrollableFrameDrawable::onMouseScroll(const graphics::ScrollEvent& event) {
+    // Use the cached viewport height from the last draw() call
+    const float viewportHeight = cachedViewportHeight > 0.0f ? cachedViewportHeight : 100.0f;
+    const float effectiveContentHeight = contentHeight > 0.0f ? contentHeight : viewportHeight;
+    const float maxScroll = std::max(0.0f, effectiveContentHeight - viewportHeight);
 
-    scrollOffset -= dy * scrollStep;
+    scrollOffset -= event.dy * scrollStep;
     if (scrollOffset < 0.0f) scrollOffset = 0.0f;
     if (scrollOffset > maxScroll) scrollOffset = maxScroll;
 

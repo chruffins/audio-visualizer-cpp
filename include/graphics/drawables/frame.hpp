@@ -157,6 +157,19 @@ public:
         return graphics::IEventHandler::onMouseMove(event);
     }
 
+    bool onMouseScroll(const graphics::ScrollEvent& event) override {
+        // Delegate scroll events to children
+        for (auto it = children.rbegin(); it != children.rend(); ++it) {
+            auto handler = dynamic_cast<graphics::IEventHandler*>(*it);
+            if (!handler) continue;
+            
+            if (handler->onMouseScroll(event)) {
+                return true;
+            }
+        }
+        return graphics::IEventHandler::onMouseScroll(event);
+    }
+
     bool onKeyDown(const graphics::KeyboardEvent& event) override {
         for (auto it = children.rbegin(); it != children.rend(); ++it) {
             auto handler = dynamic_cast<graphics::IEventHandler*>(*it);

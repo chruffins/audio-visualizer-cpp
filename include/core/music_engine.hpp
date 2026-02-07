@@ -16,6 +16,7 @@ struct ALLEGRO_EVENT_QUEUE;
 namespace music { 
     struct SongView;
     class Library;
+    enum class PlaybackContextType;
 }
 
 namespace core {
@@ -49,6 +50,16 @@ public:
 
     // Play all songs in the specified album
     void playAlbum(int album_id);
+
+    // Play all songs in the specified playlist
+    void playPlaylist(int playlist_id);
+
+    // Get current playback context type
+    // Returns: Individual (single song), Album (all album songs), or Playlist (playlist songs)
+    music::PlaybackContextType getCurrentContextType() const;
+    
+    // Get current context ID (album_id or playlist_id). Returns -1 for Individual playback.
+    int getCurrentContextId() const;
 
     void setEventQueue(ALLEGRO_EVENT_QUEUE* queue) {
         event_queue = queue;

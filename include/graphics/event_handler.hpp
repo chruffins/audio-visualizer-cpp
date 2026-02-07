@@ -14,6 +14,18 @@ class Drawable;
 // RenderContext is defined in drawable.hpp
 
 /**
+ * Scroll event data passed to event handlers
+ */
+struct ScrollEvent {
+    float dx;
+    float dy;
+    const RenderContext* context;  // Pointer to current render context
+    
+    ScrollEvent(float dx_, float dy_ = 0.0f, const RenderContext* ctx = nullptr)
+        : dx(dx_), dy(dy_), context(ctx) {}
+};
+
+/**
  * Mouse event data passed to event handlers
  */
 struct MouseEvent {
@@ -61,7 +73,7 @@ public:
     std::function<bool(const MouseEvent&)> m_onMouseMove;
     std::function<bool(const MouseEvent&)> m_onMouseEnter;
     std::function<bool(const MouseEvent&)> m_onMouseLeave;
-    std::function<bool(float, float)> m_onMouseScroll;
+    std::function<bool(const ScrollEvent&)> m_onMouseScroll;
     
     std::function<bool(const KeyboardEvent&)> m_onKeyDown;
     std::function<bool(const KeyboardEvent&)> m_onKeyUp;
@@ -91,8 +103,8 @@ public:
     virtual bool onMouseLeave(const MouseEvent& event) {
         return m_onMouseLeave && m_onMouseLeave(event);
     }
-    virtual bool onMouseScroll(float dx, float dy) {
-        return m_onMouseScroll && m_onMouseScroll(dx, dy);
+    virtual bool onMouseScroll(const ScrollEvent& event) {
+        return m_onMouseScroll && m_onMouseScroll(event);
     }
     
     virtual bool onKeyDown(const KeyboardEvent& event) {

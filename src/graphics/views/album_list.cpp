@@ -19,7 +19,7 @@ AlbumListView::AlbumListView(std::shared_ptr<util::FontManager> fontManager,
     
     // Configure main scrollable frame
     mainFrame->setPosition(graphics::UV(0.0f, 0.0f, 0.0f, 00.0f));
-    mainFrame->setSize(graphics::UV(1.0f, 1.0f, 0.0f, -100.0f));
+    mainFrame->setSize(graphics::UV(0.75f, 1.0f, 0.0f, -100.0f));
     mainFrame->setBackgroundColor(al_map_rgba(20, 20, 30, 240));
     mainFrame->setBorderColor(al_map_rgb(80, 80, 100));
     mainFrame->setBorderThickness(2);

@@ -20,10 +20,10 @@ bool AppState::init() {
     al_set_new_bitmap_flags(ALLEGRO_MIN_LINEAR | ALLEGRO_MAG_LINEAR | ALLEGRO_VIDEO_BITMAP | ALLEGRO_MIPMAP);
 
     // Update your application state here
-    this->display = al_create_display(800, 300);
+    this->display = al_create_display(800, 400);
     this->default_font = al_create_builtin_font();
     this->event_queue = al_create_event_queue();
-    this->graphics_timer = al_create_timer(1.0 / 60.0);
+    this->graphics_timer = al_create_timer(1.0 / 30.0);
     this->discord_callback_timer = al_create_timer(1.0);
 
     al_register_event_source(this->event_queue, al_get_display_event_source(this->display));

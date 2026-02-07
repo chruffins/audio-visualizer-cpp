@@ -5,8 +5,16 @@
 #include <vector>
 
 namespace music {
+enum class PlaybackContextType {
+    Individual,  // Playing a single song directly
+    Album,       // Playing from an album
+    Playlist     // Playing from a playlist
+};
+
 struct PlayQueue {
-    PlayQueue() : current_index(0), is_shuffled(false), is_repeating(false), song_ids(), played_indices() {}
+    PlayQueue() : current_index(0), is_shuffled(false), is_repeating(false), 
+                  context_type(PlaybackContextType::Individual), context_id(-1),
+                  song_ids(), played_indices() {}
 
     // enqueue a single song id
     void enqueue(int song_id) {
@@ -77,6 +85,8 @@ struct PlayQueue {
         song_ids.clear();
         played_indices.clear();
         current_index = 0;
+        context_type = PlaybackContextType::Individual;
+        context_id = -1;
     }
 
     size_t size() const {
@@ -96,6 +106,8 @@ struct PlayQueue {
     size_t current_index;
     bool is_shuffled;
     bool is_repeating;
+    PlaybackContextType context_type;   // Track what kind of playback context we're in
+    int context_id;                      // Track the album/playlist ID (or -1 for individual songs)
 };
 } // namespace music
  
