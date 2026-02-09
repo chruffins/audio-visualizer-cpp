@@ -295,4 +295,17 @@ int MusicEngine::getCurrentContextId() const {
     return playQueueModel->context_id;
 }
 
+void MusicEngine::setRepeat(bool enabled) {
+    if (playQueueModel) {
+        playQueueModel->repeat(enabled);
+    }
+}
+
+bool MusicEngine::isRepeating() const {
+    if (!playQueueModel) {
+        return false;
+    }
+    return playQueueModel->is_repeating;
+}
+
 };

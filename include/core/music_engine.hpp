@@ -61,6 +61,12 @@ public:
     // Get current context ID (album_id or playlist_id). Returns -1 for Individual playback.
     int getCurrentContextId() const;
 
+    // Set repeat mode on/off for the play queue
+    void setRepeat(bool enabled);
+    
+    // Check if repeat mode is enabled
+    bool isRepeating() const;
+
     void setEventQueue(ALLEGRO_EVENT_QUEUE* queue) {
         event_queue = queue;
     }

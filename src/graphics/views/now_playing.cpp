@@ -20,6 +20,9 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
       skipButton(graphics::UV(0.5f, 1.0f, 30.0f, -50.0f),
       graphics::UV(0.0f, 0.0f, 40.0f, 40.0f),
       ">|"),
+      loopButton(graphics::UV(0.5f, 1.0f, 80.0f, -50.0f),
+      graphics::UV(0.0f, 0.0f, 40.0f, 40.0f),
+      "O"),
       mainFrame(std::make_shared<FrameDrawable>()),
       progressBar(progressBarModel) {
   
@@ -142,6 +145,20 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
     }
   });
   
+  // Setup loop button
+  loopButton.setFont(font->getFont(16));
+  loopButton.setColors(
+    al_map_rgb(60, 60, 80),   // normal
+    al_map_rgb(80, 80, 100),  // hover
+    al_map_rgb(100, 100, 120) // pressed
+  );
+  loopButton.setOnClick([this]() {
+    if (this->musicEngine) {
+      this->musicEngine->setRepeat(!this->musicEngine->isRepeating());
+      updateLoopButton();
+    }
+  });
+  
   // Add all elements as children of the main frame
   mainFrame->addChild(&songTitleText);
   mainFrame->addChild(&artistNameText);
@@ -153,6 +170,7 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
   mainFrame->addChild(&rewindButton);
   mainFrame->addChild(&playPauseButton);
   mainFrame->addChild(&skipButton);
+  mainFrame->addChild(&loopButton);
   
   // Register button for events
   eventDispatcher.addEventTarget(mainFrame);
@@ -218,11 +236,31 @@ void NowPlayingView::updatePlayPauseButton() {
   }
 }
 
+void NowPlayingView::updateLoopButton() {
+  if (musicEngine) {
+    // Visual feedback: brighter color when loop is active
+    if (musicEngine->isRepeating()) {
+      loopButton.setColors(
+        al_map_rgb(80, 120, 80),   // normal (green tint)
+        al_map_rgb(100, 140, 100), // hover
+        al_map_rgb(120, 160, 120)  // pressed
+      );
+    } else {
+      loopButton.setColors(
+        al_map_rgb(60, 60, 80),   // normal
+        al_map_rgb(80, 80, 100),  // hover
+        al_map_rgb(100, 100, 120) // pressed
+      );
+    }
+  }
+}
+
 void NowPlayingView::draw(const graphics::RenderContext& context) {
   // Recalculate layout if display size has changed (responsive font sizing)
   recalculateLayout(context);
-  // Update button state
+  // Update button states
   updatePlayPauseButton();
+  updateLoopButton();
   // Draw the main frame, which will automatically draw all its children
   mainFrame->draw(context);
 }

@@ -36,6 +36,7 @@ public:
 
     void draw(const graphics::RenderContext& context);
     void updatePlayPauseButton();
+    void updateLoopButton();
 private:
     void recalculateLayout(const graphics::RenderContext& context);
     
@@ -47,6 +48,7 @@ private:
     ButtonDrawable playPauseButton;
     ButtonDrawable rewindButton;
     ButtonDrawable skipButton;
+    ButtonDrawable loopButton;
     std::shared_ptr<FrameDrawable> mainFrame;
     
     // Text drawables
