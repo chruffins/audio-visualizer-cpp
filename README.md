@@ -2,6 +2,8 @@
 
 A desktop music player built with C++. Has views for currently playing song, album library, and album view. Built on top of the game programming library Allegro 5. As it is right now, I actually daily drive this over Spotify on desktop since it has all of the features I need to enjoy a music player.
 
+<img width="922" height="559" alt="image" src="https://github.com/user-attachments/assets/ed12af47-669f-457d-a78a-e9c442d6bf9f" />
+
 ## Features
 
 - **Music Library Management**: Automatic scanning and importing of audio files with metadata extraction into a database
