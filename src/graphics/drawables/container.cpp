@@ -4,6 +4,12 @@
 
 namespace ui {
 
+// Static cache for batch clipping optimization
+int ContainerDrawable::s_lastClipX = -1;
+int ContainerDrawable::s_lastClipY = -1;
+int ContainerDrawable::s_lastClipW = -1;
+int ContainerDrawable::s_lastClipH = -1;
+
 void ContainerDrawable::draw(const graphics::RenderContext& context) const {
     auto sizePx = getSize().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
     auto posPx = getPosition().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
@@ -15,7 +21,21 @@ void ContainerDrawable::draw(const graphics::RenderContext& context) const {
 
     int oldClipX = 0, oldClipY = 0, oldClipW = 0, oldClipH = 0;
     al_get_clipping_rectangle(&oldClipX, &oldClipY, &oldClipW, &oldClipH);
-    al_set_clipping_rectangle(static_cast<int>(absX), static_cast<int>(absY), static_cast<int>(width), static_cast<int>(height));
+    
+    // Batch clipping: only set if rectangle changed
+    int newClipX = static_cast<int>(absX);
+    int newClipY = static_cast<int>(absY);
+    int newClipW = static_cast<int>(width);
+    int newClipH = static_cast<int>(height);
+    
+    if (s_lastClipX != newClipX || s_lastClipY != newClipY || 
+        s_lastClipW != newClipW || s_lastClipH != newClipH) {
+        al_set_clipping_rectangle(newClipX, newClipY, newClipW, newClipH);
+        s_lastClipX = newClipX;
+        s_lastClipY = newClipY;
+        s_lastClipW = newClipW;
+        s_lastClipH = newClipH;
+    }
 
     if (drawBackground) {
         al_draw_filled_rectangle(absX, absY, absX + width, absY + height, backgroundColor);

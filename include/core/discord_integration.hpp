@@ -10,6 +10,9 @@ namespace music {
 	class SongView;
 }
 
+// Forward declaration for Allegro timer
+struct ALLEGRO_TIMER;
+
 namespace core {
 
 class DiscordIntegration {
@@ -34,7 +37,6 @@ public:
 	// Shutdown/cleanup. Safe to call multiple times.
 	void shutdown();
 
-    void set_new_song(std::string &title, std::string &artist);
 	void setSongPresence(const music::SongView& song);
 
     void run_callbacks() {
@@ -42,6 +44,11 @@ public:
 	}
 
 	void update_presence(std::string state);
+
+	// Inject the callback timer so Discord integration can stop it when ready
+	void setCallbackTimer(ALLEGRO_TIMER* timer) {
+		callback_timer = timer;
+	}
 
     std::shared_ptr<discordpp::Client> client;
 
@@ -51,6 +58,7 @@ private:
 
 	const uint64_t APPLICATION_ID = 1362371550275174512;
 	std::chrono::steady_clock::time_point last_update_time = std::chrono::steady_clock::now();
+	ALLEGRO_TIMER* callback_timer = nullptr;
 };
 
 } // namespace core

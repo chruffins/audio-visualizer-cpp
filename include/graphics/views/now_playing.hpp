@@ -4,7 +4,7 @@
 #include "graphics/drawables/text.hpp"
 #include "graphics/drawables/frame.hpp"
 #include "graphics/drawables/image.hpp"
-#include "graphics/drawables/button.hpp"
+#include "graphics/drawables/image_button.hpp"
 #include "graphics/event_handler.hpp"
 #include "graphics/uv.hpp"
 #include <memory>
@@ -45,10 +45,10 @@ private:
     int lastDisplayWidth = 0;
     int lastDisplayHeight = 0;
 
-    ButtonDrawable playPauseButton;
-    ButtonDrawable rewindButton;
-    ButtonDrawable skipButton;
-    ButtonDrawable loopButton;
+    ImageButtonDrawable playPauseButton;
+    ImageButtonDrawable rewindButton;
+    ImageButtonDrawable skipButton;
+    ImageButtonDrawable loopButton;
     std::shared_ptr<FrameDrawable> mainFrame;
     
     // Text drawables
@@ -63,6 +63,11 @@ private:
     
     // Progress bar
     ProgressBarDrawable progressBar;
+    
+    // Cached font pointers (optimization)
+    ALLEGRO_FONT* m_fontTitle = nullptr;
+    ALLEGRO_FONT* m_fontMetadata = nullptr;
+    ALLEGRO_FONT* m_fontTime = nullptr;
 };
 
 }

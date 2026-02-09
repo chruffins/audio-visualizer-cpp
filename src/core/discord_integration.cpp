@@ -4,6 +4,7 @@
 #include <fstream>
 #include <filesystem>
 #include <chrono>
+#include <allegro5/allegro.h>
 
 const std::string token_file = "discord_tokens.txt";
 
@@ -59,6 +60,13 @@ bool DiscordIntegration::init() {
 
       if (status == discordpp::Client::Status::Ready) {
         std::cout << "✅ Client is ready! You can now call SDK functions.\n";
+        
+        // Stop the polling timer now that Discord is initialized.
+        // Rich presence updates will trigger callbacks on-demand.
+        if (this->callback_timer) {
+          al_stop_timer(this->callback_timer);
+          std::cout << "📊 Discord callback timer stopped - callbacks triggered on-demand.\n";
+        }
       } else if (error != discordpp::Client::Error::None) {
         std::cerr << "❌ Connection Error: " << discordpp::Client::ErrorToString(error) << " - Details: " << errorDetail << std::endl;
       }
@@ -72,39 +80,10 @@ void DiscordIntegration::shutdown() {
     // Render your application state here
 }
 
-void DiscordIntegration::set_new_song(std::string& title, std::string& artist) {
-    discordpp::Activity activity;
-    discordpp::ActivityAssets assets;
-    discordpp::ActivityTimestamps timestamps;
-    assets.SetSmallImage("logo");
-    assets.SetSmallText("Audio Visualizer C++");
-    assets.SetLargeImage("https://coverartarchive.org/release-group/3c7430a6-798f-3060-8539-4d22a92aaffe/front");
-    // assets.SetLargeText("Abandoned Pools - Humanistic");
-
-    // activity.SetName("Audio Visualizer C++"); this does nothing
-    activity.SetType(discordpp::ActivityTypes::Listening);
-    activity.SetDetails(title);
-    activity.SetState(artist);
-    activity.SetApplicationId(APPLICATION_ID);
-    activity.SetStatusDisplayType(discordpp::StatusDisplayTypes::State);
-    activity.SetAssets(assets);
-    timestamps.SetStart(std::time(nullptr));
-    timestamps.SetEnd(std::time(nullptr) + 200); // Example: song ends in 200 seconds
-    activity.SetTimestamps(timestamps);
-
-    client->UpdateRichPresence(activity, [](auto result) {
-        if (result.Successful()) {
-            std::cout << "✅ Rich presence updated successfully.\n";
-        } else {
-            std::cerr << "❌ Failed to update rich presence: " << result.Error() << std::endl;
-        }
-        });
-}
-
 void DiscordIntegration::setSongPresence(const music::SongView &song) {
     // Rate-limiting: only allow updates every 1 second
     auto now = std::chrono::steady_clock::now();
-    if (std::chrono::duration_cast<std::chrono::seconds>(now - last_update_time).count() < 5) {
+    if (std::chrono::duration_cast<std::chrono::seconds>(now - last_update_time).count() < 2) {
         return; // Skip update if called too soon
     }
     last_update_time = now;
@@ -143,6 +122,10 @@ void DiscordIntegration::setSongPresence(const music::SongView &song) {
             std::cerr << "❌ Failed to update rich presence: " << result.Error() << std::endl;
         }
         });
+    
+    // Process callbacks immediately after updating presence
+    // This ensures Discord SDK processes the update without waiting for the timer
+    run_callbacks();
 }
 
 void DiscordIntegration::update_presence(std::string state) {

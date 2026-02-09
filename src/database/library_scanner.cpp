@@ -80,7 +80,7 @@ static int for_each_recursive_cb(ALLEGRO_FS_ENTRY *entry, void *vstate)
     st->scanned++;
     if (!LibraryScanner::isAudioFile(path))
     {
-        std::cerr << "Skipped non-audio file: " << path << "\n";
+        // std::cerr << "Skipped non-audio file: " << path << "\n";
         st->skipped++;
         return ALLEGRO_FOR_EACH_FS_ENTRY_OK;
     }
@@ -171,23 +171,31 @@ ScanResult LibraryScanner::scan(MusicDatabase &db,
         std::optional<int64_t> album_id_opt;
         if (!rep.album.empty())
         {
-            // Pass cover art data if available from the representative track
-            const std::vector<unsigned char>* cover_art_ptr = rep.cover_art_data.empty() ? nullptr : &rep.cover_art_data;
-            std::string cover_mime = rep.cover_art_mime;
+            // Extract cover art from the first song in the album (only once per album, not per song)
+            std::vector<unsigned char> cover_data;
+            std::string cover_mime;
+            
+            // Try embedded cover art from the first track
+            auto embedded_cover = st.scanner->extractCoverArtFromFile(rep.filepath);
+            if (embedded_cover)
+            {
+                cover_data = std::move(embedded_cover->first);
+                cover_mime = std::move(embedded_cover->second);
+            }
             
             // If no embedded cover art, try to find cover image in the album folder
-            std::vector<unsigned char> folder_cover_data;
-            if (!cover_art_ptr && !rep.filepath.empty())
+            if (cover_data.empty() && !rep.filepath.empty())
             {
                 std::string folder_path = std::filesystem::path(rep.filepath).parent_path().string();
                 auto folder_cover = st.scanner->findAlbumCoverInFolder(folder_path);
                 if (folder_cover)
                 {
-                    folder_cover_data = std::move(folder_cover->first);
+                    cover_data = std::move(folder_cover->first);
                     cover_mime = std::move(folder_cover->second);
-                    cover_art_ptr = &folder_cover_data;
                 }
             }
+            
+            const std::vector<unsigned char>* cover_art_ptr = cover_data.empty() ? nullptr : &cover_data;
             
             album_id_opt = db.addAlbum(rep.album, static_cast<int>(artist_id), "", std::optional<int>(rep.year), cover_art_ptr, cover_mime);
         }
@@ -260,7 +268,7 @@ music::SongMetadata LibraryScanner::readSongMetadata(const std::string &path)
         // meta.bpm = f.audioProperties()->bpm();
     }
 
-    // Extract album_artist and cover art based on file type
+    // Extract album_artist (but NOT cover art - handled per-album in scan())
     // MP3/ID3v2
     if (auto* mpegFile = dynamic_cast<TagLib::MPEG::File*>(f.file())) {
         if (mpegFile->ID3v2Tag()) {
@@ -268,16 +276,6 @@ music::SongMetadata LibraryScanner::readSongMetadata(const std::string &path)
             auto albumArtistFrames = mpegFile->ID3v2Tag()->frameListMap()["TPE2"];
             if (!albumArtistFrames.isEmpty()) {
                 meta.album_artist = albumArtistFrames.front()->toString().to8Bit(true);
-            }
-            
-            // Extract cover art
-            auto frameList = mpegFile->ID3v2Tag()->frameListMap()["APIC"];
-            if (!frameList.isEmpty()) {
-                auto* coverFrame = static_cast<TagLib::ID3v2::AttachedPictureFrame*>(frameList.front());
-                auto picture = coverFrame->picture();
-                meta.cover_art_data.assign(picture.data(), picture.data() + picture.size());
-                meta.cover_art_mime = coverFrame->mimeType().to8Bit(true);
-                // std::cout << "extracted cover art of type " << meta.cover_art_mime << " from file " << path << "\n";
             }
         }
     }
@@ -290,15 +288,6 @@ music::SongMetadata LibraryScanner::readSongMetadata(const std::string &path)
                 meta.album_artist = fieldMap["ALBUMARTIST"].front().to8Bit(true);
             }
         }
-        
-        // Extract cover art
-        auto picList = flacFile->pictureList();
-        if (!picList.isEmpty()) {
-            auto* pic = picList.front();
-            auto data = pic->data();
-            meta.cover_art_data.assign(data.data(), data.data() + data.size());
-            meta.cover_art_mime = pic->mimeType().to8Bit(true);
-        }
     }
     // MP4/M4A
     else if (auto* mp4File = dynamic_cast<TagLib::MP4::File*>(f.file())) {
@@ -308,28 +297,6 @@ music::SongMetadata LibraryScanner::readSongMetadata(const std::string &path)
             // Extract album artist
             if (itemMap.contains("aART")) {
                 meta.album_artist = itemMap["aART"].toStringList().front().to8Bit(true);
-            }
-            
-            // Extract cover art
-            if (itemMap.contains("covr")) {
-                auto coverList = itemMap["covr"].toCoverArtList();
-                if (!coverList.isEmpty()) {
-                    auto cover = coverList.front();
-                    auto data = cover.data();
-                    meta.cover_art_data.assign(data.data(), data.data() + data.size());
-                    // MP4 cover art format detection
-                    switch (cover.format()) {
-                        case TagLib::MP4::CoverArt::JPEG:
-                            meta.cover_art_mime = "image/jpeg";
-                            break;
-                        case TagLib::MP4::CoverArt::PNG:
-                            meta.cover_art_mime = "image/png";
-                            break;
-                        default:
-                            meta.cover_art_mime = "image/jpeg"; // fallback
-                            break;
-                    }
-                }
             }
         }
     }
@@ -343,15 +310,6 @@ music::SongMetadata LibraryScanner::readSongMetadata(const std::string &path)
             if (fieldMap.contains("ALBUMARTIST")) {
                 meta.album_artist = fieldMap["ALBUMARTIST"].front().to8Bit(true);
             }
-            
-            // Extract cover art
-            auto picList = xiphComment->pictureList();
-            if (!picList.isEmpty()) {
-                auto* pic = picList.front();
-                auto data = pic->data();
-                meta.cover_art_data.assign(data.data(), data.data() + data.size());
-                meta.cover_art_mime = pic->mimeType().to8Bit(true);
-            }
         }
     } else if (auto* opusFile = dynamic_cast<TagLib::Ogg::Opus::File*>(f.file())) {
         if (opusFile->tag()) {
@@ -361,19 +319,96 @@ music::SongMetadata LibraryScanner::readSongMetadata(const std::string &path)
             if (fieldMap.contains("ALBUMARTIST")) {
                 meta.album_artist = fieldMap["ALBUMARTIST"].front().to8Bit(true);
             }
-
-            // Extract cover art
-            auto picList = xiphComment->pictureList();
-            if (!picList.isEmpty()) {
-                auto* pic = picList.front();
-                auto data = pic->data();
-                meta.cover_art_data.assign(data.data(), data.data() + data.size());
-                meta.cover_art_mime = pic->mimeType().to8Bit(true);
-            }
         }   
     }
 
     return meta;
+}
+
+std::optional<std::pair<std::vector<unsigned char>, std::string>> LibraryScanner::extractCoverArtFromFile(const std::string &path)
+{
+    TagLib::FileRef f(path.c_str());
+    
+    // MP3/ID3v2
+    if (auto* mpegFile = dynamic_cast<TagLib::MPEG::File*>(f.file())) {
+        if (mpegFile->ID3v2Tag()) {
+            auto frameList = mpegFile->ID3v2Tag()->frameListMap()["APIC"];
+            if (!frameList.isEmpty()) {
+                auto* coverFrame = static_cast<TagLib::ID3v2::AttachedPictureFrame*>(frameList.front());
+                auto picture = coverFrame->picture();
+                std::vector<unsigned char> data(picture.data(), picture.data() + picture.size());
+                std::string mime = coverFrame->mimeType().to8Bit(true);
+                return std::make_pair(std::move(data), std::move(mime));
+            }
+        }
+    }
+    // FLAC
+    else if (auto* flacFile = dynamic_cast<TagLib::FLAC::File*>(f.file())) {
+        auto picList = flacFile->pictureList();
+        if (!picList.isEmpty()) {
+            auto* pic = picList.front();
+            auto picture_data = pic->data();
+            std::vector<unsigned char> data(picture_data.data(), picture_data.data() + picture_data.size());
+            std::string mime = pic->mimeType().to8Bit(true);
+            return std::make_pair(std::move(data), std::move(mime));
+        }
+    }
+    // MP4/M4A
+    else if (auto* mp4File = dynamic_cast<TagLib::MP4::File*>(f.file())) {
+        if (mp4File->tag()) {
+            auto itemMap = mp4File->tag()->itemMap();
+            if (itemMap.contains("covr")) {
+                auto coverList = itemMap["covr"].toCoverArtList();
+                if (!coverList.isEmpty()) {
+                    auto cover = coverList.front();
+                    auto picture_data = cover.data();
+                    std::vector<unsigned char> data(picture_data.data(), picture_data.data() + picture_data.size());
+                    
+                    std::string mime;
+                    switch (cover.format()) {
+                        case TagLib::MP4::CoverArt::JPEG:
+                            mime = "image/jpeg";
+                            break;
+                        case TagLib::MP4::CoverArt::PNG:
+                            mime = "image/png";
+                            break;
+                        default:
+                            mime = "image/jpeg";
+                            break;
+                    }
+                    return std::make_pair(std::move(data), std::move(mime));
+                }
+            }
+        }
+    }
+    // OGG Vorbis
+    else if (auto* vorbisFile = dynamic_cast<TagLib::Ogg::Vorbis::File*>(f.file())) {
+        if (vorbisFile->tag()) {
+            auto picList = vorbisFile->tag()->pictureList();
+            if (!picList.isEmpty()) {
+                auto* pic = picList.front();
+                auto picture_data = pic->data();
+                std::vector<unsigned char> data(picture_data.data(), picture_data.data() + picture_data.size());
+                std::string mime = pic->mimeType().to8Bit(true);
+                return std::make_pair(std::move(data), std::move(mime));
+            }
+        }
+    }
+    // OGG Opus
+    else if (auto* opusFile = dynamic_cast<TagLib::Ogg::Opus::File*>(f.file())) {
+        if (opusFile->tag()) {
+            auto picList = opusFile->tag()->pictureList();
+            if (!picList.isEmpty()) {
+                auto* pic = picList.front();
+                auto picture_data = pic->data();
+                std::vector<unsigned char> data(picture_data.data(), picture_data.data() + picture_data.size());
+                std::string mime = pic->mimeType().to8Bit(true);
+                return std::make_pair(std::move(data), std::move(mime));
+            }
+        }
+    }
+    
+    return std::nullopt;
 }
 
 std::optional<std::pair<std::vector<unsigned char>, std::string>> LibraryScanner::findAlbumCoverInFolder(const std::string &folder_path)

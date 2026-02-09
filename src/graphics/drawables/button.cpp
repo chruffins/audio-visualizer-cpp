@@ -10,6 +10,11 @@ ButtonDrawable::ButtonDrawable(graphics::UV position, graphics::UV size, const s
 }
 
 void ButtonDrawable::draw(const graphics::RenderContext& context) const {
+    // Culling: skip off-screen buttons
+    if (isOffScreen(context)) {
+        return;
+    }
+    
     auto [x, y] = getPosition().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
     auto [w, h] = getSize().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
     x += context.offsetX;

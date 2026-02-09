@@ -12,6 +12,11 @@ void ui::ProgressBarDrawable::draw(const graphics::RenderContext& context) const
 void ui::ProgressBarDrawable::drawSquared(const graphics::RenderContext& context) const
 {
     if (!model) return;
+    
+    // Culling: skip off-screen progress bars
+    if (isOffScreen(context)) {
+        return;
+    }
 
     // use sizes from context
     auto size = getSize().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));

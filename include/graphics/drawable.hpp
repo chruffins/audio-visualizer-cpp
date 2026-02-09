@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 #include "graphics/uv.hpp"
+#include <allegro5/allegro.h>
 
 namespace graphics {
 
@@ -27,6 +28,29 @@ public:
     
     void setSize(const UV& sz) { size = sz; }
     UV getSize() const { return size; }
+    
+    // Check if drawable is completely off-screen (accounts for clipping rectangle)
+    bool isOffScreen(const RenderContext& context) const {
+        auto [x, y] = getPosition().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
+        auto [w, h] = getSize().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
+        x += context.offsetX;
+        y += context.offsetY;
+        
+        // Check against Allegro's actual clipping rectangle
+        int clipX = 0, clipY = 0, clipW = 0, clipH = 0;
+        al_get_clipping_rectangle(&clipX, &clipY, &clipW, &clipH);
+        
+        // If no clipping is set (0,0,0,0), don't cull
+        if (clipW == 0 || clipH == 0) {
+            return false;
+        }
+        
+        int clipRight = clipX + clipW;
+        int clipBottom = clipY + clipH;
+        
+        return (x + w < clipX || x > clipRight ||
+                y + h < clipY || y > clipBottom);
+    }
     
 protected:
     bool enabled = true;

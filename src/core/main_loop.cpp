@@ -98,7 +98,7 @@ void runMainLoop() {
                 //al_hold_bitmap_drawing(false);
                 al_flip_display();
             } else if (appState.event.timer.source == appState.discord_callback_timer) {
-                // Handle Discord callback timer event
+                // Handle Discord callback timer event (used for initial setup only)
                 if (!appState.discord_initialized.load()) {
                     if (appState.discord_integration.init()) {
                         appState.discord_initialized.store(true);

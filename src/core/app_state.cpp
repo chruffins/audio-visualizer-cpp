@@ -24,7 +24,7 @@ bool AppState::init() {
     this->default_font = al_create_builtin_font();
     this->event_queue = al_create_event_queue();
     this->graphics_timer = al_create_timer(1.0 / 30.0);
-    this->discord_callback_timer = al_create_timer(1.0);
+    this->discord_callback_timer = al_create_timer(1.0);  // every second until discord is initialized
 
     al_register_event_source(this->event_queue, al_get_display_event_source(this->display));
     al_register_event_source(this->event_queue, al_get_timer_event_source(this->graphics_timer));
@@ -51,6 +51,9 @@ bool AppState::init() {
     } else {
         this->music_engine.setEventQueue(this->event_queue);
     }
+
+    // Inject the callback timer into Discord integration so it can stop itself when ready
+    this->discord_integration.setCallbackTimer(this->discord_callback_timer);
 
     // init the database
     if (!this->db.open()) {

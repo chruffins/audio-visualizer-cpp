@@ -16,6 +16,11 @@ void ImageDrawable::draw(const graphics::RenderContext& context) const {
     if (!visible || !bitmap) {
         return;
     }
+    
+    // Culling: skip off-screen images
+    if (isOffScreen(context)) {
+        return;
+    }
 
     DrawParams params = calculateDrawParams(context);
 

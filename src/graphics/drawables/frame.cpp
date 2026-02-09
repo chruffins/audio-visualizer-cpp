@@ -5,6 +5,11 @@
 namespace ui {
 
 void FrameDrawable::draw(const graphics::RenderContext& context) const {
+    // Culling: skip off-screen frames
+    if (isOffScreen(context)) {
+        return;
+    }
+    
     auto sizePx = getSize().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
     auto posPx = getPosition().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
 

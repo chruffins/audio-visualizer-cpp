@@ -38,6 +38,11 @@ void TextDrawable::drawTextInternal(const char* str, const graphics::RenderConte
   if (!visible) {
     return;
   }
+  
+  // Culling: skip off-screen text
+  if (isOffScreen(context)) {
+    return;
+  }
 
   auto [x, y] = getPosition().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
   auto [w, h] = getSize().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));

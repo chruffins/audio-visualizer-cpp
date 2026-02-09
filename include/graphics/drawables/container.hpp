@@ -42,6 +42,12 @@ protected:
 
     graphics::DrawableObserverList children;
 
+    // Static cache for batch clipping optimization
+    static int s_lastClipX;
+    static int s_lastClipY;
+    static int s_lastClipW;
+    static int s_lastClipH;
+    
     bool drawBackground = false;
     ALLEGRO_COLOR backgroundColor = al_map_rgba(0, 0, 0, 0);
     ALLEGRO_COLOR borderColor = al_map_rgb(255, 255, 255);

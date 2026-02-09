@@ -12,21 +12,21 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
   core::MusicEngine* musicEngine)
     : fontManager(fontManager), musicEngine(musicEngine), 
       playPauseButton(graphics::UV(0.5f, 1.0f, -20.0f, -50.0f),
-      graphics::UV(0.0f, 0.0f, 40.0f, 40.0f),
-      ">"),
+      graphics::UV(0.0f, 0.0f, 40.0f, 40.0f)),
       rewindButton(graphics::UV(0.5f, 1.0f, -70.0f, -50.0f),
-      graphics::UV(0.0f, 0.0f, 40.0f, 40.0f),
-      "|<"),
+      graphics::UV(0.0f, 0.0f, 40.0f, 40.0f)),
       skipButton(graphics::UV(0.5f, 1.0f, 30.0f, -50.0f),
-      graphics::UV(0.0f, 0.0f, 40.0f, 40.0f),
-      ">|"),
+      graphics::UV(0.0f, 0.0f, 40.0f, 40.0f)),
       loopButton(graphics::UV(0.5f, 1.0f, 80.0f, -50.0f),
-      graphics::UV(0.0f, 0.0f, 40.0f, 40.0f),
-      "O"),
+      graphics::UV(0.0f, 0.0f, 40.0f, 40.0f)),
       mainFrame(std::make_shared<FrameDrawable>()),
       progressBar(progressBarModel) {
   
+  // Cache fonts (optimization)
   auto font = fontManager->getFont("courier");
+  m_fontTitle = fontManager->getFont("courier")->getFont(16);
+  m_fontMetadata = fontManager->getFont("courier")->getFont(14);
+  m_fontTime = fontManager->getFont("courier")->getFont(12);
 
   mainFrame->setPosition(graphics::UV(0.0f, 1.0f, 0.0f, -101.0f));
   mainFrame->setSize(graphics::UV(1.0f, 0.0f, 0.0f, 101.0f));
@@ -96,12 +96,17 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
    .setVerticalAlignment(graphics::VerticalAlignment::TOP);
 
   // Setup play/pause button
-  playPauseButton.setFont(font->getFont(16));
-  playPauseButton.setColors(
+  playPauseButton.loadImageFromFile("../assets/icons/play.png");
+  playPauseButton.setDrawBorder(false);
+  playPauseButton.setDrawBackground(true);
+  playPauseButton.setBackgroundColors(
     al_map_rgb(60, 60, 80),   // normal
     al_map_rgb(80, 80, 100),  // hover
-    al_map_rgb(100, 100, 120) // pressed
+    al_map_rgb(100, 100, 120), // pressed
+    al_map_rgb(50, 50, 60)    // disabled
   );
+  playPauseButton.setImageScaleMode(ImageDrawable::ScaleMode::FIT);
+  playPauseButton.setImagePadding(4.0f);
   playPauseButton.setOnClick([this]() {
     if (this->musicEngine) {
       if (this->musicEngine->isPlaying()) {
@@ -114,12 +119,17 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
   });
   
   // Setup rewind button
-  rewindButton.setFont(font->getFont(16));
-  rewindButton.setColors(
+  rewindButton.loadImageFromFile("../assets/icons/skip_prev.png");
+  rewindButton.setDrawBorder(false);
+  rewindButton.setDrawBackground(true);
+  rewindButton.setBackgroundColors(
     al_map_rgb(60, 60, 80),   // normal
     al_map_rgb(80, 80, 100),  // hover
-    al_map_rgb(100, 100, 120) // pressed
+    al_map_rgb(100, 100, 120), // pressed
+    al_map_rgb(50, 50, 60)    // disabled
   );
+  rewindButton.setImageScaleMode(ImageDrawable::ScaleMode::FIT);
+  rewindButton.setImagePadding(4.0f);
   rewindButton.setOnClick([this]() {
     if (this->musicEngine) {
       // smarter rewind
@@ -133,12 +143,17 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
   });
   
   // Setup skip button
-  skipButton.setFont(font->getFont(16));
-  skipButton.setColors(
+  skipButton.loadImageFromFile("../assets/icons/skip_next.png");
+  skipButton.setDrawBorder(false);
+  skipButton.setDrawBackground(true);
+  skipButton.setBackgroundColors(
     al_map_rgb(60, 60, 80),   // normal
     al_map_rgb(80, 80, 100),  // hover
-    al_map_rgb(100, 100, 120) // pressed
+    al_map_rgb(100, 100, 120), // pressed
+    al_map_rgb(50, 50, 60)    // disabled
   );
+  skipButton.setImageScaleMode(ImageDrawable::ScaleMode::FIT);
+  skipButton.setImagePadding(4.0f);
   skipButton.setOnClick([this]() {
     if (this->musicEngine) {
       this->musicEngine->playNext();
@@ -146,12 +161,17 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
   });
   
   // Setup loop button
-  loopButton.setFont(font->getFont(16));
-  loopButton.setColors(
+  loopButton.loadImageFromFile("../assets/icons/loop.png");
+  loopButton.setDrawBorder(false);
+  loopButton.setDrawBackground(true);
+  loopButton.setBackgroundColors(
     al_map_rgb(60, 60, 80),   // normal
     al_map_rgb(80, 80, 100),  // hover
-    al_map_rgb(100, 100, 120) // pressed
+    al_map_rgb(100, 100, 120), // pressed
+    al_map_rgb(50, 50, 60)    // disabled
   );
+  loopButton.setImageScaleMode(ImageDrawable::ScaleMode::FIT);
+  loopButton.setImagePadding(4.0f);
   loopButton.setOnClick([this]() {
     if (this->musicEngine) {
       this->musicEngine->setRepeat(!this->musicEngine->isRepeating());
@@ -232,25 +252,17 @@ void NowPlayingView::recalculateLayout(const graphics::RenderContext& context) {
 
 void NowPlayingView::updatePlayPauseButton() {
   if (musicEngine) {
-    playPauseButton.setLabel(musicEngine->isPlaying() ? "||" : ">");
+    playPauseButton.loadImageFromFile(musicEngine->isPlaying() ? "../assets/icons/pause.png" : "../assets/icons/play.png");
   }
 }
 
 void NowPlayingView::updateLoopButton() {
   if (musicEngine) {
-    // Visual feedback: brighter color when loop is active
+    // Swap icon based on repeat state
     if (musicEngine->isRepeating()) {
-      loopButton.setColors(
-        al_map_rgb(80, 120, 80),   // normal (green tint)
-        al_map_rgb(100, 140, 100), // hover
-        al_map_rgb(120, 160, 120)  // pressed
-      );
+      loopButton.loadImageFromFile("../assets/icons/repeat.png");
     } else {
-      loopButton.setColors(
-        al_map_rgb(60, 60, 80),   // normal
-        al_map_rgb(80, 80, 100),  // hover
-        al_map_rgb(100, 100, 120) // pressed
-      );
+      loopButton.loadImageFromFile("../assets/icons/loop.png");
     }
   }
 }
