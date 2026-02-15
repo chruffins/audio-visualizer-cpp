@@ -275,6 +275,19 @@ int64_t MusicDatabase::getLastPositionInPlaylist(int64_t playlist_id) {
     return position;
 }
 
+bool MusicDatabase::deleteSong(int64_t song_id) {
+    if (!db) { lastErr = "DB not open"; return false; }
+    // Foreign keys will cascade delete song_artists, song_genres, and playlist_songs
+    const char* sql = "DELETE FROM songs WHERE id = ?1";
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) { lastErr = sqlite3_errmsg(db); return false; }
+    sqlite3_bind_int64(stmt, 1, song_id);
+    int rc = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+    if (rc != SQLITE_DONE) { lastErr = sqlite3_errmsg(db); return false; }
+    return true;
+}
+
 std::optional<music::Genre> MusicDatabase::getGenreById(int64_t id) const {
     if (!db) { lastErr = "DB not open"; return std::nullopt; }
     sqlite3_stmt* stmt = nullptr;
@@ -499,6 +512,9 @@ std::vector<music::Song> MusicDatabase::getAllSongs() const {
     sqlite3_stmt* stmt = nullptr;
     const char* sql = "SELECT id, song_path, title, album_id, track, comment, duration FROM songs ORDER BY id ASC";
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) { lastErr = sqlite3_errmsg(db); return out; }
+    
+    std::vector<int> songsToDelete;
+    
     while (sqlite3_step(stmt) == SQLITE_ROW) {
         int sid = static_cast<int>(sqlite3_column_int64(stmt, 0));
         const unsigned char* pathTxt = sqlite3_column_text(stmt, 1);
@@ -510,9 +526,26 @@ std::vector<music::Song> MusicDatabase::getAllSongs() const {
         std::string path = pathTxt ? reinterpret_cast<const char*>(pathTxt) : std::string();
         std::string title = titleTxt ? reinterpret_cast<const char*>(titleTxt) : std::string();
         std::string comment = commentTxt ? reinterpret_cast<const char*>(commentTxt) : std::string();
+        
+        // Check if file exists
+        if (!path.empty() && !std::filesystem::exists(path)) {
+            songsToDelete.push_back(sid);
+            continue; // Skip adding to output
+        }
+        
         out.emplace_back(sid, path, title, album_id, track, comment, duration);
     }
     sqlite3_finalize(stmt);
+    
+    // Delete songs whose files don't exist
+    // We need to cast away const to modify the database...
+    if (!songsToDelete.empty()) {
+        auto* mutableThis = const_cast<MusicDatabase*>(this);
+        for (int song_id : songsToDelete) {
+            mutableThis->deleteSong(song_id);
+        }
+    }
+    
     return out;
 }
 

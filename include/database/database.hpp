@@ -47,6 +47,9 @@ public:
     bool addSongGenre(int64_t song_id, int64_t genre_id);
     std::optional<int64_t> addPlaylistSong(int64_t playlist_id, int64_t song_id, int position);
 
+    // Delete entities
+    bool deleteSong(int64_t song_id);
+
     // Get last error message
     std::string lastError() const;
 
