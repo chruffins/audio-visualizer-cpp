@@ -188,9 +188,49 @@ void PlayQueueView::buildQueueDisplay() {
 void PlayQueueView::refresh() {
     buildQueueDisplay();
     if (scrollableFrame) {
-        scrollableFrame->setScrollOffset(0.0f); // reset scroll to top on refresh
+        // find the currently playing song and check if it's visible
+        float currentSongY = -1.0f;
+        const float itemHeight = 40.0f;
+        const float padding = 5.0f;
+        
+        for (size_t i = 0; i < queueItems.size(); ++i) {
+            if (queueItems[i].is_current) {
+                currentSongY = i * (itemHeight + padding);
+                break;
+            }
+        }
+        
+        // only adjust scroll if current song exists and is not visible
+        if (currentSongY >= 0.0f && lastDisplayWidth > 0 && lastDisplayHeight > 0) {
+            float currentScrollOffset = scrollableFrame->getScrollOffset();
+            
+            // calculate viewport height (scrollableFrame is child of mainFrame)
+            // first get mainFrame's actual screen size
+            auto [mainFrameW, mainFrameH] = mainFrame->getSize().toScreenPos(
+                static_cast<float>(lastDisplayWidth), 
+                static_cast<float>(lastDisplayHeight)
+            );
+
+            // then calculate scrollableFrame's size relative to mainFrame
+            auto [frameW, frameH] = scrollableFrame->getSize().toScreenPos(
+                mainFrameW, mainFrameH
+            );
+            float viewportHeight = frameH - 2.0f * scrollableFrame->getPadding();
+            
+            bool isVisible = (currentSongY >= currentScrollOffset) && 
+                           (currentSongY + itemHeight <= currentScrollOffset + viewportHeight);
+            
+            if (!isVisible) {
+                // Scroll to show the current song (centered if possible)
+                float targetScroll = currentSongY - (viewportHeight / 2.0f) + (itemHeight / 2.0f);
+                targetScroll = std::max(0.0f, std::min(targetScroll, totalContentHeight - viewportHeight));
+                scrollableFrame->setScrollOffset(targetScroll);
+            }
+        }
+        
         scrollableFrame->setContentHeight(totalContentHeight);
     }
+    
     if (contextLabelText) {
         contextLabelText->setText(getContextLabel());
     }
