@@ -17,6 +17,9 @@ public:
     
     std::string getString(const std::string& section, const std::string& key, const std::string& defaultValue = "") const;
     int getInt(const std::string& section, const std::string& key, int defaultValue = 0) const;
+    void setString(const std::string& section, const std::string& key, const std::string& value);
+    void setInt(const std::string& section, const std::string& key, int value);
+    bool save() const;
     
     // Convenience methods for common config values
     std::string getMusicDirectory() const;
@@ -24,9 +27,12 @@ public:
     uint64_t getDiscordApplicationId() const;
     int getDisplayWidth() const;
     int getDisplayHeight() const;
+    int getVolumePercent() const;
+    void setVolumePercent(int percent);
 
 private:
     ALLEGRO_CONFIG* config;
+    std::string loadedFilename;
     
     // Disallow copy/move
     Config(const Config&) = delete;

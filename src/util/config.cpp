@@ -1,5 +1,6 @@
 #include "util/config.hpp"
 #include <iostream>
+#include <algorithm>
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_native_dialog.h>
 
@@ -35,6 +36,7 @@ bool Config::generateDefaultConfig(const std::string& filename) {
     al_set_config_value(defaultConfig, "display", "height", "300");
     
     al_set_config_value(defaultConfig, "discord", "application_id", "0");
+    al_set_config_value(defaultConfig, "audio", "volume_percent", "100");
 
     // Save the config file
     bool success = al_save_config_file(filename.c_str(), defaultConfig);
@@ -61,6 +63,7 @@ bool Config::load(const std::string& filename) {
         std::cerr << "Failed to load config file: " << filename << "\n";
         return false;
     }
+    loadedFilename = filename;
     return true;
 }
 
@@ -79,6 +82,22 @@ int Config::getInt(const std::string& section, const std::string& key, int defau
     } catch (...) {
         return defaultValue;
     }
+}
+
+void Config::setString(const std::string& section, const std::string& key, const std::string& value) {
+    if (!config) return;
+    al_set_config_value(config, section.c_str(), key.c_str(), value.c_str());
+}
+
+void Config::setInt(const std::string& section, const std::string& key, int value) {
+    setString(section, key, std::to_string(value));
+}
+
+bool Config::save() const {
+    if (!config || loadedFilename.empty()) {
+        return false;
+    }
+    return al_save_config_file(loadedFilename.c_str(), config);
 }
 
 std::string Config::getMusicDirectory() const {
@@ -101,6 +120,15 @@ int Config::getDisplayWidth() const {
 
 int Config::getDisplayHeight() const {
     return getInt("display", "height", 300);
+}
+
+int Config::getVolumePercent() const {
+    const int value = getInt("audio", "volume_percent", 100);
+    return std::clamp(value, 0, 100);
+}
+
+void Config::setVolumePercent(int percent) {
+    setInt("audio", "volume_percent", std::clamp(percent, 0, 100));
 }
 
 } // namespace util

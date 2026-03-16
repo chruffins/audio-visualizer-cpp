@@ -40,6 +40,8 @@ bool MusicEngine::initialize() {
         return false;
     }
 
+    al_set_mixer_gain(mixer, current_gain);
+
     return true;
 }
 
@@ -144,10 +146,14 @@ double MusicEngine::getDuration() const {
 }
 
 void MusicEngine::setGain(float gain) {
-    // Set gain code
+    current_gain = std::clamp(gain, 0.0f, 1.0f);
     if (mixer) {
-        al_set_mixer_gain(mixer, gain);
+        al_set_mixer_gain(mixer, current_gain);
     }
+}
+
+float MusicEngine::getGain() const {
+    return current_gain;
 }
 
 void MusicEngine::setPan(float pan) {

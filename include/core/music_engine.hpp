@@ -37,6 +37,7 @@ public:
     double getDuration() const;
 
     void setGain(float gain);
+    float getGain() const;
     void setPan(float pan);
     void setSpeed(float speed);
     void setProgress(double position); // position in seconds
@@ -101,6 +102,7 @@ private:
 
     double current_time = 0.0;
     double duration = 0.0;
+    float current_gain = 1.0f;
     bool is_shutdown = false;
     bool song_finished_fired = false; // Track if we already fired the callback
 };
