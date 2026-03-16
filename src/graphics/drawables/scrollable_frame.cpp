@@ -2,18 +2,16 @@
 
 #include <algorithm>
 #include <allegro5/allegro.h>
-#include <iostream>
 
 namespace ui {
 
 void ScrollableFrameDrawable::draw(const graphics::RenderContext& context) const {
-    auto sizePx = getSize().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
-    auto posPx = getPosition().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
-
-    const float absX = posPx.first + context.offsetX;
-    const float absY = posPx.second + context.offsetY;
-    const float width = sizePx.first;
-    const float height = sizePx.second;
+    const auto geometry = computeScrollbarGeometry(context);
+    const float absX = geometry.absX;
+    const float absY = geometry.absY;
+    const float width = geometry.width;
+    const float height = geometry.height;
+    const float clampedScroll = geometry.clampedScroll;
 
     int oldClipX = 0, oldClipY = 0, oldClipW = 0, oldClipH = 0;
     al_get_clipping_rectangle(&oldClipX, &oldClipY, &oldClipW, &oldClipH);
@@ -28,19 +26,11 @@ void ScrollableFrameDrawable::draw(const graphics::RenderContext& context) const
     }
 
     // Calculate viewport dimensions accounting for padding
-    const float viewportWidth = width - 2 * padding;
-    const float viewportHeight = height - 2 * padding;
+    const float viewportWidth = geometry.viewportWidth;
+    const float viewportHeight = geometry.viewportHeight;
     
     // Cache viewport height for use in event handlers
     const_cast<ScrollableFrameDrawable*>(this)->cachedViewportHeight = viewportHeight;
-    
-    const float effectiveContentHeight = contentHeight > 0.0f ? contentHeight : viewportHeight;
-    const float maxScroll = std::max(0.0f, effectiveContentHeight - viewportHeight);
-    
-    // Clamp scroll offset to valid range
-    float clampedScroll = scrollOffset;
-    if (clampedScroll < 0.0f) clampedScroll = 0.0f;
-    if (clampedScroll > maxScroll) clampedScroll = maxScroll;
 
     // Set up child context with padding and scroll offset
     graphics::RenderContext childContext = context;
@@ -52,51 +42,63 @@ void ScrollableFrameDrawable::draw(const graphics::RenderContext& context) const
     drawChildren(childContext);
 
     // Draw scrollbar indicator if content exceeds viewport
-    if (showScrollbar && maxScroll > 0.0f && scrollbarWidth > 0.0f) {
-        const float ratio = viewportHeight / effectiveContentHeight;
-        const float indicatorHeight = std::max(10.0f, viewportHeight * ratio);
-        const float scrollRatio = clampedScroll / maxScroll;
-        const float indicatorY = absY + padding + scrollRatio * (viewportHeight - indicatorHeight);
-        const float indicatorX = absX + width - scrollbarWidth; // - padding
-        al_draw_filled_rectangle(indicatorX, indicatorY, indicatorX + scrollbarWidth, indicatorY + indicatorHeight, scrollbarColor);
+    if (showScrollbar && geometry.hasScrollableRange && scrollbarWidth > 0.0f) {
+        al_draw_filled_rectangle(
+            geometry.thumbX,
+            geometry.thumbY,
+            geometry.thumbX + geometry.thumbWidth,
+            geometry.thumbY + geometry.thumbHeight,
+            scrollbarColor
+        );
     }
 
     al_set_clipping_rectangle(oldClipX, oldClipY, oldClipW, oldClipH);
 }
 
 bool ScrollableFrameDrawable::onMouseDown(const graphics::MouseEvent& event) {
-    // First check if click is within frame bounds
-    graphics::RenderContext baseContext;
-    if (event.context) {
-        baseContext = *event.context;
-    } else {
-        int displayW = al_get_display_width(al_get_current_display());
-        int displayH = al_get_display_height(al_get_current_display());
-        baseContext = graphics::RenderContext{displayW, displayH, 0.0f, 0.0f, nullptr};
-    }
+    const auto baseContext = getBaseContext(event.context);
+    const auto geometry = computeScrollbarGeometry(baseContext);
+    activeMouseChild = nullptr;
     
     if (!hitTest(event.x, event.y, baseContext)) {
         return graphics::IEventHandler::onMouseDown(event);
     }
-    
-    // Get viewport bounds for scroll offset
-    auto posPx = getPosition().toScreenPos(static_cast<float>(baseContext.screenWidth), static_cast<float>(baseContext.screenHeight));
-    auto sizePx = getSize().toScreenPos(static_cast<float>(baseContext.screenWidth), static_cast<float>(baseContext.screenHeight));
-    const float absX = posPx.first + baseContext.offsetX;
-    const float absY = posPx.second + baseContext.offsetY;
-    const float width = sizePx.first;
-    const float height = sizePx.second;
-    const float viewportHeight = height - 2 * padding;
-    const float effectiveContentHeight = contentHeight > 0.0f ? contentHeight : viewportHeight;
-    const float maxScroll = std::max(0.0f, effectiveContentHeight - viewportHeight);
-    float clampedScroll = std::min(std::max(0.0f, scrollOffset), maxScroll);
+
+    const bool leftButton = event.button == 1;
+    const bool onScrollbarTrack =
+        event.x >= geometry.thumbX &&
+        event.x <= geometry.thumbX + geometry.thumbWidth &&
+        event.y >= geometry.viewportY &&
+        event.y <= geometry.viewportY + geometry.viewportHeight;
+
+    const bool onScrollbarThumb =
+        event.x >= geometry.thumbX &&
+        event.x <= geometry.thumbX + geometry.thumbWidth &&
+        event.y >= geometry.thumbY &&
+        event.y <= geometry.thumbY + geometry.thumbHeight;
+
+    if (leftButton && showScrollbar && geometry.hasScrollableRange && scrollbarWidth > 0.0f) {
+        if (onScrollbarThumb) {
+            isDraggingScrollbar = true;
+            scrollbarDragOffsetY = event.y - geometry.thumbY;
+            return true;
+        }
+
+        if (onScrollbarTrack) {
+            const float targetThumbTop = clampThumbTop(event.y - geometry.thumbHeight * 0.5f, geometry);
+            scrollOffset = scrollOffsetFromThumbTop(targetThumbTop, geometry);
+            isDraggingScrollbar = true;
+            scrollbarDragOffsetY = event.y - targetThumbTop;
+            return true;
+        }
+    }
     
     // Set up child context with padding and scroll offset
     graphics::RenderContext childContext = baseContext;
-    childContext.screenWidth = static_cast<int>(width - 2 * padding);
-    childContext.screenHeight = static_cast<int>(viewportHeight);
-    childContext.offsetX = absX + padding;
-    childContext.offsetY = absY + padding - clampedScroll;
+    childContext.screenWidth = static_cast<int>(geometry.viewportWidth);
+    childContext.screenHeight = static_cast<int>(geometry.viewportHeight);
+    childContext.offsetX = geometry.viewportX;
+    childContext.offsetY = geometry.viewportY - geometry.clampedScroll;
     
     // Check children in reverse order (top-most first)
     for (auto it = children.rbegin(); it != children.rend(); ++it) {
@@ -109,6 +111,7 @@ bool ScrollableFrameDrawable::onMouseDown(const graphics::MouseEvent& event) {
             localEvent.localX = event.x - childContext.offsetX;
             localEvent.localY = event.y - childContext.offsetY;
             if (handler->onMouseDown(localEvent)) {
+                activeMouseChild = handler;
                 return true;
             }
         }
@@ -117,34 +120,32 @@ bool ScrollableFrameDrawable::onMouseDown(const graphics::MouseEvent& event) {
 }
 
 bool ScrollableFrameDrawable::onMouseUp(const graphics::MouseEvent& event) {
-    // Get viewport bounds for scroll calculation
-    graphics::RenderContext baseContext;
-    if (event.context) {
-        baseContext = *event.context;
-    } else {
-        int displayW = al_get_display_width(al_get_current_display());
-        int displayH = al_get_display_height(al_get_current_display());
-        baseContext = graphics::RenderContext{displayW, displayH, 0.0f, 0.0f, nullptr};
+    const auto baseContext = getBaseContext(event.context);
+    const auto geometry = computeScrollbarGeometry(baseContext);
+
+    if (isDraggingScrollbar && event.button == 1) {
+        isDraggingScrollbar = false;
+        return true;
     }
-    
-    // Get viewport bounds
-    auto posPx = getPosition().toScreenPos(static_cast<float>(baseContext.screenWidth), static_cast<float>(baseContext.screenHeight));
-    auto sizePx = getSize().toScreenPos(static_cast<float>(baseContext.screenWidth), static_cast<float>(baseContext.screenHeight));
-    const float absX = posPx.first + baseContext.offsetX;
-    const float absY = posPx.second + baseContext.offsetY;
-    const float width = sizePx.first;
-    const float height = sizePx.second;
-    const float viewportHeight = height - 2 * padding;
-    const float effectiveContentHeight = contentHeight > 0.0f ? contentHeight : viewportHeight;
-    const float maxScroll = std::max(0.0f, effectiveContentHeight - viewportHeight);
-    float clampedScroll = std::min(std::max(0.0f, scrollOffset), maxScroll);
     
     // Set up child context with padding and scroll offset
     graphics::RenderContext childContext = baseContext;
-    childContext.screenWidth = static_cast<int>(width - 2 * padding);
-    childContext.screenHeight = static_cast<int>(viewportHeight);
-    childContext.offsetX = absX + padding;
-    childContext.offsetY = absY + padding - clampedScroll;
+    childContext.screenWidth = static_cast<int>(geometry.viewportWidth);
+    childContext.screenHeight = static_cast<int>(geometry.viewportHeight);
+    childContext.offsetX = geometry.viewportX;
+    childContext.offsetY = geometry.viewportY - geometry.clampedScroll;
+
+    if (activeMouseChild) {
+        graphics::MouseEvent localEvent = event;
+        localEvent.context = &childContext;
+        localEvent.localX = event.x - childContext.offsetX;
+        localEvent.localY = event.y - childContext.offsetY;
+        const bool handled = activeMouseChild->onMouseUp(localEvent);
+        activeMouseChild = nullptr;
+        if (handled) {
+            return true;
+        }
+    }
     
     // Check children in reverse order (top-most first)
     for (auto it = children.rbegin(); it != children.rend(); ++it) {
@@ -157,42 +158,41 @@ bool ScrollableFrameDrawable::onMouseUp(const graphics::MouseEvent& event) {
             localEvent.localX = event.x - childContext.offsetX;
             localEvent.localY = event.y - childContext.offsetY;
             if (handler->onMouseUp(localEvent)) {
+                activeMouseChild = nullptr;
                 return true;
             }
         }
     }
+    activeMouseChild = nullptr;
     return graphics::IEventHandler::onMouseUp(event);
 }
 
 bool ScrollableFrameDrawable::onMouseMove(const graphics::MouseEvent& event) {
-    // Get viewport bounds for scroll calculation
-    graphics::RenderContext baseContext;
-    if (event.context) {
-        baseContext = *event.context;
-    } else {
-        int displayW = al_get_display_width(al_get_current_display());
-        int displayH = al_get_display_height(al_get_current_display());
-        baseContext = graphics::RenderContext{displayW, displayH, 0.0f, 0.0f, nullptr};
+    const auto baseContext = getBaseContext(event.context);
+    const auto geometry = computeScrollbarGeometry(baseContext);
+
+    if (isDraggingScrollbar) {
+        const float targetThumbTop = clampThumbTop(event.y - scrollbarDragOffsetY, geometry);
+        scrollOffset = scrollOffsetFromThumbTop(targetThumbTop, geometry);
+        return true;
     }
-    
-    // Get viewport bounds
-    auto posPx = getPosition().toScreenPos(static_cast<float>(baseContext.screenWidth), static_cast<float>(baseContext.screenHeight));
-    auto sizePx = getSize().toScreenPos(static_cast<float>(baseContext.screenWidth), static_cast<float>(baseContext.screenHeight));
-    const float absX = posPx.first + baseContext.offsetX;
-    const float absY = posPx.second + baseContext.offsetY;
-    const float width = sizePx.first;
-    const float height = sizePx.second;
-    const float viewportHeight = height - 2 * padding;
-    const float effectiveContentHeight = contentHeight > 0.0f ? contentHeight : viewportHeight;
-    const float maxScroll = std::max(0.0f, effectiveContentHeight - viewportHeight);
-    float clampedScroll = std::min(std::max(0.0f, scrollOffset), maxScroll);
     
     // Set up child context with padding and scroll offset
     graphics::RenderContext childContext = baseContext;
-    childContext.screenWidth = static_cast<int>(width - 2 * padding);
-    childContext.screenHeight = static_cast<int>(viewportHeight);
-    childContext.offsetX = absX + padding;
-    childContext.offsetY = absY + padding - clampedScroll;
+    childContext.screenWidth = static_cast<int>(geometry.viewportWidth);
+    childContext.screenHeight = static_cast<int>(geometry.viewportHeight);
+    childContext.offsetX = geometry.viewportX;
+    childContext.offsetY = geometry.viewportY - geometry.clampedScroll;
+
+    if (activeMouseChild) {
+        graphics::MouseEvent localEvent = event;
+        localEvent.context = &childContext;
+        localEvent.localX = event.x - childContext.offsetX;
+        localEvent.localY = event.y - childContext.offsetY;
+        if (activeMouseChild->onMouseMove(localEvent)) {
+            return true;
+        }
+    }
     
     // Check children in reverse order (top-most first)
     for (auto it = children.rbegin(); it != children.rend(); ++it) {
@@ -213,34 +213,15 @@ bool ScrollableFrameDrawable::onMouseMove(const graphics::MouseEvent& event) {
 }
 
 bool ScrollableFrameDrawable::onMouseEnter(const graphics::MouseEvent& event) {
-    // Get viewport bounds for scroll calculation
-    graphics::RenderContext baseContext;
-    if (event.context) {
-        baseContext = *event.context;
-    } else {
-        int displayW = al_get_display_width(al_get_current_display());
-        int displayH = al_get_display_height(al_get_current_display());
-        baseContext = graphics::RenderContext{displayW, displayH, 0.0f, 0.0f, nullptr};
-    }
-    
-    // Get viewport bounds
-    auto posPx = getPosition().toScreenPos(static_cast<float>(baseContext.screenWidth), static_cast<float>(baseContext.screenHeight));
-    auto sizePx = getSize().toScreenPos(static_cast<float>(baseContext.screenWidth), static_cast<float>(baseContext.screenHeight));
-    const float absX = posPx.first + baseContext.offsetX;
-    const float absY = posPx.second + baseContext.offsetY;
-    const float width = sizePx.first;
-    const float height = sizePx.second;
-    const float viewportHeight = height - 2 * padding;
-    const float effectiveContentHeight = contentHeight > 0.0f ? contentHeight : viewportHeight;
-    const float maxScroll = std::max(0.0f, effectiveContentHeight - viewportHeight);
-    float clampedScroll = std::min(std::max(0.0f, scrollOffset), maxScroll);
+    const auto baseContext = getBaseContext(event.context);
+    const auto geometry = computeScrollbarGeometry(baseContext);
     
     // Set up child context with padding and scroll offset
     graphics::RenderContext childContext = baseContext;
-    childContext.screenWidth = static_cast<int>(width - 2 * padding);
-    childContext.screenHeight = static_cast<int>(viewportHeight);
-    childContext.offsetX = absX + padding;
-    childContext.offsetY = absY + padding - clampedScroll;
+    childContext.screenWidth = static_cast<int>(geometry.viewportWidth);
+    childContext.screenHeight = static_cast<int>(geometry.viewportHeight);
+    childContext.offsetX = geometry.viewportX;
+    childContext.offsetY = geometry.viewportY - geometry.clampedScroll;
     
     // Check children in reverse order (top-most first)
     for (auto it = children.rbegin(); it != children.rend(); ++it) {
@@ -261,34 +242,15 @@ bool ScrollableFrameDrawable::onMouseEnter(const graphics::MouseEvent& event) {
 }
 
 bool ScrollableFrameDrawable::onMouseLeave(const graphics::MouseEvent& event) {
-    // Get viewport bounds for scroll calculation
-    graphics::RenderContext baseContext;
-    if (event.context) {
-        baseContext = *event.context;
-    } else {
-        int displayW = al_get_display_width(al_get_current_display());
-        int displayH = al_get_display_height(al_get_current_display());
-        baseContext = graphics::RenderContext{displayW, displayH, 0.0f, 0.0f, nullptr};
-    }
-    
-    // Get viewport bounds
-    auto posPx = getPosition().toScreenPos(static_cast<float>(baseContext.screenWidth), static_cast<float>(baseContext.screenHeight));
-    auto sizePx = getSize().toScreenPos(static_cast<float>(baseContext.screenWidth), static_cast<float>(baseContext.screenHeight));
-    const float absX = posPx.first + baseContext.offsetX;
-    const float absY = posPx.second + baseContext.offsetY;
-    const float width = sizePx.first;
-    const float height = sizePx.second;
-    const float viewportHeight = height - 2 * padding;
-    const float effectiveContentHeight = contentHeight > 0.0f ? contentHeight : viewportHeight;
-    const float maxScroll = std::max(0.0f, effectiveContentHeight - viewportHeight);
-    float clampedScroll = std::min(std::max(0.0f, scrollOffset), maxScroll);
+    const auto baseContext = getBaseContext(event.context);
+    const auto geometry = computeScrollbarGeometry(baseContext);
     
     // Set up child context with padding and scroll offset
     graphics::RenderContext childContext = baseContext;
-    childContext.screenWidth = static_cast<int>(width - 2 * padding);
-    childContext.screenHeight = static_cast<int>(viewportHeight);
-    childContext.offsetX = absX + padding;
-    childContext.offsetY = absY + padding - clampedScroll;
+    childContext.screenWidth = static_cast<int>(geometry.viewportWidth);
+    childContext.screenHeight = static_cast<int>(geometry.viewportHeight);
+    childContext.offsetX = geometry.viewportX;
+    childContext.offsetY = geometry.viewportY - geometry.clampedScroll;
     
     // Check children in reverse order (top-most first)
     for (auto it = children.rbegin(); it != children.rend(); ++it) {
@@ -370,6 +332,70 @@ float ScrollableFrameDrawable::computeMaxScroll(float screenW, float screenH) co
     const float viewportHeight = sizePx.second - 2 * padding;
     const float effectiveContentHeight = contentHeight > 0.0f ? contentHeight : viewportHeight;
     return std::max(0.0f, effectiveContentHeight - viewportHeight);
+}
+
+graphics::RenderContext ScrollableFrameDrawable::getBaseContext(const graphics::RenderContext* eventContext) const {
+    if (eventContext) {
+        return *eventContext;
+    }
+
+    int displayW = al_get_display_width(al_get_current_display());
+    int displayH = al_get_display_height(al_get_current_display());
+    return graphics::RenderContext{displayW, displayH, 0.0f, 0.0f, nullptr};
+}
+
+ScrollableFrameDrawable::ScrollbarGeometry ScrollableFrameDrawable::computeScrollbarGeometry(const graphics::RenderContext& context) const noexcept {
+    ScrollbarGeometry geometry;
+
+    const auto sizePx = getSize().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
+    const auto posPx = getPosition().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
+
+    geometry.absX = posPx.first + context.offsetX;
+    geometry.absY = posPx.second + context.offsetY;
+    geometry.width = sizePx.first;
+    geometry.height = sizePx.second;
+    geometry.viewportX = geometry.absX + padding;
+    geometry.viewportY = geometry.absY + padding;
+    geometry.viewportWidth = geometry.width - 2 * padding;
+    geometry.viewportHeight = geometry.height - 2 * padding;
+
+    const float effectiveContentHeight = contentHeight > 0.0f ? contentHeight : geometry.viewportHeight;
+    geometry.maxScroll = std::max(0.0f, effectiveContentHeight - geometry.viewportHeight);
+    geometry.clampedScroll = std::clamp(scrollOffset, 0.0f, geometry.maxScroll);
+    geometry.hasScrollableRange = geometry.maxScroll > 0.0f && geometry.viewportHeight > 0.0f;
+
+    geometry.thumbWidth = std::max(0.0f, scrollbarWidth);
+    geometry.thumbX = geometry.absX + geometry.width - geometry.thumbWidth;
+
+    if (!geometry.hasScrollableRange || geometry.thumbWidth <= 0.0f) {
+        geometry.thumbHeight = 0.0f;
+        geometry.thumbY = geometry.viewportY;
+        return geometry;
+    }
+
+    const float ratio = geometry.viewportHeight / effectiveContentHeight;
+    geometry.thumbHeight = std::max(10.0f, geometry.viewportHeight * ratio);
+    const float thumbTravel = geometry.viewportHeight - geometry.thumbHeight;
+    const float scrollRatio = geometry.maxScroll > 0.0f ? geometry.clampedScroll / geometry.maxScroll : 0.0f;
+    geometry.thumbY = geometry.viewportY + scrollRatio * std::max(0.0f, thumbTravel);
+
+    return geometry;
+}
+
+float ScrollableFrameDrawable::scrollOffsetFromThumbTop(float thumbTop, const ScrollbarGeometry& geometry) const noexcept {
+    const float thumbTravel = std::max(0.0f, geometry.viewportHeight - geometry.thumbHeight);
+    if (thumbTravel <= 0.0f || geometry.maxScroll <= 0.0f) {
+        return 0.0f;
+    }
+
+    const float ratio = (thumbTop - geometry.viewportY) / thumbTravel;
+    return std::clamp(ratio, 0.0f, 1.0f) * geometry.maxScroll;
+}
+
+float ScrollableFrameDrawable::clampThumbTop(float thumbTop, const ScrollbarGeometry& geometry) const noexcept {
+    const float minTop = geometry.viewportY;
+    const float maxTop = geometry.viewportY + std::max(0.0f, geometry.viewportHeight - geometry.thumbHeight);
+    return std::clamp(thumbTop, minTop, maxTop);
 }
 
 } // namespace ui

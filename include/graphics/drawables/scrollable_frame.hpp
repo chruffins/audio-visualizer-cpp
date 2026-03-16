@@ -44,6 +44,24 @@ public:
     void setScrollStep(float step) noexcept { scrollStep = step; }
 
 private:
+    struct ScrollbarGeometry {
+        float absX = 0.0f;
+        float absY = 0.0f;
+        float width = 0.0f;
+        float height = 0.0f;
+        float viewportX = 0.0f;
+        float viewportY = 0.0f;
+        float viewportWidth = 0.0f;
+        float viewportHeight = 0.0f;
+        float maxScroll = 0.0f;
+        float clampedScroll = 0.0f;
+        float thumbX = 0.0f;
+        float thumbY = 0.0f;
+        float thumbWidth = 0.0f;
+        float thumbHeight = 0.0f;
+        bool hasScrollableRange = false;
+    };
+
     float scrollOffset = 0.0f;
     float contentHeight = 0.0f;
     float cachedViewportHeight = 0.0f;  // Cache viewport height from draw() for use in event handlers
@@ -51,8 +69,15 @@ private:
     float scrollbarWidth = 6.0f;
     bool showScrollbar = true;
     float scrollStep = 24.0f; // pixels per wheel notch
+    bool isDraggingScrollbar = false;
+    float scrollbarDragOffsetY = 0.0f;
+    graphics::IEventHandler* activeMouseChild = nullptr;
 
     float computeMaxScroll(float screenW, float screenH) const noexcept;
+    graphics::RenderContext getBaseContext(const graphics::RenderContext* eventContext) const;
+    ScrollbarGeometry computeScrollbarGeometry(const graphics::RenderContext& context) const noexcept;
+    float scrollOffsetFromThumbTop(float thumbTop, const ScrollbarGeometry& geometry) const noexcept;
+    float clampThumbTop(float thumbTop, const ScrollbarGeometry& geometry) const noexcept;
 };
 
 } // namespace ui

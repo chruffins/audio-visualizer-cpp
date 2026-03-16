@@ -6,6 +6,7 @@
 #include <allegro5/allegro_primitives.h>
 
 #include "graphics/drawable.hpp"
+#include "graphics/event_handler.hpp"
 #include "graphics/uv.hpp"
 
 namespace ui {
@@ -57,7 +58,7 @@ protected:
 // Scrollable container that offsets child rendering by a vertical scroll value
 // while keeping children clipped to the viewport. A simple scrollbar indicator
 // is drawn on the right edge when content exceeds the viewport height.
-class ScrollContainerDrawable : public ContainerDrawable {
+class ScrollContainerDrawable : public ContainerDrawable, public graphics::IEventHandler {
 public:
     using ContainerDrawable::ContainerDrawable;
 
@@ -71,15 +72,49 @@ public:
     void setScrollbarColor(ALLEGRO_COLOR c) noexcept { scrollbarColor = c; }
     void setScrollbarWidth(float w) noexcept { scrollbarWidth = w; }
     void enableScrollbar(bool enable) noexcept { showScrollbar = enable; }
+    void setScrollStep(float step) noexcept { scrollStep = step; }
 
     void draw(const graphics::RenderContext& context = {}) const override;
 
+    bool onMouseDown(const graphics::MouseEvent& event) override;
+    bool onMouseUp(const graphics::MouseEvent& event) override;
+    bool onMouseMove(const graphics::MouseEvent& event) override;
+    bool onMouseScroll(const graphics::ScrollEvent& event) override;
+    bool hitTest(float x, float y, const graphics::RenderContext& context) const override;
+    bool isEnabled() const override { return true; }
+
 private:
+    struct ScrollbarGeometry {
+        float absX = 0.0f;
+        float absY = 0.0f;
+        float width = 0.0f;
+        float height = 0.0f;
+        float viewportX = 0.0f;
+        float viewportY = 0.0f;
+        float viewportHeight = 0.0f;
+        float maxScroll = 0.0f;
+        float clampedScroll = 0.0f;
+        float thumbX = 0.0f;
+        float thumbY = 0.0f;
+        float thumbWidth = 0.0f;
+        float thumbHeight = 0.0f;
+        bool hasScrollableRange = false;
+    };
+
     float scrollOffset = 0.0f;
     float contentHeight = 0.0f;
     ALLEGRO_COLOR scrollbarColor = al_map_rgb(160, 160, 160);
     float scrollbarWidth = 6.0f;
     bool showScrollbar = true;
+    float scrollStep = 24.0f;
+    bool isDraggingScrollbar = false;
+    float scrollbarDragOffsetY = 0.0f;
+    graphics::IEventHandler* activeMouseChild = nullptr;
+
+    graphics::RenderContext getBaseContext(const graphics::RenderContext* eventContext) const;
+    ScrollbarGeometry computeScrollbarGeometry(const graphics::RenderContext& context) const noexcept;
+    float clampThumbTop(float thumbTop, const ScrollbarGeometry& geometry) const noexcept;
+    float scrollOffsetFromThumbTop(float thumbTop, const ScrollbarGeometry& geometry) const noexcept;
 };
 
 } // namespace ui
