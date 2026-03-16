@@ -1,6 +1,7 @@
 #pragma once
 
 #include "graphics/drawables/progress_bar.hpp"
+#include "graphics/drawables/slider.hpp"
 #include "graphics/drawables/text.hpp"
 #include "graphics/drawables/frame.hpp"
 #include "graphics/drawables/image.hpp"
@@ -63,6 +64,10 @@ private:
     
     // Progress bar
     ProgressBarDrawable progressBar;
+
+    // Volume slider
+    std::shared_ptr<ui::Slider> volumeSliderModel;
+    SliderDrawable volumeSlider;
     
     // Cached font pointers (optimization)
     ALLEGRO_FONT* m_fontTitle = nullptr;

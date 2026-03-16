@@ -27,6 +27,8 @@ public:
 
     // Event delegation to children
     bool onMouseDown(const graphics::MouseEvent& event) override {
+        activeMouseChild = nullptr;
+
         // First check if click is within frame bounds
         graphics::RenderContext baseContext;
         if (event.context) {
@@ -66,6 +68,7 @@ public:
                 localEvent.localX = event.x - childContext.offsetX;
                 localEvent.localY = event.y - childContext.offsetY;
                 if (handler->onMouseDown(localEvent)) {
+                    activeMouseChild = handler;
                     return true;
                 }
             }
@@ -97,6 +100,18 @@ public:
         childContext.offsetX = absX + padding;
         childContext.offsetY = absY + padding;
         
+        if (activeMouseChild) {
+            graphics::MouseEvent localEvent = event;
+            localEvent.context = &childContext;
+            localEvent.localX = event.x - childContext.offsetX;
+            localEvent.localY = event.y - childContext.offsetY;
+            const bool handled = activeMouseChild->onMouseUp(localEvent);
+            activeMouseChild = nullptr;
+            if (handled) {
+                return true;
+            }
+        }
+
         // Check children in reverse order (top-most first)
         for (auto it = children.rbegin(); it != children.rend(); ++it) {
             auto handler = dynamic_cast<graphics::IEventHandler*>(*it);
@@ -108,10 +123,12 @@ public:
                 localEvent.localX = event.x - childContext.offsetX;
                 localEvent.localY = event.y - childContext.offsetY;
                 if (handler->onMouseUp(localEvent)) {
+                    activeMouseChild = nullptr;
                     return true;
                 }
             }
         }
+        activeMouseChild = nullptr;
         return graphics::IEventHandler::onMouseUp(event);
     }
 
@@ -139,6 +156,16 @@ public:
         childContext.offsetX = absX + padding;
         childContext.offsetY = absY + padding;
         
+        if (activeMouseChild) {
+            graphics::MouseEvent localEvent = event;
+            localEvent.context = &childContext;
+            localEvent.localX = event.x - childContext.offsetX;
+            localEvent.localY = event.y - childContext.offsetY;
+            if (activeMouseChild->onMouseMove(localEvent)) {
+                return true;
+            }
+        }
+
         // Check children in reverse order (top-most first)
         for (auto it = children.rbegin(); it != children.rend(); ++it) {
             auto handler = dynamic_cast<graphics::IEventHandler*>(*it);
@@ -207,6 +234,7 @@ public:
 protected:
     float padding = 0.0f;
     float margin = 0.0f;
+    graphics::IEventHandler* activeMouseChild = nullptr;
 };
 
 } // namespace ui

@@ -20,7 +20,13 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
       loopButton(graphics::UV(0.5f, 1.0f, 80.0f, -50.0f),
       graphics::UV(0.0f, 0.0f, 40.0f, 40.0f)),
       mainFrame(std::make_shared<FrameDrawable>()),
-      progressBar(progressBarModel) {
+        progressBar(progressBarModel),
+        volumeSliderModel(std::make_shared<ui::Slider>(
+          0.0f,
+          100.0f,
+          musicEngine ? (musicEngine->getGain() * 100.0f) : 100.0f
+        )),
+        volumeSlider(volumeSliderModel) {
   
   // Cache fonts (optimization)
   auto font = fontManager->getFont("courier");
@@ -94,6 +100,15 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
   ).setFont(font)
    .setAlignment(TextDrawable::HorizontalAlignment::Left)
    .setVerticalAlignment(graphics::VerticalAlignment::TOP);
+
+  // Volume slider (0-100 mapped to engine gain 0.0-1.0)
+  volumeSlider.setPosition(graphics::UV(1.0f, 1.0f, -180.0f, -28.0f));
+  volumeSlider.setSize(graphics::UV(0.0f, 0.0f, 140.0f, 20.0f));
+  volumeSlider.setOnValueChanged([this](float value) {
+    if (this->musicEngine) {
+      this->musicEngine->setGain(value / 100.0f);
+    }
+  });
 
   // Setup play/pause button
   playPauseButton.loadImageFromFile("../assets/icons/play.png");
@@ -191,6 +206,7 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
   mainFrame->addChild(&playPauseButton);
   mainFrame->addChild(&skipButton);
   mainFrame->addChild(&loopButton);
+  mainFrame->addChild(&volumeSlider);
   
   // Register button for events
   eventDispatcher.addEventTarget(mainFrame);
@@ -260,9 +276,9 @@ void NowPlayingView::updateLoopButton() {
   if (musicEngine) {
     // Swap icon based on repeat state
     if (musicEngine->isRepeating()) {
-      loopButton.loadImageFromFile("../assets/icons/repeat.png");
+      loopButton.setImageTint(al_map_rgb(100, 200, 100)); // green tint when active
     } else {
-      loopButton.loadImageFromFile("../assets/icons/loop.png");
+      loopButton.setImageTint(al_map_rgb(255, 255, 255)); // normal tint when inactive
     }
   }
 }

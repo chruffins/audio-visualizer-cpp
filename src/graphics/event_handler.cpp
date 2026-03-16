@@ -170,6 +170,14 @@ bool EventDispatcher::dispatchMouseMove(float x, float y) {
     int displayW = al_get_display_width(al_get_current_display());
     int displayH = al_get_display_height(al_get_current_display());
     RenderContext baseContext{displayW, displayH, 0.0f, 0.0f, nullptr};
+
+    auto downTarget = m_mouseDownTarget.lock();
+    if (downTarget && downTarget->isEnabled()) {
+        MouseEvent moveEvent(x, y, 1, false, &baseContext);
+        if (downTarget->onMouseMove(moveEvent)) {
+            return true;
+        }
+    }
     
     auto newTarget = findTargetAt(x, y, baseContext);
     auto oldTarget = m_hoveredElement.lock();

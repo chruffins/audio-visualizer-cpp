@@ -4,9 +4,18 @@
 
 void ui::ProgressBarDrawable::draw(const graphics::RenderContext& context) const
 {
-    // For now, just draw a squared progress bar
     drawSquared(context);
-    // Future: could have a mode to choose rounded vs squared
+}
+
+bool ui::ProgressBarDrawable::hitTest(float x, float y, const graphics::RenderContext& context) const
+{
+    auto size = getSize().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
+    auto position = getPosition().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
+    position.first += context.offsetX;
+    position.second += context.offsetY;
+
+    return x >= position.first && x <= position.first + size.first
+        && y >= position.second && y <= position.second + size.second;
 }
 
 void ui::ProgressBarDrawable::drawSquared(const graphics::RenderContext& context) const

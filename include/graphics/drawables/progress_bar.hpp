@@ -5,10 +5,11 @@
 #include <allegro5/color.h>
 
 #include "graphics/drawable.hpp"
+#include "graphics/event_handler.hpp"
 
 namespace ui
 {
-class ProgressBarDrawable : public graphics::Drawable
+class ProgressBarDrawable : public graphics::Drawable, public graphics::IEventHandler
 {
 public:
     // owns or references a ProgressBar; use shared_ptr so multiple drawables can reflect the same model
@@ -22,6 +23,10 @@ public:
 
     // render using your renderer implementation
     void draw(const graphics::RenderContext& context = {}) const override;
+
+    bool hitTest(float x, float y, const graphics::RenderContext& context) const override;
+    bool isFocusable() const override { return false; }
+    bool isEnabled() const override { return true; }
 private:
     std::shared_ptr<ProgressBar> model;
     ALLEGRO_COLOR bgColor = al_map_rgb(32, 32, 32);

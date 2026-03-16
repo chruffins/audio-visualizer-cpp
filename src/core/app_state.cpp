@@ -50,6 +50,8 @@ bool AppState::init() {
         return false; // Failed to initialize music engine
     } else {
         this->music_engine.setEventQueue(this->event_queue);
+        const float startupGain = static_cast<float>(this->config.getVolumePercent()) / 100.0f;
+        this->music_engine.setGain(startupGain);
     }
 
     // Inject the callback timer into Discord integration so it can stop itself when ready
@@ -105,6 +107,9 @@ bool AppState::init() {
 }
 
 void AppState::shutdown() {
+    config.setVolumePercent(static_cast<int>(music_engine.getGain() * 100.0f));
+    config.save();
+
     music_engine.shutdown();
 
     // Clear library (destroys album cover ImageModels) before destroying display
