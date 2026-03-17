@@ -19,6 +19,39 @@ float calculateVerticalOffset(graphics::VerticalAlignment alignment, float heigh
       return 0.0f;
   }
 }
+
+// helper to truncate text with ellipsis if it exceeds width
+std::string truncateTextWithEllipsis(ALLEGRO_FONT* font, const char* str, int maxWidth) {
+  int textWidth = al_get_text_width(font, str);
+  if (textWidth <= maxWidth) {
+    return std::string(str);
+  }
+
+  std::string ellipsis = "...";
+  int ellipsisWidth = al_get_text_width(font, ellipsis.c_str());
+  if (ellipsisWidth >= maxWidth) {
+    return "";
+  }
+
+  int availableWidth = maxWidth - ellipsisWidth;
+  std::string truncated;
+  for (const char* p = str; *p != '\0'; ) {
+    // utf-8 crap
+    unsigned char c = static_cast<unsigned char>(*p);
+    int charLen = 1;
+    if      ((c & 0xF8) == 0xF0) charLen = 4; // 11110xxx
+    else if ((c & 0xF0) == 0xE0) charLen = 3; // 1110xxxx
+    else if ((c & 0xE0) == 0xC0) charLen = 2; // 110xxxxx
+
+    std::string candidate = truncated + std::string(p, charLen);
+    if (al_get_text_width(font, candidate.c_str()) > availableWidth) {
+      break;
+    }
+    truncated = std::move(candidate);
+    p += charLen;
+  }
+  return truncated + ellipsis;
+}
 } // anonymous namespace
 
 void TextDrawable::initializeFallbackFont() {
@@ -64,6 +97,12 @@ void TextDrawable::drawTextInternal(const char* str, const graphics::RenderConte
 
   int font_height = al_get_font_line_height(font_ptr);
   float y_offset = calculateVerticalOffset(verticalAlignment, h, font_height);
+  std::string truncatedStr;
+
+  if (truncateText) {
+    truncatedStr = truncateTextWithEllipsis(font_ptr, str, static_cast<int>(w));
+    str = truncatedStr.c_str();
+  }
 
   int allegro_align = ALLEGRO_ALIGN_CENTER;
   switch (textAlignment) {

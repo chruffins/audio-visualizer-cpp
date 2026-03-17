@@ -31,7 +31,9 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
   // Cache fonts (optimization)
   auto courierFont = fontManager->getFont("courier");
   auto kanitFont = fontManager->getFont("kanit");
+  auto kanitLightFont = fontManager->getFont("kanitLight");
   auto gothicFont = fontManager->getFont("gothic");
+  auto plexSansLightFont = fontManager->getFont("plexSansLight");
   m_fontTitle = fontManager->getFont("courier")->getFont(16);
   m_fontMetadata = fontManager->getFont("courier")->getFont(14);
   m_fontTime = fontManager->getFont("courier")->getFont(12);
@@ -48,7 +50,7 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
       graphics::UV(0.0f, 0.0f, 69.0f, 17.0f),
       graphics::UV(0.9f, 0.0f, 0.0f, 30.0f),
       16
-  ).setFont(gothicFont)
+  ).setFont(kanitFont)
    .setMultiline(false)
    .setAlignment(TextDrawable::HorizontalAlignment::Left)
    .setVerticalAlignment(graphics::VerticalAlignment::TOP);
@@ -59,7 +61,7 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
       graphics::UV(0.0f, 0.0f, 69.0f, 32.0f),
       graphics::UV(0.9f, 0.0f, 0.0f, 25.0f),
       16
-  ).setFont(kanitFont)
+  ).setFont(kanitLightFont)
    .setMultiline(false)
    .setAlignment(TextDrawable::HorizontalAlignment::Left)
    .setVerticalAlignment(graphics::VerticalAlignment::TOP);
@@ -90,22 +92,22 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
       "0:00",
       graphics::UV(0.3f, 1.0f, -0.0f, -10.0f),
       graphics::UV(0.0f, 0.0f, 80.0f, 25.0f),
-      14
-  ).setFont(kanitFont)
+      12
+  ).setFont(plexSansLightFont)
    .setAlignment(TextDrawable::HorizontalAlignment::Right)
-   .setVerticalAlignment(graphics::VerticalAlignment::TOP);
+   .setVerticalAlignment(graphics::VerticalAlignment::CENTER);
 
   songDurationText = TextDrawable(
       "0:00",
       graphics::UV(0.7f, 1.0f, 20.0f, -10.0f),
       graphics::UV(0.0f, 0.0f, 80.0f, 25.0f),
-      14
-  ).setFont(kanitFont)
+      12
+  ).setFont(plexSansLightFont)
    .setAlignment(TextDrawable::HorizontalAlignment::Left)
-   .setVerticalAlignment(graphics::VerticalAlignment::TOP);
+   .setVerticalAlignment(graphics::VerticalAlignment::CENTER);
 
   // Volume slider (0-100 mapped to engine gain 0.0-1.0)
-  volumeSlider.setPosition(graphics::UV(1.0f, 1.0f, -180.0f, -28.0f));
+  volumeSlider.setPosition(graphics::UV(1.0f, 1.0f, -160.0f, -7.0f));
   volumeSlider.setSize(graphics::UV(0.0f, 0.0f, 140.0f, 20.0f));
   volumeSlider.setOnValueChanged([this](float value) {
     if (this->musicEngine) {
@@ -255,7 +257,7 @@ void NowPlayingView::recalculateLayout(const graphics::RenderContext& context) {
   // Album: ~3-4% of display height
   int albumFontSize = static_cast<int>(std::clamp(context.screenHeight * 0.04f, 12.0f, 24.0f));
   // Time labels: ~2-3% of display height
-  int timeFontSize = static_cast<int>(std::clamp(context.screenHeight * 0.05f, 8.0f, 18.0f));
+  int timeFontSize = static_cast<int>(std::clamp(context.screenHeight * 0.04f, 8.0f, 18.0f));
 
   // Update font sizes
   songTitleText.setFontSize(titleFontSize);

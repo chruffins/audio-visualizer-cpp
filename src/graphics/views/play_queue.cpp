@@ -32,7 +32,7 @@ PlayQueueView::PlayQueueView(std::shared_ptr<util::FontManager> fontManager,
 
     // Scrollable frame for songs
     scrollableFrame->setPosition(graphics::UV(0.0f, 0.0f, 0.0f, 25.0f));
-    scrollableFrame->setSize(graphics::UV(1.0f, 1.0f, 0.0f, -10.0f));
+    scrollableFrame->setSize(graphics::UV(1.0f, 1.0f, 0.0f, -25.0f));
     scrollableFrame->setBackgroundColor(al_map_rgba(20, 20, 30, 200));
     scrollableFrame->setBorderColor(al_map_rgb(60, 60, 80));
     scrollableFrame->setBorderThickness(1);
@@ -53,6 +53,7 @@ PlayQueueView::PlayQueueView(std::shared_ptr<util::FontManager> fontManager,
     contextLabelText->setFont(kanitFont)
                      .setMultiline(false)
                      .setAlignment(TextDrawable::HorizontalAlignment::Left)
+                     .setTruncateText(true)
                      .setVerticalAlignment(graphics::VerticalAlignment::TOP);
 
     mainFrame->addChild(scrollableFrame.get());
@@ -108,6 +109,7 @@ void PlayQueueView::buildQueueDisplay() {
     const auto& playQueue = musicEngine->playQueueModel;
     auto courierFont = fontManager->getFont("courier");
     auto kanitFont = fontManager->getFont("kanit");
+    auto kanitLightFont = fontManager->getFont("kanitLight");
     
     const float itemHeight = 40.0f;
     const float padding = 5.0f;
@@ -147,8 +149,9 @@ void PlayQueueView::buildQueueDisplay() {
         // Title
         item.titleText->setText(songView->title);
         item.titleText->setPosition(graphics::UV(0.0f, 0.0f, 20.0f, 5.0f));
-        item.titleText->setSize(graphics::UV(1.0f, 0.0f, -70.0f, 20.0f));
+        item.titleText->setSize(graphics::UV(1.0f, 0.0f, -20.0f, 20.0f));
         item.titleText->setFontSize(12);
+        item.titleText->setTruncateText(true);
         item.titleText->setFont(kanitFont);
         item.titleText->setAlignment(TextDrawable::HorizontalAlignment::Left);
         
@@ -166,7 +169,7 @@ void PlayQueueView::buildQueueDisplay() {
         item.durationText->setPosition(graphics::UV(1.0f, 0.0f, -10.0f, 20.0f));
         item.durationText->setSize(graphics::UV(0.0f, 0.0f, 50.0f, 20.0f));
         item.durationText->setFontSize(10);
-        item.durationText->setFont(kanitFont);
+        item.durationText->setFont(courierFont);
         item.durationText->setAlignment(TextDrawable::HorizontalAlignment::Right);
         
         // add texts to frame

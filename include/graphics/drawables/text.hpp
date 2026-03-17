@@ -131,6 +131,11 @@ public:
         return *this;
     }
 
+    TextDrawable& setTruncateText(bool truncate) {
+        truncateText = truncate;
+        return *this;
+    }
+
     bool isVisible() const {
         return visible;
     }
@@ -170,6 +175,7 @@ private:
     int line_height = 0;
     bool multiline = false;
     bool visible = true;
+    bool truncateText = false;
     ALLEGRO_COLOR color = al_map_rgb(255, 255, 255);
 
     int font_size;
