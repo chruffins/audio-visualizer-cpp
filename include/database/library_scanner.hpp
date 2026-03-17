@@ -37,7 +37,8 @@ struct SongMetadata {
 namespace database {
 
 struct ScanOptions {
-	std::vector<std::string> extensions = { ".mp3", ".flac", ".wav", ".ogg" };
+    std::vector<std::string> extensions = { ".mp3", ".flac", ".wav", ".ogg", ".m4a", ".mp4", ".aac", ".opus" };
+    bool probe_unknown_extensions = true;
 	bool transactional = true;
 };
 

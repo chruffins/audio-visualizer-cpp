@@ -5,6 +5,7 @@
 #include <iostream>
 #include <filesystem>
 #include <unordered_map>
+#include <unordered_set>
 #include <cctype>
 
 #include <taglib/tag.h>
@@ -25,18 +26,20 @@
 
 using namespace database;
 
-// Helper: case-insensitive ends-with
-static bool ends_with_ci(const std::string &s, const std::string &suffix)
+static std::string normalize_extension(std::string ext)
 {
-    if (s.size() < suffix.size())
-        return false;
-    auto a = s.substr(s.size() - suffix.size());
-    for (size_t i = 0; i < a.size(); ++i)
-        a[i] = tolower(a[i]);
-    auto b = suffix;
-    for (auto &c : b)
-        c = tolower(c);
-    return a == b;
+    if (ext.empty())
+        return ext;
+
+    if (ext.front() != '.')
+        ext.insert(ext.begin(), '.');
+
+    for (auto &c : ext)
+    {
+        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    }
+
+    return ext;
 }
 
 bool LibraryScanner::isAudioFile(const std::string &path)
@@ -62,7 +65,11 @@ struct ScanState
     size_t scanned = 0;
     size_t imported = 0;
     size_t skipped = 0;
+    size_t acceptedByExtension = 0;
+    size_t acceptedByProbe = 0;
     std::vector<std::string> files; // collected file paths
+    std::unordered_set<std::string> allowedExtensions;
+    std::unordered_map<std::string, std::optional<std::pair<std::vector<unsigned char>, std::string>>> folderCoverCache;
 };
 
 static int for_each_recursive_cb(ALLEGRO_FS_ENTRY *entry, void *vstate)
@@ -76,9 +83,23 @@ static int for_each_recursive_cb(ALLEGRO_FS_ENTRY *entry, void *vstate)
 
     const char *name = al_get_fs_entry_name(entry);
     std::string path(name);
+    std::string extension = normalize_extension(std::filesystem::path(path).extension().string());
 
     st->scanned++;
-    if (!LibraryScanner::isAudioFile(path))
+    bool isAccepted = false;
+
+    if (!extension.empty() && st->allowedExtensions.find(extension) != st->allowedExtensions.end())
+    {
+        isAccepted = true;
+        st->acceptedByExtension++;
+    }
+    else if (st->opts.probe_unknown_extensions && LibraryScanner::isAudioFile(path))
+    {
+        isAccepted = true;
+        st->acceptedByProbe++;
+    }
+
+    if (!isAccepted)
     {
         // std::cerr << "Skipped non-audio file: " << path << "\n";
         st->skipped++;
@@ -118,6 +139,12 @@ ScanResult LibraryScanner::scan(MusicDatabase &db,
     st.opts = opts;
     st.progress = progress;
     st.cancel = cancel;
+    for (const auto &ext : opts.extensions)
+    {
+        auto normalized = normalize_extension(ext);
+        if (!normalized.empty())
+            st.allowedExtensions.insert(std::move(normalized));
+    }
 
     // traverse and collect files
     al_for_each_fs_entry(dir, for_each_recursive_cb, &st);
@@ -174,6 +201,7 @@ ScanResult LibraryScanner::scan(MusicDatabase &db,
             // Extract cover art from the first song in the album (only once per album, not per song)
             std::vector<unsigned char> cover_data;
             std::string cover_mime;
+            const std::vector<unsigned char> *cover_art_ptr = nullptr;
             
             // Try embedded cover art from the first track
             auto embedded_cover = st.scanner->extractCoverArtFromFile(rep.filepath);
@@ -181,22 +209,29 @@ ScanResult LibraryScanner::scan(MusicDatabase &db,
             {
                 cover_data = std::move(embedded_cover->first);
                 cover_mime = std::move(embedded_cover->second);
+                cover_art_ptr = &cover_data;
             }
             
-            // If no embedded cover art, try to find cover image in the album folder
-            if (cover_data.empty() && !rep.filepath.empty())
+            // If no embedded cover art, try to find and cache cover image by folder
+            if (!cover_art_ptr && !rep.filepath.empty())
             {
                 std::string folder_path = std::filesystem::path(rep.filepath).parent_path().string();
-                auto folder_cover = st.scanner->findAlbumCoverInFolder(folder_path);
-                if (folder_cover)
+                auto cache_it = st.folderCoverCache.find(folder_path);
+                if (cache_it == st.folderCoverCache.end())
                 {
-                    cover_data = std::move(folder_cover->first);
-                    cover_mime = std::move(folder_cover->second);
+                    auto [it, _inserted] = st.folderCoverCache.emplace(
+                        folder_path,
+                        st.scanner->findAlbumCoverInFolder(folder_path));
+                    cache_it = it;
+                }
+
+                if (cache_it->second)
+                {
+                    cover_art_ptr = &cache_it->second->first;
+                    cover_mime = cache_it->second->second;
                 }
             }
-            
-            const std::vector<unsigned char>* cover_art_ptr = cover_data.empty() ? nullptr : &cover_data;
-            
+
             album_id_opt = db.addAlbum(rep.album, static_cast<int>(artist_id), "", std::optional<int>(rep.year), cover_art_ptr, cover_mime);
         }
         int64_t album_id = album_id_opt ? *album_id_opt : 0;

@@ -129,7 +129,29 @@ bool EventDispatcher::dispatchMouseEvent(const ALLEGRO_EVENT& event) {
             // Mouse up goes to the element where mouse was originally pressed
             auto target = m_mouseDownTarget.lock();
             if (target && target->isEnabled()) {
-                MouseEvent mouseEvent(mouseX, mouseY, event.mouse.button, false, &baseContext);
+                constexpr double k_doubleClickInterval = 0.3;  // seconds
+                constexpr float  k_doubleClickRadius   = 4.0f; // pixels
+                double now = al_get_time();
+                float dx = mouseX - m_lastClickX;
+                float dy = mouseY - m_lastClickY;
+                bool isDoubleClick = (now - m_lastClickTime) < k_doubleClickInterval
+                    && event.mouse.button == m_lastClickButton
+                    && m_lastClickTarget.lock() == target
+                    && (dx*dx + dy*dy) <= (k_doubleClickRadius * k_doubleClickRadius);
+
+                if (isDoubleClick) {
+                    // Consume the record so a third click starts fresh
+                    m_lastClickTime = 0.0;
+                    m_lastClickTarget.reset();
+                } else {
+                    m_lastClickTime   = now;
+                    m_lastClickX      = mouseX;
+                    m_lastClickY      = mouseY;
+                    m_lastClickButton = event.mouse.button;
+                    m_lastClickTarget = target;
+                }
+
+                MouseEvent mouseEvent(mouseX, mouseY, event.mouse.button, isDoubleClick, &baseContext);
                 bool handled = target->onMouseUp(mouseEvent);
                 m_mouseDownTarget.reset();
                 return handled;

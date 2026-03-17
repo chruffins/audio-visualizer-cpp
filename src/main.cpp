@@ -24,7 +24,10 @@ int main() {
   // Import songs from configured directory
   database::LibraryScanner scanner;
   std::string musicDir = appState.config.getMusicDirectory();
-  auto result = scanner.scan(appState.db, musicDir);
+  database::ScanOptions scanOptions;
+  scanOptions.extensions = { ".mp3", ".flac", ".wav", ".ogg", ".m4a", ".mp4", ".aac", ".opus" };
+  scanOptions.probe_unknown_extensions = true;
+  auto result = scanner.scan(appState.db, musicDir, scanOptions);
   std::cout << "Scanned " << result.scanned << " files, imported " << result.imported << " songs, skipped " << result.skipped << " songs.\n";
 
   core::runMainLoop();
