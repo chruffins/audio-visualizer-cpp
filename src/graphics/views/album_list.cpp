@@ -47,7 +47,9 @@ void AlbumListView::rebuildItemList() {
         items.reserve(library->getAllAlbums().size());
     }
     
-    auto font = fontManager->getFont("courier");
+    auto courierFont = fontManager->getFont("courier");
+    auto kanitFont = fontManager->getFont("kanit");
+    auto gothicFont = fontManager->getFont("gothic");
     
     if (!library) {
         mainFrame->setContentHeight(0.0f);
@@ -87,7 +89,7 @@ void AlbumListView::rebuildItemList() {
             graphics::UV(0.0f, 0.0f, TEXT_OFFSET_X, 5.0f),
             graphics::UV(1.0f, 0.0f, -TEXT_OFFSET_X - 20.0f, 24.0f),
             16
-        ).setFont(font)
+        ).setFont(gothicFont)
          .setMultiline(false)
          .setAlignment(TextDrawable::HorizontalAlignment::Left)
          .setVerticalAlignment(graphics::VerticalAlignment::TOP);
@@ -100,7 +102,7 @@ void AlbumListView::rebuildItemList() {
             graphics::UV(0.0f, 0.0f, TEXT_OFFSET_X, 30.0f),
             graphics::UV(1.0f, 0.0f, -TEXT_OFFSET_X - 20.0f, 20.0f),
             14
-        ).setFont(font)
+        ).setFont(kanitFont)
          .setMultiline(false)
          .setAlignment(TextDrawable::HorizontalAlignment::Left)
          .setVerticalAlignment(graphics::VerticalAlignment::TOP);
@@ -112,7 +114,7 @@ void AlbumListView::rebuildItemList() {
             graphics::UV(0.0f, 0.0f, TEXT_OFFSET_X, 50.0f),
             graphics::UV(1.0f, 0.0f, -TEXT_OFFSET_X - 20.0f, 20.0f),
             12
-        ).setFont(font)
+        ).setFont(kanitFont)
          .setMultiline(false)
          .setAlignment(TextDrawable::HorizontalAlignment::Left)
          .setVerticalAlignment(graphics::VerticalAlignment::TOP)

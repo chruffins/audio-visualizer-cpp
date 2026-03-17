@@ -88,6 +88,8 @@ bool AppState::init() {
 
     // load fonts
     this->fontManager->loadFont("courier", "../assets/CourierPrime-Regular.ttf");
+    this->fontManager->loadFont("kanit", "../assets/Kanit-Regular.ttf");
+    this->fontManager->loadFont("gothic", "../assets/fourche.ttf");
 
     // Wire the shared play queue into the music engine so playback can operate
     // on the application-owned queue.

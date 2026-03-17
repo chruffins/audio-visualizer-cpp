@@ -31,7 +31,7 @@ PlayQueueView::PlayQueueView(std::shared_ptr<util::FontManager> fontManager,
     mainFrame->setPadding(5.0f);
 
     // Scrollable frame for songs
-    scrollableFrame->setPosition(graphics::UV(0.0f, 0.0f, 0.0f, 10.0f));
+    scrollableFrame->setPosition(graphics::UV(0.0f, 0.0f, 0.0f, 25.0f));
     scrollableFrame->setSize(graphics::UV(1.0f, 1.0f, 0.0f, -10.0f));
     scrollableFrame->setBackgroundColor(al_map_rgba(20, 20, 30, 200));
     scrollableFrame->setBorderColor(al_map_rgb(60, 60, 80));
@@ -41,14 +41,16 @@ PlayQueueView::PlayQueueView(std::shared_ptr<util::FontManager> fontManager,
     scrollableFrame->enableScrollbar(true);
     
     // Context label
-    auto font = fontManager->getFont("courier");
+    auto courierFont = fontManager->getFont("courier");
+    auto gothicFont = fontManager->getFont("gothic");
+    auto kanitFont = fontManager->getFont("kanit");
     *contextLabelText = TextDrawable(
         "Queue",
         graphics::UV(0.0f, 0.0f, 0.0f, 5.0f),
         graphics::UV(1.0f, 0.0f, -10.0f, 30.0f),
         14
     );
-    contextLabelText->setFont(font)
+    contextLabelText->setFont(kanitFont)
                      .setMultiline(false)
                      .setAlignment(TextDrawable::HorizontalAlignment::Left)
                      .setVerticalAlignment(graphics::VerticalAlignment::TOP);
@@ -104,7 +106,8 @@ void PlayQueueView::buildQueueDisplay() {
     }
     
     const auto& playQueue = musicEngine->playQueueModel;
-    auto font = fontManager->getFont("courier");
+    auto courierFont = fontManager->getFont("courier");
+    auto kanitFont = fontManager->getFont("kanit");
     
     const float itemHeight = 40.0f;
     const float padding = 5.0f;
@@ -135,26 +138,26 @@ void PlayQueueView::buildQueueDisplay() {
         
         // Track number
         item.trackNumberText->setText(std::to_string(i + 1));
-        item.trackNumberText->setPosition(graphics::UV(0.0f, 0.0f, 0.0f, 5.0f));
+        item.trackNumberText->setPosition(graphics::UV(0.0f, 0.0f, -2.0f, 5.0f));
         item.trackNumberText->setSize(graphics::UV(0.0f, 0.0f, 25.0f, 20.0f));
         item.trackNumberText->setFontSize(12);
-        item.trackNumberText->setFont(font);
+        item.trackNumberText->setFont(kanitFont);
         item.trackNumberText->setAlignment(TextDrawable::HorizontalAlignment::Left);
         
         // Title
         item.titleText->setText(songView->title);
-        item.titleText->setPosition(graphics::UV(0.0f, 0.0f, 25.0f, 5.0f));
+        item.titleText->setPosition(graphics::UV(0.0f, 0.0f, 20.0f, 5.0f));
         item.titleText->setSize(graphics::UV(1.0f, 0.0f, -70.0f, 20.0f));
         item.titleText->setFontSize(12);
-        item.titleText->setFont(font);
+        item.titleText->setFont(kanitFont);
         item.titleText->setAlignment(TextDrawable::HorizontalAlignment::Left);
         
         // Artist
         item.artistText->setText(songView->artist);
-        item.artistText->setPosition(graphics::UV(0.0f, 0.0f, 25.0f, 22.0f));
+        item.artistText->setPosition(graphics::UV(0.0f, 0.0f, 20.0f, 22.0f));
         item.artistText->setSize(graphics::UV(1.0f, 0.0f, -70.0f, 15.0f));
         item.artistText->setFontSize(10);
-        item.artistText->setFont(font);
+        item.artistText->setFont(kanitFont);
         item.artistText->setAlignment(TextDrawable::HorizontalAlignment::Left);
         
         // Duration
@@ -163,7 +166,7 @@ void PlayQueueView::buildQueueDisplay() {
         item.durationText->setPosition(graphics::UV(1.0f, 0.0f, -10.0f, 20.0f));
         item.durationText->setSize(graphics::UV(0.0f, 0.0f, 50.0f, 20.0f));
         item.durationText->setFontSize(10);
-        item.durationText->setFont(font);
+        item.durationText->setFont(kanitFont);
         item.durationText->setAlignment(TextDrawable::HorizontalAlignment::Right);
         
         // add texts to frame

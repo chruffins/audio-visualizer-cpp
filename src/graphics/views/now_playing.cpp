@@ -29,7 +29,9 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
         volumeSlider(volumeSliderModel) {
   
   // Cache fonts (optimization)
-  auto font = fontManager->getFont("courier");
+  auto courierFont = fontManager->getFont("courier");
+  auto kanitFont = fontManager->getFont("kanit");
+  auto gothicFont = fontManager->getFont("gothic");
   m_fontTitle = fontManager->getFont("courier")->getFont(16);
   m_fontMetadata = fontManager->getFont("courier")->getFont(14);
   m_fontTime = fontManager->getFont("courier")->getFont(12);
@@ -39,14 +41,14 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
   mainFrame->setBackgroundColor(al_map_rgba(30, 30, 40, 220));
   mainFrame->setBorderColor(al_map_rgb(80, 80, 100));
   mainFrame->setBorderThickness(2);
-  mainFrame->setPadding(20.0f);
+  mainFrame->setPadding(15.0f);
 
   songTitleText = TextDrawable(
       "No Song Playing",
-      graphics::UV(0.0f, 0.0f, 64.0f, 30.0f),
+      graphics::UV(0.0f, 0.0f, 69.0f, 17.0f),
       graphics::UV(0.9f, 0.0f, 0.0f, 30.0f),
       16
-  ).setFont(font)
+  ).setFont(gothicFont)
    .setMultiline(false)
    .setAlignment(TextDrawable::HorizontalAlignment::Left)
    .setVerticalAlignment(graphics::VerticalAlignment::TOP);
@@ -54,10 +56,10 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
   // Artist name - medium size, below title
   artistNameText = TextDrawable(
       "Unknown Artist",
-      graphics::UV(0.0f, 0.0f, 64.0f, 45.0f),
+      graphics::UV(0.0f, 0.0f, 69.0f, 32.0f),
       graphics::UV(0.9f, 0.0f, 0.0f, 25.0f),
       16
-  ).setFont(font)
+  ).setFont(kanitFont)
    .setMultiline(false)
    .setAlignment(TextDrawable::HorizontalAlignment::Left)
    .setVerticalAlignment(graphics::VerticalAlignment::TOP);
@@ -68,10 +70,11 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
       graphics::UV(0.0f, 0.0f, 64.0f, 60.0f),
       graphics::UV(0.9f, 0.0f, 0.0f, 25.0f),
       16
-  ).setFont(font)
+  ).setFont(kanitFont)
    .setMultiline(false)
    .setAlignment(TextDrawable::HorizontalAlignment::Left)
-   .setVerticalAlignment(graphics::VerticalAlignment::TOP);
+   .setVerticalAlignment(graphics::VerticalAlignment::TOP)
+   .setVisible(false); // uhh dont need this anymore i guess
 
   // Progress bar - positioned in lower third
   progressBar.setPosition(graphics::UV(0.3f, 1.0f, 10.0f, 0.0f));
@@ -85,19 +88,19 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
   // Position and duration text below progress bar
   songPositionText = TextDrawable(
       "0:00",
-      graphics::UV(0.3f, 1.0f, -0.0f, -4.0f),
+      graphics::UV(0.3f, 1.0f, -0.0f, -10.0f),
       graphics::UV(0.0f, 0.0f, 80.0f, 25.0f),
       14
-  ).setFont(font)
+  ).setFont(kanitFont)
    .setAlignment(TextDrawable::HorizontalAlignment::Right)
    .setVerticalAlignment(graphics::VerticalAlignment::TOP);
 
   songDurationText = TextDrawable(
       "0:00",
-      graphics::UV(0.7f, 1.0f, 20.0f, -4.0f),
+      graphics::UV(0.7f, 1.0f, 20.0f, -10.0f),
       graphics::UV(0.0f, 0.0f, 80.0f, 25.0f),
       14
-  ).setFont(font)
+  ).setFont(kanitFont)
    .setAlignment(TextDrawable::HorizontalAlignment::Left)
    .setVerticalAlignment(graphics::VerticalAlignment::TOP);
 

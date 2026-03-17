@@ -126,8 +126,9 @@ public:
         return verticalAlignment;
     }
 
-    void setVisible(bool is_visible) {
+    TextDrawable& setVisible(bool is_visible) {
         visible = is_visible;
+        return *this;
     }
 
     bool isVisible() const {
