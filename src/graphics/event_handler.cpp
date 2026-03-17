@@ -14,6 +14,14 @@ EventDispatcher::~EventDispatcher() {
     al_destroy_user_event_source(&eventSource);
 }
 
+void EventDispatcher::emitPlayQueueJump(size_t index) {
+    ALLEGRO_EVENT ev{};
+    ev.user.type  = ALLEGRO_EVENT_UI;
+    ev.user.data1 = ALLEGRO_EVENT_UI_PLAY_QUEUE_JUMP;
+    ev.user.data2 = static_cast<intptr_t>(index);
+    al_emit_user_event(&eventSource, &ev, nullptr);
+}
+
 void EventDispatcher::addEventTarget(std::shared_ptr<IEventHandler> target) {
     if (target) {
         m_eventTargets.push_back(target);

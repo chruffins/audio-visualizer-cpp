@@ -31,6 +31,7 @@ bool AppState::init() {
     al_register_event_source(this->event_queue, al_get_timer_event_source(this->discord_callback_timer));
     al_register_event_source(this->event_queue, al_get_keyboard_event_source());
     al_register_event_source(this->event_queue, al_get_mouse_event_source());
+    event_dispatcher.registerEventSource(this->event_queue);
     
     al_start_timer(this->graphics_timer);
     al_start_timer(this->discord_callback_timer);

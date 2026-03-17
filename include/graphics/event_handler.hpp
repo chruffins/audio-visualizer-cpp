@@ -7,6 +7,8 @@
 
 #define ALLEGRO_EVENT_UI ALLEGRO_GET_EVENT_TYPE('U','I','E','V')
 
+#define ALLEGRO_EVENT_UI_PLAY_QUEUE_JUMP 1  // data2 = queue index to jump to
+
 namespace graphics {
 
 class Drawable;
@@ -175,6 +177,13 @@ public:
     const ALLEGRO_EVENT_SOURCE* getEventSource() const {
         return &eventSource;
     }
+
+    /**
+     * Emit a ALLEGRO_EVENT_UI_PLAY_QUEUE_JUMP event so the main loop can
+     * safely jump to and play the given queue index without re-entering the
+     * event handler while it is still on the call stack.
+     */
+    void emitPlayQueueJump(size_t index);
     
     /**
      * Focus management

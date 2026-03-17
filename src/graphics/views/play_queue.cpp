@@ -171,7 +171,18 @@ void PlayQueueView::buildQueueDisplay() {
         item.frame.addChild(item.titleText.get());
         item.frame.addChild(item.artistText.get());
         item.frame.addChild(item.durationText.get());
-        
+
+        {
+            const size_t captured_index = i;
+            item.frame.m_onMouseUp = [this, captured_index](const graphics::MouseEvent& e) -> bool {
+                if (!e.doubleClick) return false;
+
+                // emit a UI event to ask for a jump in the play queue
+                eventDispatcher.emitPlayQueueJump(captured_index);
+                return true;
+            };
+        }
+
         queueItems.push_back(std::move(item));
         totalContentHeight += itemHeight + padding;
 
@@ -253,7 +264,7 @@ void PlayQueueView::recalculateLayout(const graphics::RenderContext& context) {
 
 void PlayQueueView::draw(const graphics::RenderContext& context) {
     if (!isVisible) return;
-    
+
     recalculateLayout(context);
     
     // Draw main frame background/border (includes children via FrameDrawable::draw)

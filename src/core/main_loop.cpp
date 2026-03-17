@@ -142,7 +142,19 @@ void runMainLoop() {
             }
             */
         case ALLEGRO_EVENT_UI:
-            // Handle custom UI events here
+            if (appState.event.user.data1 == ALLEGRO_EVENT_UI_PLAY_QUEUE_JUMP) {
+                auto& pq = appState.music_engine.playQueueModel;
+                size_t idx = static_cast<size_t>(appState.event.user.data2);
+
+                if (pq && idx < pq->song_ids.size()) {
+                    pq->current_index = idx;
+
+                    const auto* song = appState.library->getSongById(pq->song_ids[idx]);
+                    if (song) {
+                        appState.music_engine.playSound(song->filename);
+                    }
+                }
+            }
             break;
         default:
             break;
