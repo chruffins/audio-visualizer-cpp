@@ -39,6 +39,7 @@ std::string SongView::toString() const {
            ", title: " + title +
            ", album: " + album +
            ", artist: " + artist +
+           ", album_artist: " + album_artist +
            ", genre: " + genre +
            ", comment: " + comment +
            ", track_number: " + std::to_string(track_number) +

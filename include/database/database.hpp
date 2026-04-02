@@ -66,6 +66,7 @@ public:
     // Get all entities
     std::vector<music::Genre> getAllGenres() const;
     std::vector<music::Artist> getAllArtists() const;
+    std::vector<music::Artist> getSongArtistsById(int64_t song_id) const;
     std::vector<music::Album> getAllAlbums() const;
     std::vector<music::Song> getAllSongs() const;
     std::vector<music::Playlist> getAllPlaylists() const;

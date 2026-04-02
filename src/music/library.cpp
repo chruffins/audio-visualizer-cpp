@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <random>
 #include <algorithm>
+#include <sstream>
 #include "database/database.hpp"
 
 namespace music {
@@ -43,6 +44,20 @@ bool Library::loadFromDatabase(database::MusicDatabase& db) {
         songs.emplace(s.id, std::move(s));
     }
 
+    songArtists.clear();
+    for (const auto& [songId, song] : songs) {
+        (void)song;
+        std::vector<std::string> names;
+        auto songArtistVec = db.getSongArtistsById(songId);
+        names.reserve(songArtistVec.size());
+        for (const auto& artist : songArtistVec) {
+            if (!artist.name.empty()) {
+                names.push_back(artist.name);
+            }
+        }
+        songArtists.emplace(songId, std::move(names));
+    }
+
     if (!db.lastError().empty()) {
         return false;
     }
@@ -58,21 +73,32 @@ void Library::recreateViews() {
     albumViews.clear();
     playlistViews.clear();
 
-    // create SongViews - we need to join with album, artist, and genre data
-    // note: since songs can have multiple artists/genres (junction tables),
-    // we'll use the primary album artist and first genre for now
+    // create SongViews from preloaded entity maps and cached song artist names
     
     for (const auto& [songId, song] : songs) {
         const Album* album = getAlbumById(song.album_id);
         std::string albumTitle = album ? album->title : "";
         std::string artistName = "";
+        std::string albumArtistName = "";
         int year = album ? album->year : 0;
         int disc = 1; // Default disc number (not in current schema)
+
+        auto songArtistIt = songArtists.find(songId);
+        if (songArtistIt != songArtists.end()) {
+            std::ostringstream oss;
+            for (size_t i = 0; i < songArtistIt->second.size(); ++i) {
+                if (i > 0) {
+                    oss << ", ";
+                }
+                oss << songArtistIt->second[i];
+            }
+            artistName = oss.str();
+        }
         
         if (album) {
             const Artist* artist = getArtistById(album->artist_id);
             if (artist) {
-                artistName = artist->name;
+                albumArtistName = artist->name;
             }
         }
         
@@ -84,6 +110,7 @@ void Library::recreateViews() {
             song.title,
             albumTitle,
             artistName,
+            albumArtistName,
             genreName,
             song.comment,
             song.track_number,

@@ -460,6 +460,43 @@ std::vector<music::Artist> MusicDatabase::getAllArtists() const {
     return out;
 }
 
+std::vector<music::Artist> MusicDatabase::getSongArtistsById(int64_t song_id) const {
+    std::vector<music::Artist> out;
+    if (!db) { lastErr = "DB not open"; return out; }
+
+    sqlite3_stmt* stmt = nullptr;
+    const char* sql =
+        "SELECT a.id, a.name, a.picture_path, a.desc "
+        "FROM song_artists sa "
+        "INNER JOIN artists a ON a.id = sa.artist_id "
+        "WHERE sa.song_id = ?1 "
+        "ORDER BY a.name ASC";
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        lastErr = sqlite3_errmsg(db);
+        return out;
+    }
+
+    sqlite3_bind_int64(stmt, 1, song_id);
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        int aid = static_cast<int>(sqlite3_column_int64(stmt, 0));
+        const unsigned char* nameTxt = sqlite3_column_text(stmt, 1);
+        const unsigned char* picTxt = sqlite3_column_text(stmt, 2);
+        const unsigned char* descTxt = sqlite3_column_text(stmt, 3);
+        std::string name = nameTxt ? reinterpret_cast<const char*>(nameTxt) : std::string();
+        std::string pic = picTxt ? reinterpret_cast<const char*>(picTxt) : std::string();
+        std::string desc = descTxt ? reinterpret_cast<const char*>(descTxt) : std::string();
+        out.emplace_back(aid, name, pic, desc);
+    }
+
+    if (sqlite3_errcode(db) != SQLITE_OK && sqlite3_errcode(db) != SQLITE_DONE) {
+        lastErr = sqlite3_errmsg(db);
+    }
+
+    sqlite3_finalize(stmt);
+    return out;
+}
+
 std::vector<music::Album> MusicDatabase::getAllAlbums() const {
     std::vector<music::Album> out;
     if (!db) { lastErr = "DB not open"; return out; }
