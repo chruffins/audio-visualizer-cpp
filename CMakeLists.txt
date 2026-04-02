@@ -22,12 +22,15 @@ if(NOT MSVC AND NOT WIN32)
 endif()
 
 # Glob all source files
-file(GLOB_RECURSE SOURCES 
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
     "src/*.cpp"
     "src/*.c"
 )
 
 add_executable(audiovis ${SOURCES})
+
+# Build bundled libscrob and make its target available for linking.
+add_subdirectory(external/libscrob)
 
 # Define some handy Social SDK variables
 set(DISCORD_SDK_ROOT "${CMAKE_SOURCE_DIR}/external/discord-sdk")
@@ -55,6 +58,9 @@ endif()
 
 # Link the Social SDK library
 target_link_libraries(audiovis PRIVATE ${DISCORD_LIB_PATH})
+
+# Link libscrob (external/libscrob)
+target_link_libraries(audiovis PRIVATE scrob)
 
 # Link Allegro 5 libraries
 find_package(PkgConfig REQUIRED)

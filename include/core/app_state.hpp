@@ -18,6 +18,8 @@
 #include "util/config.hpp"
 #include "graphics/event_handler.hpp"
 
+typedef struct scrob_client scrob_client;
+
 namespace core {
 
 class AppState {
@@ -60,6 +62,9 @@ public:
 	// Discord
 	std::atomic<bool> discord_initialized;
 	DiscordIntegration& discord_integration;
+
+	// last.fm integration
+	scrob_client* scrob_client;
 
 	// Music engine
 	MusicEngine music_engine;
