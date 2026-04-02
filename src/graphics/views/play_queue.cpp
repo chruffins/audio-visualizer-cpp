@@ -136,19 +136,20 @@ void PlayQueueView::buildQueueDisplay() {
         item.frame.setBackgroundColor(bgColor);
         item.frame.setBorderColor(al_map_rgb(70, 70, 90));
         item.frame.setBorderThickness(1);
-        item.frame.setPadding(5.0f);
+        item.frame.setPadding(2.0f);
         
         // Track number
         item.trackNumberText->setText(std::to_string(i + 1));
-        item.trackNumberText->setPosition(graphics::UV(0.0f, 0.0f, -2.0f, 5.0f));
-        item.trackNumberText->setSize(graphics::UV(0.0f, 0.0f, 25.0f, 20.0f));
+        item.trackNumberText->setPosition(graphics::UV(0.0f, 0.0f, 2.0f, 0.0f));
+        item.trackNumberText->setSize(graphics::UV(0.0f, 1.0f, 25.0f, 0.0f));
         item.trackNumberText->setFontSize(12);
         item.trackNumberText->setFont(kanitFont);
+        item.trackNumberText->setVerticalAlignment(graphics::VerticalAlignment::CENTER);
         item.trackNumberText->setAlignment(TextDrawable::HorizontalAlignment::Left);
         
         // Title
         item.titleText->setText(songView->title);
-        item.titleText->setPosition(graphics::UV(0.0f, 0.0f, 20.0f, 5.0f));
+        item.titleText->setPosition(graphics::UV(0.0f, 0.0f, 20.0f, 0.0f));
         item.titleText->setSize(graphics::UV(1.0f, 0.0f, -20.0f, 20.0f));
         item.titleText->setFontSize(12);
         item.titleText->setTruncateText(true);
@@ -157,19 +158,21 @@ void PlayQueueView::buildQueueDisplay() {
         
         // Artist
         item.artistText->setText(songView->artist);
-        item.artistText->setPosition(graphics::UV(0.0f, 0.0f, 20.0f, 22.0f));
+        item.artistText->setPosition(graphics::UV(0.0f, 0.0f, 20.0f, 18.0f));
         item.artistText->setSize(graphics::UV(1.0f, 0.0f, -70.0f, 15.0f));
         item.artistText->setFontSize(10);
+        item.artistText->setTruncateText(true);
         item.artistText->setFont(kanitFont);
         item.artistText->setAlignment(TextDrawable::HorizontalAlignment::Left);
         
         // Duration
         std::string durationStr = util::format_mm_ss(songView->duration);
         item.durationText->setText(durationStr);
-        item.durationText->setPosition(graphics::UV(1.0f, 0.0f, -10.0f, 20.0f));
+        item.durationText->setPosition(graphics::UV(1.0f, 1.0f, -10.0f, -24.0f));
         item.durationText->setSize(graphics::UV(0.0f, 0.0f, 50.0f, 20.0f));
         item.durationText->setFontSize(10);
         item.durationText->setFont(courierFont);
+        item.durationText->setVerticalAlignment(graphics::VerticalAlignment::BOTTOM);
         item.durationText->setAlignment(TextDrawable::HorizontalAlignment::Right);
         
         // add texts to frame
