@@ -41,7 +41,7 @@ int scrob_get_client_token(scrob_client* client) {
     struct xml_document *doc = NULL;
 
     if (scrob_perform_request(request_url, NULL, &response) == 0 && response.data) {
-        printf("%s", response.data);
+        // printf("%s", response.data);
     }
 
     doc = xml_parse_document((uint8_t *)response.data, response.length);
@@ -115,7 +115,7 @@ int scrob_get_session_key(scrob_client *client) {
     struct xml_document *doc = NULL;
 
     if (scrob_perform_request(request_url, NULL, &response) == 0 && response.data) {
-        printf("%s", response.data);
+        // printf("%s", response.data);
     }
 
     free((char*)api_sig);

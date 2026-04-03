@@ -64,7 +64,8 @@ public:
 	DiscordIntegration& discord_integration;
 
 	// last.fm integration
-	scrob_client* scrob_client;
+	scrob_client* scrobClient;
+	bool lastfm_enabled = false;
 
 	// Music engine
 	MusicEngine music_engine;

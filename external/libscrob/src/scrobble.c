@@ -36,16 +36,16 @@ int scrob_scrobble_track(scrob_client *client, const scrob_track *track) {
         return 1;
     }
 
-    return scrob_easy_scrobble(client, track->artist, track->title, track->timestamp);
+    return scrob_easy_scrobble(client, track->artist, track->title, track->album, track->timestamp);
 }
 
-int scrob_easy_scrobble(scrob_client *client, const char *artist, const char *track_title, unsigned int utc_timestamp) {
-    if (client == NULL || artist == NULL || track_title == NULL || client->is_authenticated == false) {
+int scrob_easy_scrobble(scrob_client *client, const char *artist, const char *track_title, const char *album, unsigned int utc_timestamp) {
+    if (client == NULL || artist == NULL || album == NULL || track_title == NULL || client->is_authenticated == false) {
         return 1; // failure
     }
 
-    char *params[7] = {"api_key", "artist0", "method", "sk", "timestamp0", "track0", "api_sig"};
-    char *values[7] = {client->api_key, (char*)artist, "track.scrobble", client->session_key_buffer, NULL, (char*)track_title, NULL};
+    char *params[8] = {"api_key", "album0", "artist0", "method", "sk", "timestamp0", "track0", "api_sig"};
+    char *values[8] = {client->api_key, (char*)album, (char*)artist, "track.scrobble", client->session_key_buffer, NULL, (char*)track_title, NULL};
 
     char *timestamp_str = malloc(11); // enough for 10 digits + null terminator
     if (!timestamp_str) {
@@ -53,16 +53,16 @@ int scrob_easy_scrobble(scrob_client *client, const char *artist, const char *tr
     }
 
     snprintf(timestamp_str, 11, "%u", utc_timestamp);
-    values[4] = timestamp_str;
+    values[5] = timestamp_str;
 
-    const char* api_sig = scrob_create_api_signature((const char **)params, (const char **)values, 6, client->shared_secret); // need 2 free after POST
+    const char* api_sig = scrob_create_api_signature((const char **)params, (const char **)values, 7, client->shared_secret); // need 2 free after POST
     if (!api_sig) {
         free(timestamp_str);
         return 1; // failure
     }
-    values[6] = (char *)api_sig;
+    values[7] = (char *)api_sig;
 
-    const char* postfields = scrob_build_postfields((const char **)params, (const char **)values, 7); // also needs free after POST
+    const char* postfields = scrob_build_postfields((const char **)params, (const char **)values, 8); // also needs free after POST
     if (!postfields) {
         free(timestamp_str);
         free((char*)api_sig);
@@ -74,7 +74,7 @@ int scrob_easy_scrobble(scrob_client *client, const char *artist, const char *tr
     struct xml_document *doc = NULL;
 
     if (scrob_perform_request(SCROB_API_ENDPOINT, postfields, &response) == 0 && response.data) {
-        printf("%s", response.data);
+        // printf("%s", response.data);
     }
 
     // *dont* need these resources anymore

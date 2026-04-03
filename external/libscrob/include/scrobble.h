@@ -12,7 +12,7 @@ typedef struct scrob_client scrob_client;
 
 // interface with scrobble API
 int scrob_scrobble_track(scrob_client *client, const scrob_track *track);
-int scrob_easy_scrobble(scrob_client *client, const char *artist, const char *track_title, unsigned int utc_timestamp);
+int scrob_easy_scrobble(scrob_client *client, const char *artist, const char *track_title, const char *album, unsigned int utc_timestamp);
 
 // scrob track struct
 scrob_track* scrob_create_track(const char *artist, const char *track_title, unsigned int utc_timestamp);

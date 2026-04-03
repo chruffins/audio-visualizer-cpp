@@ -8,6 +8,8 @@
 #include <allegro5/allegro_audio.h>
 #include <iostream>
 
+#include "scrobble.h"
+
 namespace core {
 
 void runMainLoop() {
@@ -44,6 +46,18 @@ void runMainLoop() {
     // Register a callback to automatically play the next song when current finishes
     appState.music_engine.onSongFinished = [&]() {
         std::cout << "Song finished, playing next...\n";
+        // Last.fm scrobble goes here...
+        auto songId = appState.music_engine.playQueueModel ? appState.music_engine.playQueueModel->current() : -1;
+        if (songId >= 0) {
+            const music::SongView* song = appState.library->getSongById(songId);
+            if (song && appState.lastfm_enabled) {
+                int result = scrob_easy_scrobble(appState.scrobClient, song->artist.c_str(), song->title.c_str(), song->album.c_str(), time(nullptr) - song->duration);
+                if (result != 0) {
+                    std::cerr << "Failed to scrobble song to last.fm...\n";
+                }
+            }
+        }
+
         appState.music_engine.playNext();
     };
 

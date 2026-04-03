@@ -3,6 +3,7 @@
 #include <core/app_state.hpp>
 #include "mp3/mp3_streaming.hpp"
 #include "music/album.hpp"
+#include "libscrobbler.h"
 
 namespace core {
 bool AppState::init() {
@@ -57,6 +58,22 @@ bool AppState::init() {
 
     // Inject the callback timer into Discord integration so it can stop itself when ready
     this->discord_integration.setCallbackTimer(this->discord_callback_timer);
+
+    // do scrobble initialization here
+    {
+        auto api_key = this->config.getString("lastfm", "api_key", "");
+        auto shared_secret = this->config.getString("lastfm", "shared_secret", "");
+        auto session_key = this->config.getString("lastfm", "session_key", "");
+        if (api_key.empty() || shared_secret.empty() || session_key.empty()) {
+            std::cerr << "Warning: Incomplete last.fm config; scrobbling will be disabled.\n";
+        } else {
+            scrobClient = scrob_create_client();
+            scrob_set_client_api_key(scrobClient, api_key.c_str());
+            scrob_set_client_shared_secret(scrobClient, shared_secret.c_str());
+            scrob_set_client_session_key(scrobClient, session_key.c_str());
+            lastfm_enabled = true;
+        }
+    }
 
     // init the database
     if (!this->db.open()) {

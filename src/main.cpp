@@ -6,6 +6,7 @@
 #include "core/allegro_init.hpp"
 #include "core/main_loop.hpp"
 #include "database/library_scanner.hpp"
+#include "scrob.h"
 
 int main() {
   auto& appState = core::AppState::instance();
@@ -14,6 +15,11 @@ int main() {
 
   if (!core::initializeAllegro()) {
     std::cerr << "Failed to initialize Allegro.\n";
+    return 1;
+  }
+
+  if (!scrob_init()) {
+    std::cerr << "Failed to initialize libscrob.\n";
     return 1;
   }
 
