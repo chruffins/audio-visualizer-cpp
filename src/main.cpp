@@ -1,5 +1,3 @@
-#define DISCORDPP_IMPLEMENTATION
-#include "discordpp.h"
 #include <iostream>
 
 #include "core/app_state.hpp"

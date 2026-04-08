@@ -1,7 +1,5 @@
-#define MINIMP3_IMPLEMENTATION
-
 #include <core/app_state.hpp>
-#include "mp3/mp3_streaming.hpp"
+#include "mp3/mp3_support.hpp"
 #include "music/album.hpp"
 #include "libscrobbler.h"
 
