@@ -4,6 +4,22 @@ project(audiovis)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+option(ENABLE_CCACHE "Use ccache to accelerate rebuilds" ON)
+option(ENABLE_UNITY_BUILD "Enable CMake unity/jumbo builds for faster full builds" OFF)
+option(ENABLE_PCH "Enable precompiled headers for C++ sources" ON)
+
+if(ENABLE_CCACHE)
+    find_program(CCACHE_PROGRAM ccache)
+    if(CCACHE_PROGRAM)
+        if(NOT CMAKE_C_COMPILER_LAUNCHER)
+            set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+        endif()
+        if(NOT CMAKE_CXX_COMPILER_LAUNCHER)
+            set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+        endif()
+    endif()
+endif()
+
 # Ensure a Debug build type by default for single-config generators and
 # add GDB-friendly debug info (-ggdb) to the debug flags for GCC/Clang.
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -28,6 +44,18 @@ file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
 )
 
 add_executable(audiovis ${SOURCES})
+
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.16")
+    if(ENABLE_UNITY_BUILD)
+        set_target_properties(audiovis PROPERTIES UNITY_BUILD ON)
+    endif()
+
+    if(ENABLE_PCH)
+        target_precompile_headers(audiovis PRIVATE
+            "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_SOURCE_DIR}/include/pch.hpp>"
+        )
+    endif()
+endif()
 
 # Build bundled libscrob and make its target available for linking.
 add_subdirectory(external/libscrob)
