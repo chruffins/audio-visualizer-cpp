@@ -49,7 +49,6 @@ void AlbumListView::rebuildItemList() {
         items.reserve(albums.size());
     }
     
-    auto courierFont = fontManager->getFont("courier");
     auto kanitFont = fontManager->getFont("kanit");
     auto gothicFont = fontManager->getFont("gothic");
     
@@ -68,75 +67,7 @@ void AlbumListView::rebuildItemList() {
         
         items.emplace_back();
         AlbumListItem& item = items.back();
-        item.album = album;
-
-        float yPos = static_cast<float>(idx) * (ITEM_HEIGHT + ITEM_SPACING);
-        
-        // Set up frame with margin to prevent overlap
-        item.frame.setPosition(graphics::UV(0.0f, 0.0f, 0.0f, yPos));
-        item.frame.setSize(graphics::UV(1.0f, 0.0f, 0.0f, ITEM_HEIGHT - ITEM_SPACING / 2.0f));
-        item.frame.setPadding(5.0f);
-        item.frame.setBackgroundColor(al_map_rgba(30, 30, 40, 200));
-        item.frame.setBorderColor(al_map_rgba(60, 60, 80, 150));
-        item.frame.setBorderThickness(1);
-        
-        // Album art
-        item.albumArt->setPosition(graphics::UV(0.0f, 0.0f, 0.0f, 0.0f));
-        item.albumArt->setSize(graphics::UV(0.0f, 0.0f, ALBUM_ART_SIZE, ALBUM_ART_SIZE));
-        item.albumArt->setScaleMode(ImageDrawable::ScaleMode::STRETCH);
-        item.albumArt->setImageModel(album->cover_art_model);
-        
-        // Title text
-        *item.titleText = TextDrawable(
-            album->title,
-            graphics::UV(0.0f, 0.0f, TEXT_OFFSET_X, 5.0f),
-            graphics::UV(1.0f, 0.0f, -TEXT_OFFSET_X - 20.0f, 24.0f),
-            16
-        ).setFont(gothicFont)
-         .setMultiline(false)
-         .setAlignment(TextDrawable::HorizontalAlignment::Left)
-         .setVerticalAlignment(graphics::VerticalAlignment::TOP);
-        
-        // Artist text (we'd need to look up artist name from library)
-        const auto* artist = library->getArtistById(album->artist_id);
-        std::string artistText = artist ? artist->name : "Unknown Artist";
-        *item.artistText = TextDrawable(
-            artistText,
-            graphics::UV(0.0f, 0.0f, TEXT_OFFSET_X, 30.0f),
-            graphics::UV(1.0f, 0.0f, -TEXT_OFFSET_X - 20.0f, 20.0f),
-            14
-        ).setFont(kanitFont)
-         .setMultiline(false)
-         .setAlignment(TextDrawable::HorizontalAlignment::Left)
-         .setVerticalAlignment(graphics::VerticalAlignment::TOP);
-        
-        // Year text
-        std::string yearStr = album->year > 0 ? std::to_string(album->year) : "Unknown";
-        *item.yearText = TextDrawable(
-            yearStr,
-            graphics::UV(0.0f, 0.0f, TEXT_OFFSET_X, 50.0f),
-            graphics::UV(1.0f, 0.0f, -TEXT_OFFSET_X - 20.0f, 20.0f),
-            12
-        ).setFont(kanitFont)
-         .setMultiline(false)
-         .setAlignment(TextDrawable::HorizontalAlignment::Left)
-         .setVerticalAlignment(graphics::VerticalAlignment::TOP)
-         .setColor(al_map_rgb(180, 180, 180));
-        
-        // Action button (right side)
-        item.actionButton->setPosition(graphics::UV(1.0f, 0.0f, -75.0f, 25.0f));
-        item.actionButton->setSize(graphics::UV(0.0f, 0.0f, 70.0f, 30.0f));
-        item.actionButton->setColors(
-            al_map_rgb(80, 120, 180),
-            al_map_rgb(100, 140, 200),
-            al_map_rgb(60, 100, 160)
-        );
-        item.actionButton->setLabel("Play");
-        item.actionButton->setOnClick([this, album]() {
-            if (musicEngine && album) {
-                musicEngine->playAlbum(album->id);
-            }
-        });
+        configureItem(item, album, idx, kanitFont, gothicFont);
         
         // Add frame as child of the main frame (contains all UI elements)
         mainFrame->addChild(&item.frame);
@@ -150,6 +81,76 @@ void AlbumListView::rebuildItemList() {
     // Need to rebuild layout on next draw
     lastDisplayWidth = 0;
     lastDisplayHeight = 0;
+}
+
+void AlbumListView::configureItem(AlbumListItem& item,
+                                  const music::Album* album,
+                                  size_t index,
+                                  const std::shared_ptr<util::Font>& kanitFont,
+                                  const std::shared_ptr<util::Font>& gothicFont) {
+    item.album = album;
+
+    const float yPos = static_cast<float>(index) * (ITEM_HEIGHT + ITEM_SPACING);
+
+    item.frame.setPosition(graphics::UV(0.0f, 0.0f, 0.0f, yPos));
+    item.frame.setSize(graphics::UV(1.0f, 0.0f, 0.0f, ITEM_HEIGHT - ITEM_SPACING / 2.0f));
+    item.frame.setPadding(5.0f);
+    item.frame.setBackgroundColor(al_map_rgba(30, 30, 40, 200));
+    item.frame.setBorderColor(al_map_rgba(60, 60, 80, 150));
+    item.frame.setBorderThickness(1);
+
+    item.albumArt->setPosition(graphics::UV(0.0f, 0.0f, 0.0f, 0.0f));
+    item.albumArt->setSize(graphics::UV(0.0f, 0.0f, ALBUM_ART_SIZE, ALBUM_ART_SIZE));
+    item.albumArt->setScaleMode(ImageDrawable::ScaleMode::STRETCH);
+    item.albumArt->setImageModel(album->cover_art_model);
+
+    *item.titleText = TextDrawable(
+        album->title,
+        graphics::UV(0.0f, 0.0f, TEXT_OFFSET_X, 5.0f),
+        graphics::UV(1.0f, 0.0f, -TEXT_OFFSET_X - 20.0f, 24.0f),
+        16
+    ).setFont(gothicFont)
+     .setMultiline(false)
+     .setAlignment(TextDrawable::HorizontalAlignment::Left)
+     .setVerticalAlignment(graphics::VerticalAlignment::TOP);
+
+    const auto* artist = library->getArtistById(album->artist_id);
+    const std::string artistText = artist ? artist->name : "Unknown Artist";
+    *item.artistText = TextDrawable(
+        artistText,
+        graphics::UV(0.0f, 0.0f, TEXT_OFFSET_X, 30.0f),
+        graphics::UV(1.0f, 0.0f, -TEXT_OFFSET_X - 20.0f, 20.0f),
+        14
+    ).setFont(kanitFont)
+     .setMultiline(false)
+     .setAlignment(TextDrawable::HorizontalAlignment::Left)
+     .setVerticalAlignment(graphics::VerticalAlignment::TOP);
+
+    const std::string yearStr = album->year > 0 ? std::to_string(album->year) : "Unknown";
+    *item.yearText = TextDrawable(
+        yearStr,
+        graphics::UV(0.0f, 0.0f, TEXT_OFFSET_X, 50.0f),
+        graphics::UV(1.0f, 0.0f, -TEXT_OFFSET_X - 20.0f, 20.0f),
+        12
+    ).setFont(kanitFont)
+     .setMultiline(false)
+     .setAlignment(TextDrawable::HorizontalAlignment::Left)
+     .setVerticalAlignment(graphics::VerticalAlignment::TOP)
+     .setColor(al_map_rgb(180, 180, 180));
+
+    item.actionButton->setPosition(graphics::UV(1.0f, 0.0f, -75.0f, 25.0f));
+    item.actionButton->setSize(graphics::UV(0.0f, 0.0f, 70.0f, 30.0f));
+    item.actionButton->setColors(
+        al_map_rgb(80, 120, 180),
+        al_map_rgb(100, 140, 200),
+        al_map_rgb(60, 100, 160)
+    );
+    item.actionButton->setLabel("Play");
+    item.actionButton->setOnClick([this, album]() {
+        if (musicEngine && album) {
+            musicEngine->playAlbum(album->id);
+        }
+    });
 }
 
 float AlbumListView::calculateContentHeight() const {

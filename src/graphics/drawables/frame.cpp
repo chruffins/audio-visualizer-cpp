@@ -1,4 +1,5 @@
 #include "graphics/drawables/frame.hpp"
+#include "graphics/clipping.hpp"
 
 #include <algorithm>
 
@@ -18,26 +19,14 @@ void FrameDrawable::draw(const graphics::RenderContext& context) const {
     const float width = sizePx.first;
     const float height = sizePx.second;
 
-    int oldClipX = 0, oldClipY = 0, oldClipW = 0, oldClipH = 0;
-    al_get_clipping_rectangle(&oldClipX, &oldClipY, &oldClipW, &oldClipH);
-    
-    // Intersect with existing clipping rectangle to respect parent bounds
-    int newClipX = static_cast<int>(absX);
-    int newClipY = static_cast<int>(absY);
-    int newClipW = static_cast<int>(width);
-    int newClipH = static_cast<int>(height);
-    
-    // Intersect with old clip bounds
-    if (oldClipW > 0 && oldClipH > 0) {
-        int clipRight = std::min(oldClipX + oldClipW, newClipX + newClipW);
-        int clipBottom = std::min(oldClipY + oldClipH, newClipY + newClipH);
-        newClipX = std::max(oldClipX, newClipX);
-        newClipY = std::max(oldClipY, newClipY);
-        newClipW = std::max(0, clipRight - newClipX);
-        newClipH = std::max(0, clipBottom - newClipY);
-    }
-    
-    al_set_clipping_rectangle(newClipX, newClipY, newClipW, newClipH);
+    const auto oldClip = graphics::getCurrentClipRect();
+    const graphics::ClipRect frameClip{
+        static_cast<int>(absX),
+        static_cast<int>(absY),
+        static_cast<int>(width),
+        static_cast<int>(height),
+    };
+    graphics::setIntersectedClipRect(oldClip, frameClip);
     al_hold_bitmap_drawing(true);
 
     if (drawBackground) {
@@ -55,7 +44,7 @@ void FrameDrawable::draw(const graphics::RenderContext& context) const {
 
     drawChildren(childContext);
     al_hold_bitmap_drawing(false);
-    al_set_clipping_rectangle(oldClipX, oldClipY, oldClipW, oldClipH);
+    graphics::setClipRect(oldClip);
 }
 
 } // namespace ui

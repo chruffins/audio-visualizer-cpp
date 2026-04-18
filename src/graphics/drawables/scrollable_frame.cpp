@@ -1,4 +1,5 @@
 #include "graphics/drawables/scrollable_frame.hpp"
+#include "graphics/clipping.hpp"
 
 #include <algorithm>
 #include <allegro5/allegro.h>
@@ -13,34 +14,14 @@ void ScrollableFrameDrawable::draw(const graphics::RenderContext& context) const
     const float height = geometry.height;
     const float clampedScroll = geometry.clampedScroll;
 
-    int oldClipX = 0, oldClipY = 0, oldClipW = 0, oldClipH = 0;
-    al_get_clipping_rectangle(&oldClipX, &oldClipY, &oldClipW, &oldClipH);
-
-    auto setIntersectedClip = [](int baseX, int baseY, int baseW, int baseH,
-                                 int reqX, int reqY, int reqW, int reqH) {
-        int newClipX = reqX;
-        int newClipY = reqY;
-        int newClipW = reqW;
-        int newClipH = reqH;
-
-        if (baseW > 0 && baseH > 0) {
-            const int clipRight = std::min(baseX + baseW, reqX + reqW);
-            const int clipBottom = std::min(baseY + baseH, reqY + reqH);
-            newClipX = std::max(baseX, reqX);
-            newClipY = std::max(baseY, reqY);
-            newClipW = std::max(0, clipRight - newClipX);
-            newClipH = std::max(0, clipBottom - newClipY);
-        }
-
-        al_set_clipping_rectangle(newClipX, newClipY, newClipW, newClipH);
+    const auto oldClip = graphics::getCurrentClipRect();
+    const graphics::ClipRect frameClip{
+        static_cast<int>(absX),
+        static_cast<int>(absY),
+        static_cast<int>(width),
+        static_cast<int>(height),
     };
-
-    const int frameClipX = static_cast<int>(absX);
-    const int frameClipY = static_cast<int>(absY);
-    const int frameClipW = static_cast<int>(width);
-    const int frameClipH = static_cast<int>(height);
-    setIntersectedClip(oldClipX, oldClipY, oldClipW, oldClipH,
-                       frameClipX, frameClipY, frameClipW, frameClipH);
+    graphics::setIntersectedClipRect(oldClip, frameClip);
 
     // Draw background and border (inherited from ContainerDrawable)
     if (drawBackground) {
@@ -55,11 +36,13 @@ void ScrollableFrameDrawable::draw(const graphics::RenderContext& context) const
     const float viewportHeight = geometry.viewportHeight;
 
     // Clip children to the scrollable viewport (not the full frame) to avoid bleed while scrolling.
-    setIntersectedClip(oldClipX, oldClipY, oldClipW, oldClipH,
-                       static_cast<int>(geometry.viewportX),
-                       static_cast<int>(geometry.viewportY),
-                       static_cast<int>(viewportWidth),
-                       static_cast<int>(viewportHeight));
+    const graphics::ClipRect viewportClip{
+        static_cast<int>(geometry.viewportX),
+        static_cast<int>(geometry.viewportY),
+        static_cast<int>(viewportWidth),
+        static_cast<int>(viewportHeight),
+    };
+    graphics::setIntersectedClipRect(oldClip, viewportClip);
     
     // Cache viewport height for use in event handlers
     const_cast<ScrollableFrameDrawable*>(this)->cachedViewportHeight = viewportHeight;
@@ -74,8 +57,7 @@ void ScrollableFrameDrawable::draw(const graphics::RenderContext& context) const
     drawChildren(childContext);
 
     // Draw scrollbar indicator if content exceeds viewport
-    setIntersectedClip(oldClipX, oldClipY, oldClipW, oldClipH,
-                       frameClipX, frameClipY, frameClipW, frameClipH);
+    graphics::setIntersectedClipRect(oldClip, frameClip);
     if (showScrollbar && geometry.hasScrollableRange && scrollbarWidth > 0.0f) {
         al_draw_filled_rectangle(
             geometry.thumbX,
@@ -86,7 +68,7 @@ void ScrollableFrameDrawable::draw(const graphics::RenderContext& context) const
         );
     }
 
-    al_set_clipping_rectangle(oldClipX, oldClipY, oldClipW, oldClipH);
+    graphics::setClipRect(oldClip);
 }
 
 bool ScrollableFrameDrawable::onMouseDown(const graphics::MouseEvent& event) {
@@ -127,29 +109,11 @@ bool ScrollableFrameDrawable::onMouseDown(const graphics::MouseEvent& event) {
         }
     }
     
-    // Set up child context with padding and scroll offset
-    graphics::RenderContext childContext = baseContext;
-    childContext.screenWidth = static_cast<int>(geometry.viewportWidth);
-    childContext.screenHeight = static_cast<int>(geometry.viewportHeight);
-    childContext.offsetX = geometry.viewportX;
-    childContext.offsetY = geometry.viewportY - geometry.clampedScroll;
-    
-    // Check children in reverse order (top-most first)
-    for (auto it = children.rbegin(); it != children.rend(); ++it) {
-        auto handler = dynamic_cast<graphics::IEventHandler*>(*it);
-        if (!handler) continue;
-        
-        if (handler->hitTest(event.x, event.y, childContext)) {
-            graphics::MouseEvent localEvent = event;
-            localEvent.context = &childContext;
-            localEvent.localX = event.x - childContext.offsetX;
-            localEvent.localY = event.y - childContext.offsetY;
-            if (handler->onMouseDown(localEvent)) {
-                activeMouseChild = handler;
-                return true;
-            }
-        }
+    const auto childContext = buildChildContext(baseContext, geometry);
+    if (dispatchToChildren(event, childContext, MouseDispatchType::Down, true)) {
+        return true;
     }
+
     return graphics::IEventHandler::onMouseDown(event);
 }
 
@@ -162,12 +126,7 @@ bool ScrollableFrameDrawable::onMouseUp(const graphics::MouseEvent& event) {
         return true;
     }
     
-    // Set up child context with padding and scroll offset
-    graphics::RenderContext childContext = baseContext;
-    childContext.screenWidth = static_cast<int>(geometry.viewportWidth);
-    childContext.screenHeight = static_cast<int>(geometry.viewportHeight);
-    childContext.offsetX = geometry.viewportX;
-    childContext.offsetY = geometry.viewportY - geometry.clampedScroll;
+    const auto childContext = buildChildContext(baseContext, geometry);
 
     if (activeMouseChild) {
         graphics::MouseEvent localEvent = event;
@@ -180,23 +139,12 @@ bool ScrollableFrameDrawable::onMouseUp(const graphics::MouseEvent& event) {
             return true;
         }
     }
-    
-    // Check children in reverse order (top-most first)
-    for (auto it = children.rbegin(); it != children.rend(); ++it) {
-        auto handler = dynamic_cast<graphics::IEventHandler*>(*it);
-        if (!handler) continue;
-        
-        if (handler->hitTest(event.x, event.y, childContext)) {
-            graphics::MouseEvent localEvent = event;
-            localEvent.context = &childContext;
-            localEvent.localX = event.x - childContext.offsetX;
-            localEvent.localY = event.y - childContext.offsetY;
-            if (handler->onMouseUp(localEvent)) {
-                activeMouseChild = nullptr;
-                return true;
-            }
-        }
+
+    if (dispatchToChildren(event, childContext, MouseDispatchType::Up)) {
+        activeMouseChild = nullptr;
+        return true;
     }
+
     activeMouseChild = nullptr;
     return graphics::IEventHandler::onMouseUp(event);
 }
@@ -211,12 +159,7 @@ bool ScrollableFrameDrawable::onMouseMove(const graphics::MouseEvent& event) {
         return true;
     }
     
-    // Set up child context with padding and scroll offset
-    graphics::RenderContext childContext = baseContext;
-    childContext.screenWidth = static_cast<int>(geometry.viewportWidth);
-    childContext.screenHeight = static_cast<int>(geometry.viewportHeight);
-    childContext.offsetX = geometry.viewportX;
-    childContext.offsetY = geometry.viewportY - geometry.clampedScroll;
+    const auto childContext = buildChildContext(baseContext, geometry);
 
     if (activeMouseChild) {
         graphics::MouseEvent localEvent = event;
@@ -227,22 +170,11 @@ bool ScrollableFrameDrawable::onMouseMove(const graphics::MouseEvent& event) {
             return true;
         }
     }
-    
-    // Check children in reverse order (top-most first)
-    for (auto it = children.rbegin(); it != children.rend(); ++it) {
-        auto handler = dynamic_cast<graphics::IEventHandler*>(*it);
-        if (!handler) continue;
-        
-        if (handler->hitTest(event.x, event.y, childContext)) {
-            graphics::MouseEvent localEvent = event;
-            localEvent.context = &childContext;
-            localEvent.localX = event.x - childContext.offsetX;
-            localEvent.localY = event.y - childContext.offsetY;
-            if (handler->onMouseMove(localEvent)) {
-                return true;
-            }
-        }
+
+    if (dispatchToChildren(event, childContext, MouseDispatchType::Move)) {
+        return true;
     }
+
     return graphics::IEventHandler::onMouseMove(event);
 }
 
@@ -250,28 +182,11 @@ bool ScrollableFrameDrawable::onMouseEnter(const graphics::MouseEvent& event) {
     const auto baseContext = getBaseContext(event.context);
     const auto geometry = computeScrollbarGeometry(baseContext);
     
-    // Set up child context with padding and scroll offset
-    graphics::RenderContext childContext = baseContext;
-    childContext.screenWidth = static_cast<int>(geometry.viewportWidth);
-    childContext.screenHeight = static_cast<int>(geometry.viewportHeight);
-    childContext.offsetX = geometry.viewportX;
-    childContext.offsetY = geometry.viewportY - geometry.clampedScroll;
-    
-    // Check children in reverse order (top-most first)
-    for (auto it = children.rbegin(); it != children.rend(); ++it) {
-        auto handler = dynamic_cast<graphics::IEventHandler*>(*it);
-        if (!handler) continue;
-        
-            if (handler->hitTest(event.x, event.y, childContext)) {
-                graphics::MouseEvent localEvent = event;
-                localEvent.context = &childContext;
-                localEvent.localX = event.x - childContext.offsetX;
-                localEvent.localY = event.y - childContext.offsetY;
-                if (handler->onMouseEnter(localEvent)) {
-                    return true;
-                }
-            }
+    const auto childContext = buildChildContext(baseContext, geometry);
+    if (dispatchToChildren(event, childContext, MouseDispatchType::Enter)) {
+        return true;
     }
+
     return graphics::IEventHandler::onMouseEnter(event);
 }
 
@@ -279,28 +194,11 @@ bool ScrollableFrameDrawable::onMouseLeave(const graphics::MouseEvent& event) {
     const auto baseContext = getBaseContext(event.context);
     const auto geometry = computeScrollbarGeometry(baseContext);
     
-    // Set up child context with padding and scroll offset
-    graphics::RenderContext childContext = baseContext;
-    childContext.screenWidth = static_cast<int>(geometry.viewportWidth);
-    childContext.screenHeight = static_cast<int>(geometry.viewportHeight);
-    childContext.offsetX = geometry.viewportX;
-    childContext.offsetY = geometry.viewportY - geometry.clampedScroll;
-    
-    // Check children in reverse order (top-most first)
-    for (auto it = children.rbegin(); it != children.rend(); ++it) {
-        auto handler = dynamic_cast<graphics::IEventHandler*>(*it);
-        if (!handler) continue;
-        
-        if (handler->hitTest(event.x, event.y, childContext)) {
-            graphics::MouseEvent localEvent = event;
-            localEvent.context = &childContext;
-            localEvent.localX = event.x - childContext.offsetX;
-            localEvent.localY = event.y - childContext.offsetY;
-            if (handler->onMouseLeave(localEvent)) {
-                return true;
-            }
-        }
+    const auto childContext = buildChildContext(baseContext, geometry);
+    if (dispatchToChildren(event, childContext, MouseDispatchType::Leave)) {
+        return true;
     }
+
     return graphics::IEventHandler::onMouseLeave(event);
 }
 
@@ -376,6 +274,71 @@ graphics::RenderContext ScrollableFrameDrawable::getBaseContext(const graphics::
     int displayW = al_get_display_width(al_get_current_display());
     int displayH = al_get_display_height(al_get_current_display());
     return graphics::RenderContext{displayW, displayH, 0.0f, 0.0f, nullptr};
+}
+
+graphics::RenderContext ScrollableFrameDrawable::buildChildContext(
+    const graphics::RenderContext& baseContext,
+    const ScrollbarGeometry& geometry
+) const {
+    graphics::RenderContext childContext = baseContext;
+    childContext.screenWidth = static_cast<int>(geometry.viewportWidth);
+    childContext.screenHeight = static_cast<int>(geometry.viewportHeight);
+    childContext.offsetX = geometry.viewportX;
+    childContext.offsetY = geometry.viewportY - geometry.clampedScroll;
+    return childContext;
+}
+
+bool ScrollableFrameDrawable::dispatchToChildren(
+    const graphics::MouseEvent& event,
+    const graphics::RenderContext& childContext,
+    MouseDispatchType dispatchType,
+    bool captureHandledChild
+) {
+    for (auto it = children.rbegin(); it != children.rend(); ++it) {
+        auto handler = dynamic_cast<graphics::IEventHandler*>(*it);
+        if (!handler) {
+            continue;
+        }
+
+        if (!handler->hitTest(event.x, event.y, childContext)) {
+            continue;
+        }
+
+        graphics::MouseEvent localEvent = event;
+        localEvent.context = &childContext;
+        localEvent.localX = event.x - childContext.offsetX;
+        localEvent.localY = event.y - childContext.offsetY;
+
+        bool handled = false;
+        switch (dispatchType) {
+            case MouseDispatchType::Down:
+                handled = handler->onMouseDown(localEvent);
+                break;
+            case MouseDispatchType::Up:
+                handled = handler->onMouseUp(localEvent);
+                break;
+            case MouseDispatchType::Move:
+                handled = handler->onMouseMove(localEvent);
+                break;
+            case MouseDispatchType::Enter:
+                handled = handler->onMouseEnter(localEvent);
+                break;
+            case MouseDispatchType::Leave:
+                handled = handler->onMouseLeave(localEvent);
+                break;
+        }
+
+        if (!handled) {
+            continue;
+        }
+
+        if (captureHandledChild) {
+            activeMouseChild = handler;
+        }
+        return true;
+    }
+
+    return false;
 }
 
 ScrollableFrameDrawable::ScrollbarGeometry ScrollableFrameDrawable::computeScrollbarGeometry(const graphics::RenderContext& context) const noexcept {

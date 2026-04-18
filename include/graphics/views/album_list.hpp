@@ -94,6 +94,11 @@ public:
 
 private:
     void rebuildItemList();
+    void configureItem(AlbumListItem& item,
+                       const music::Album* album,
+                       size_t index,
+                       const std::shared_ptr<util::Font>& kanitFont,
+                       const std::shared_ptr<util::Font>& gothicFont);
     void recalculateLayout(const graphics::RenderContext& context);
     float calculateContentHeight() const;
     
