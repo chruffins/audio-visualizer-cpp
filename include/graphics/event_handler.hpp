@@ -49,6 +49,16 @@ struct MouseEvent {
     }
 };
 
+inline RenderContext resolveEventContext(const RenderContext* context) {
+    if (context) {
+        return *context;
+    }
+
+    const int displayW = al_get_display_width(al_get_current_display());
+    const int displayH = al_get_display_height(al_get_current_display());
+    return RenderContext{displayW, displayH, 0.0f, 0.0f, nullptr};
+}
+
 /**
  * Keyboard event data passed to event handlers
  */

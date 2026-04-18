@@ -1,5 +1,6 @@
 #include "graphics/drawables/frame.hpp"
 #include "graphics/clipping.hpp"
+#include "graphics/draw_shapes.hpp"
 
 #include <algorithm>
 
@@ -30,9 +31,16 @@ void FrameDrawable::draw(const graphics::RenderContext& context) const {
     al_hold_bitmap_drawing(true);
 
     if (drawBackground) {
-        al_draw_filled_rectangle(absX, absY, absX + width, absY + height, backgroundColor);
-    }
-    if (borderThickness > 0) {
+        graphics::drawFilledRectWithBorder(
+            absX,
+            absY,
+            width,
+            height,
+            backgroundColor,
+            borderColor,
+            static_cast<float>(borderThickness)
+        );
+    } else if (borderThickness > 0) {
         al_draw_rectangle(absX, absY, absX + width, absY + height, borderColor, static_cast<float>(borderThickness));
     }
 

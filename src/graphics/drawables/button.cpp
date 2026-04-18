@@ -1,4 +1,6 @@
 #include "graphics/drawables/button.hpp"
+#include "graphics/draw_shapes.hpp"
+#include "graphics/state_color.hpp"
 #include <allegro5/allegro_primitives.h>
 
 namespace ui {
@@ -15,29 +17,25 @@ void ButtonDrawable::draw(const graphics::RenderContext& context) const {
         return;
     }
     
-    auto [x, y] = getPosition().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
-    auto [w, h] = getSize().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
-    x += context.offsetX;
-    y += context.offsetY;
+    const auto bounds = getScreenBounds(context);
+    const float x = bounds.x;
+    const float y = bounds.y;
+    const float w = bounds.w;
+    const float h = bounds.h;
     
     // Choose color based on state
-    ALLEGRO_COLOR bgColor;
-    if (!m_enabled) {
-        bgColor = m_colorDisabled;
-    } else if (m_isPressed) {
-        bgColor = m_colorPressed;
-    } else if (m_isHovered) {
-        bgColor = m_colorHover;
-    } else {
-        bgColor = m_colorNormal;
-    }
+    const ALLEGRO_COLOR bgColor = graphics::selectStateColor(
+        m_enabled,
+        m_isPressed,
+        m_isHovered,
+        m_colorNormal,
+        m_colorHover,
+        m_colorPressed,
+        m_colorDisabled
+    );
     
-    // Draw button background
-    al_draw_filled_rectangle(x, y, x + w, y + h, bgColor);
-    
-    // Draw border
     ALLEGRO_COLOR borderColor = m_isHovered ? al_map_rgb(120, 120, 120) : al_map_rgb(80, 80, 80);
-    al_draw_rectangle(x, y, x + w, y + h, borderColor, 2.0f);
+    graphics::drawFilledRectWithBorder(x, y, w, h, bgColor, borderColor, 2.0f);
     
     // Draw label text centered
     if (m_font && !m_label.empty()) {
@@ -50,12 +48,7 @@ void ButtonDrawable::draw(const graphics::RenderContext& context) const {
 }
 
 bool ButtonDrawable::hitTest(float x, float y, const graphics::RenderContext& context) const {
-    auto [bx, by] = getPosition().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
-    auto [bw, bh] = getSize().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
-    bx += context.offsetX;
-    by += context.offsetY;
-    
-    return x >= bx && x <= bx + bw && y >= by && y <= by + bh;
+    return hitTestRect(x, y, context);
 }
 
 bool ButtonDrawable::onMouseDown(const graphics::MouseEvent& event) {

@@ -1,4 +1,6 @@
 #include "graphics/drawables/image_button.hpp"
+#include "graphics/draw_shapes.hpp"
+#include "graphics/state_color.hpp"
 #include <allegro5/allegro_primitives.h>
 #include <algorithm>
 
@@ -16,34 +18,43 @@ void ImageButtonDrawable::draw(const graphics::RenderContext& context) const {
         return;
     }
     
-    auto [x, y] = getPosition().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
-    auto [w, h] = getSize().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
-    x += context.offsetX;
-    y += context.offsetY;
+    const auto bounds = getScreenBounds(context);
+    const float x = bounds.x;
+    const float y = bounds.y;
+    const float w = bounds.w;
+    const float h = bounds.h;
 
-    ALLEGRO_COLOR bgColor = m_colorNormal;
-    if (!m_enabled) {
-        bgColor = m_colorDisabled;
-    } else if (m_isPressed) {
-        bgColor = m_colorPressed;
-    } else if (m_isHovered) {
-        bgColor = m_colorHover;
-    }
+    const ALLEGRO_COLOR bgColor = graphics::selectStateColor(
+        m_enabled,
+        m_isPressed,
+        m_isHovered,
+        m_colorNormal,
+        m_colorHover,
+        m_colorPressed,
+        m_colorDisabled
+    );
 
-    ALLEGRO_COLOR borderColor = m_borderNormal;
-    if (!m_enabled) {
-        borderColor = m_borderDisabled;
-    } else if (m_isPressed) {
-        borderColor = m_borderPressed;
-    } else if (m_isHovered) {
-        borderColor = m_borderHover;
-    }
+    const ALLEGRO_COLOR borderColor = graphics::selectStateColor(
+        m_enabled,
+        m_isPressed,
+        m_isHovered,
+        m_borderNormal,
+        m_borderHover,
+        m_borderPressed,
+        m_borderDisabled
+    );
 
     if (m_drawBackground) {
-        al_draw_filled_rectangle(x, y, x + w, y + h, bgColor);
-    }
-
-    if (m_drawBorder && m_borderThickness > 0.0f) {
+        graphics::drawFilledRectWithBorder(
+            x,
+            y,
+            w,
+            h,
+            bgColor,
+            borderColor,
+            m_drawBorder ? m_borderThickness : 0.0f
+        );
+    } else if (m_drawBorder && m_borderThickness > 0.0f) {
         al_draw_rectangle(x, y, x + w, y + h, borderColor, m_borderThickness);
     }
 
@@ -66,12 +77,7 @@ void ImageButtonDrawable::draw(const graphics::RenderContext& context) const {
 }
 
 bool ImageButtonDrawable::hitTest(float x, float y, const graphics::RenderContext& context) const {
-    auto [bx, by] = getPosition().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
-    auto [bw, bh] = getSize().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
-    bx += context.offsetX;
-    by += context.offsetY;
-
-    return x >= bx && x <= bx + bw && y >= by && y <= by + bh;
+    return hitTestRect(x, y, context);
 }
 
 bool ImageButtonDrawable::onMouseDown(const graphics::MouseEvent& event) {

@@ -30,14 +30,7 @@ public:
         activeMouseChild = nullptr;
 
         // First check if click is within frame bounds
-        graphics::RenderContext baseContext;
-        if (event.context) {
-            baseContext = *event.context;
-        } else {
-            int displayW = al_get_display_width(al_get_current_display());
-            int displayH = al_get_display_height(al_get_current_display());
-            baseContext = graphics::RenderContext{displayW, displayH, 0.0f, 0.0f, nullptr};
-        }
+        graphics::RenderContext baseContext = graphics::resolveEventContext(event.context);
         
         if (!hitTest(event.x, event.y, baseContext)) {
             return graphics::IEventHandler::onMouseDown(event);
@@ -78,14 +71,7 @@ public:
 
     bool onMouseUp(const graphics::MouseEvent& event) override {
         // Compute child context
-        graphics::RenderContext baseContext;
-        if (event.context) {
-            baseContext = *event.context;
-        } else {
-            int displayW = al_get_display_width(al_get_current_display());
-            int displayH = al_get_display_height(al_get_current_display());
-            baseContext = graphics::RenderContext{displayW, displayH, 0.0f, 0.0f, nullptr};
-        }
+        graphics::RenderContext baseContext = graphics::resolveEventContext(event.context);
         
         auto sizePx = getSize().toScreenPos(static_cast<float>(baseContext.screenWidth), static_cast<float>(baseContext.screenHeight));
         auto posPx = getPosition().toScreenPos(static_cast<float>(baseContext.screenWidth), static_cast<float>(baseContext.screenHeight));
@@ -134,14 +120,7 @@ public:
 
     bool onMouseMove(const graphics::MouseEvent& event) override {
         // Compute child context
-        graphics::RenderContext baseContext;
-        if (event.context) {
-            baseContext = *event.context;
-        } else {
-            int displayW = al_get_display_width(al_get_current_display());
-            int displayH = al_get_display_height(al_get_current_display());
-            baseContext = graphics::RenderContext{displayW, displayH, 0.0f, 0.0f, nullptr};
-        }
+        graphics::RenderContext baseContext = graphics::resolveEventContext(event.context);
         
         auto sizePx = getSize().toScreenPos(static_cast<float>(baseContext.screenWidth), static_cast<float>(baseContext.screenHeight));
         auto posPx = getPosition().toScreenPos(static_cast<float>(baseContext.screenWidth), static_cast<float>(baseContext.screenHeight));

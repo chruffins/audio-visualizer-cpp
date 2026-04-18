@@ -17,6 +17,13 @@ struct RenderContext {
     void* userData = nullptr; // optional backend-specific pointer
 };
 
+struct ScreenBounds {
+    float x = 0.0f;
+    float y = 0.0f;
+    float w = 0.0f;
+    float h = 0.0f;
+};
+
 class Drawable {
 public:
     virtual ~Drawable() = default;
@@ -28,13 +35,31 @@ public:
     
     void setSize(const UV& sz) { size = sz; }
     UV getSize() const { return size; }
+
+    ScreenBounds getScreenBounds(const RenderContext& context) const {
+        auto [x, y] = getPosition().toScreenPos(
+            static_cast<float>(context.screenWidth),
+            static_cast<float>(context.screenHeight)
+        );
+        auto [w, h] = getSize().toScreenPos(
+            static_cast<float>(context.screenWidth),
+            static_cast<float>(context.screenHeight)
+        );
+
+        x += context.offsetX;
+        y += context.offsetY;
+        return ScreenBounds{x, y, w, h};
+    }
+
+    bool hitTestRect(float x, float y, const RenderContext& context) const {
+        const auto bounds = getScreenBounds(context);
+        return x >= bounds.x && x <= bounds.x + bounds.w &&
+               y >= bounds.y && y <= bounds.y + bounds.h;
+    }
     
     // Check if drawable is completely off-screen (accounts for clipping rectangle)
     bool isOffScreen(const RenderContext& context) const {
-        auto [x, y] = getPosition().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
-        auto [w, h] = getSize().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
-        x += context.offsetX;
-        y += context.offsetY;
+        const auto bounds = getScreenBounds(context);
         
         // Check against Allegro's actual clipping rectangle
         int clipX = 0, clipY = 0, clipW = 0, clipH = 0;
@@ -48,8 +73,8 @@ public:
         int clipRight = clipX + clipW;
         int clipBottom = clipY + clipH;
         
-        return (x + w < clipX || x > clipRight ||
-                y + h < clipY || y > clipBottom);
+        return (bounds.x + bounds.w < clipX || bounds.x > clipRight ||
+            bounds.y + bounds.h < clipY || bounds.y > clipBottom);
     }
     
 protected:

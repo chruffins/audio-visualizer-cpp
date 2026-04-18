@@ -1,5 +1,6 @@
 #include "graphics/drawables/scrollable_frame.hpp"
 #include "graphics/clipping.hpp"
+#include "graphics/draw_shapes.hpp"
 
 #include <algorithm>
 #include <allegro5/allegro.h>
@@ -25,9 +26,16 @@ void ScrollableFrameDrawable::draw(const graphics::RenderContext& context) const
 
     // Draw background and border (inherited from ContainerDrawable)
     if (drawBackground) {
-        al_draw_filled_rectangle(absX, absY, absX + width, absY + height, backgroundColor);
-    }
-    if (borderThickness > 0) {
+        graphics::drawFilledRectWithBorder(
+            absX,
+            absY,
+            width,
+            height,
+            backgroundColor,
+            borderColor,
+            static_cast<float>(borderThickness)
+        );
+    } else if (borderThickness > 0) {
         al_draw_rectangle(absX, absY, absX + width, absY + height, borderColor, static_cast<float>(borderThickness));
     }
 
@@ -267,13 +275,7 @@ float ScrollableFrameDrawable::computeMaxScroll(float screenW, float screenH) co
 }
 
 graphics::RenderContext ScrollableFrameDrawable::getBaseContext(const graphics::RenderContext* eventContext) const {
-    if (eventContext) {
-        return *eventContext;
-    }
-
-    int displayW = al_get_display_width(al_get_current_display());
-    int displayH = al_get_display_height(al_get_current_display());
-    return graphics::RenderContext{displayW, displayH, 0.0f, 0.0f, nullptr};
+    return graphics::resolveEventContext(eventContext);
 }
 
 graphics::RenderContext ScrollableFrameDrawable::buildChildContext(

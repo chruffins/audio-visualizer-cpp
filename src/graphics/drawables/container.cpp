@@ -1,4 +1,5 @@
 #include "graphics/drawables/container.hpp"
+#include "graphics/draw_shapes.hpp"
 
 #include <algorithm>
 
@@ -38,9 +39,16 @@ void ContainerDrawable::draw(const graphics::RenderContext& context) const {
     }
 
     if (drawBackground) {
-        al_draw_filled_rectangle(absX, absY, absX + width, absY + height, backgroundColor);
-    }
-    if (borderThickness > 0) {
+        graphics::drawFilledRectWithBorder(
+            absX,
+            absY,
+            width,
+            height,
+            backgroundColor,
+            borderColor,
+            static_cast<float>(borderThickness)
+        );
+    } else if (borderThickness > 0) {
         al_draw_rectangle(absX, absY, absX + width, absY + height, borderColor, static_cast<float>(borderThickness));
     }
 
@@ -76,9 +84,16 @@ void ScrollContainerDrawable::draw(const graphics::RenderContext& context) const
     al_set_clipping_rectangle(static_cast<int>(absX), static_cast<int>(absY), static_cast<int>(width), static_cast<int>(height));
 
     if (drawBackground) {
-        al_draw_filled_rectangle(absX, absY, absX + width, absY + height, backgroundColor);
-    }
-    if (borderThickness > 0) {
+        graphics::drawFilledRectWithBorder(
+            absX,
+            absY,
+            width,
+            height,
+            backgroundColor,
+            borderColor,
+            static_cast<float>(borderThickness)
+        );
+    } else if (borderThickness > 0) {
         al_draw_rectangle(absX, absY, absX + width, absY + height, borderColor, static_cast<float>(borderThickness));
     }
 
@@ -273,21 +288,11 @@ bool ScrollContainerDrawable::onMouseScroll(const graphics::ScrollEvent& event) 
 }
 
 bool ScrollContainerDrawable::hitTest(float x, float y, const graphics::RenderContext& context) const {
-    auto sizePx = getSize().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
-    auto posPx = getPosition().toScreenPos(static_cast<float>(context.screenWidth), static_cast<float>(context.screenHeight));
-    const float absX = posPx.first + context.offsetX;
-    const float absY = posPx.second + context.offsetY;
-    return x >= absX && x <= absX + sizePx.first && y >= absY && y <= absY + sizePx.second;
+    return hitTestRect(x, y, context);
 }
 
 graphics::RenderContext ScrollContainerDrawable::getBaseContext(const graphics::RenderContext* eventContext) const {
-    if (eventContext) {
-        return *eventContext;
-    }
-
-    int displayW = al_get_display_width(al_get_current_display());
-    int displayH = al_get_display_height(al_get_current_display());
-    return graphics::RenderContext{displayW, displayH, 0.0f, 0.0f, nullptr};
+    return graphics::resolveEventContext(eventContext);
 }
 
 ScrollContainerDrawable::ScrollbarGeometry ScrollContainerDrawable::computeScrollbarGeometry(const graphics::RenderContext& context) const noexcept {
