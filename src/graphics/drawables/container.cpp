@@ -156,28 +156,9 @@ bool ScrollContainerDrawable::onMouseDown(const graphics::MouseEvent& event) {
         }
     }
 
-    graphics::RenderContext childContext = baseContext;
-    childContext.screenWidth = static_cast<int>(geometry.width);
-    childContext.screenHeight = static_cast<int>(geometry.viewportHeight);
-    childContext.offsetX = geometry.viewportX;
-    childContext.offsetY = geometry.viewportY - geometry.clampedScroll;
-
-    for (auto it = children.rbegin(); it != children.rend(); ++it) {
-        auto handler = dynamic_cast<graphics::IEventHandler*>(*it);
-        if (!handler) {
-            continue;
-        }
-
-        if (handler->hitTest(event.x, event.y, childContext)) {
-            graphics::MouseEvent localEvent = event;
-            localEvent.context = &childContext;
-            localEvent.localX = event.x - childContext.offsetX;
-            localEvent.localY = event.y - childContext.offsetY;
-            if (handler->onMouseDown(localEvent)) {
-                activeMouseChild = handler;
-                return true;
-            }
-        }
+    const auto childContext = buildChildContext(baseContext, geometry);
+    if (dispatchToChildren(event, childContext, MouseDispatchType::Down, true)) {
+        return true;
     }
 
     return graphics::IEventHandler::onMouseDown(event);
@@ -192,11 +173,7 @@ bool ScrollContainerDrawable::onMouseUp(const graphics::MouseEvent& event) {
         return true;
     }
 
-    graphics::RenderContext childContext = baseContext;
-    childContext.screenWidth = static_cast<int>(geometry.width);
-    childContext.screenHeight = static_cast<int>(geometry.viewportHeight);
-    childContext.offsetX = geometry.viewportX;
-    childContext.offsetY = geometry.viewportY - geometry.clampedScroll;
+    const auto childContext = buildChildContext(baseContext, geometry);
 
     if (activeMouseChild) {
         graphics::MouseEvent localEvent = event;
@@ -210,22 +187,9 @@ bool ScrollContainerDrawable::onMouseUp(const graphics::MouseEvent& event) {
         }
     }
 
-    for (auto it = children.rbegin(); it != children.rend(); ++it) {
-        auto handler = dynamic_cast<graphics::IEventHandler*>(*it);
-        if (!handler) {
-            continue;
-        }
-
-        if (handler->hitTest(event.x, event.y, childContext)) {
-            graphics::MouseEvent localEvent = event;
-            localEvent.context = &childContext;
-            localEvent.localX = event.x - childContext.offsetX;
-            localEvent.localY = event.y - childContext.offsetY;
-            if (handler->onMouseUp(localEvent)) {
-                activeMouseChild = nullptr;
-                return true;
-            }
-        }
+    if (dispatchToChildren(event, childContext, MouseDispatchType::Up)) {
+        activeMouseChild = nullptr;
+        return true;
     }
 
     activeMouseChild = nullptr;
@@ -242,11 +206,7 @@ bool ScrollContainerDrawable::onMouseMove(const graphics::MouseEvent& event) {
         return true;
     }
 
-    graphics::RenderContext childContext = baseContext;
-    childContext.screenWidth = static_cast<int>(geometry.width);
-    childContext.screenHeight = static_cast<int>(geometry.viewportHeight);
-    childContext.offsetX = geometry.viewportX;
-    childContext.offsetY = geometry.viewportY - geometry.clampedScroll;
+    const auto childContext = buildChildContext(baseContext, geometry);
 
     if (activeMouseChild) {
         graphics::MouseEvent localEvent = event;
@@ -258,21 +218,8 @@ bool ScrollContainerDrawable::onMouseMove(const graphics::MouseEvent& event) {
         }
     }
 
-    for (auto it = children.rbegin(); it != children.rend(); ++it) {
-        auto handler = dynamic_cast<graphics::IEventHandler*>(*it);
-        if (!handler) {
-            continue;
-        }
-
-        if (handler->hitTest(event.x, event.y, childContext)) {
-            graphics::MouseEvent localEvent = event;
-            localEvent.context = &childContext;
-            localEvent.localX = event.x - childContext.offsetX;
-            localEvent.localY = event.y - childContext.offsetY;
-            if (handler->onMouseMove(localEvent)) {
-                return true;
-            }
-        }
+    if (dispatchToChildren(event, childContext, MouseDispatchType::Move)) {
+        return true;
     }
 
     return graphics::IEventHandler::onMouseMove(event);
@@ -293,6 +240,65 @@ bool ScrollContainerDrawable::hitTest(float x, float y, const graphics::RenderCo
 
 graphics::RenderContext ScrollContainerDrawable::getBaseContext(const graphics::RenderContext* eventContext) const {
     return graphics::resolveEventContext(eventContext);
+}
+
+graphics::RenderContext ScrollContainerDrawable::buildChildContext(
+    const graphics::RenderContext& baseContext,
+    const ScrollbarGeometry& geometry
+) const {
+    graphics::RenderContext childContext = baseContext;
+    childContext.screenWidth = static_cast<int>(geometry.width);
+    childContext.screenHeight = static_cast<int>(geometry.viewportHeight);
+    childContext.offsetX = geometry.viewportX;
+    childContext.offsetY = geometry.viewportY - geometry.clampedScroll;
+    return childContext;
+}
+
+bool ScrollContainerDrawable::dispatchToChildren(
+    const graphics::MouseEvent& event,
+    const graphics::RenderContext& childContext,
+    MouseDispatchType dispatchType,
+    bool captureHandledChild
+) {
+    for (auto it = children.rbegin(); it != children.rend(); ++it) {
+        auto handler = dynamic_cast<graphics::IEventHandler*>(*it);
+        if (!handler) {
+            continue;
+        }
+
+        if (!handler->hitTest(event.x, event.y, childContext)) {
+            continue;
+        }
+
+        graphics::MouseEvent localEvent = event;
+        localEvent.context = &childContext;
+        localEvent.localX = event.x - childContext.offsetX;
+        localEvent.localY = event.y - childContext.offsetY;
+
+        bool handled = false;
+        switch (dispatchType) {
+            case MouseDispatchType::Down:
+                handled = handler->onMouseDown(localEvent);
+                break;
+            case MouseDispatchType::Up:
+                handled = handler->onMouseUp(localEvent);
+                break;
+            case MouseDispatchType::Move:
+                handled = handler->onMouseMove(localEvent);
+                break;
+        }
+
+        if (!handled) {
+            continue;
+        }
+
+        if (captureHandledChild) {
+            activeMouseChild = handler;
+        }
+        return true;
+    }
+
+    return false;
 }
 
 ScrollContainerDrawable::ScrollbarGeometry ScrollContainerDrawable::computeScrollbarGeometry(const graphics::RenderContext& context) const noexcept {

@@ -84,6 +84,12 @@ public:
     bool isEnabled() const override { return true; }
 
 private:
+    enum class MouseDispatchType {
+        Down,
+        Up,
+        Move,
+    };
+
     struct ScrollbarGeometry {
         float absX = 0.0f;
         float absY = 0.0f;
@@ -112,6 +118,12 @@ private:
     graphics::IEventHandler* activeMouseChild = nullptr;
 
     graphics::RenderContext getBaseContext(const graphics::RenderContext* eventContext) const;
+    graphics::RenderContext buildChildContext(const graphics::RenderContext& baseContext,
+                                              const ScrollbarGeometry& geometry) const;
+    bool dispatchToChildren(const graphics::MouseEvent& event,
+                            const graphics::RenderContext& childContext,
+                            MouseDispatchType dispatchType,
+                            bool captureHandledChild = false);
     ScrollbarGeometry computeScrollbarGeometry(const graphics::RenderContext& context) const noexcept;
     float clampThumbTop(float thumbTop, const ScrollbarGeometry& geometry) const noexcept;
     float scrollOffsetFromThumbTop(float thumbTop, const ScrollbarGeometry& geometry) const noexcept;
