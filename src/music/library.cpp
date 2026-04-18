@@ -129,7 +129,8 @@ void Library::recreateViews() {
         // find all songs for this album
         for (const auto& songView : songViews) {
             // check if the original song belongs to this album
-            const Song* song = songs.find(songView.id) != songs.end() ? &songs.at(songView.id) : nullptr;
+            auto it = songs.find(songView.id);
+            const Song* song = it != songs.end() ? &it->second : nullptr;
             if (song && song->album_id == albumId) {
                 albumSongs.push_back(songView);
             }

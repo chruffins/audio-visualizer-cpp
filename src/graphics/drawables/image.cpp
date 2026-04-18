@@ -9,6 +9,7 @@ void ImageDrawable::updateBitmapFromModel() {
     if (imageModel && imageModel->hasBitmap()) {
         bitmap = imageModel->getPrimaryBitmap();
         ownsBitmap = false; // ImageModel owns the bitmap
+        dimensionsCached = false; // Invalidate bitmap dimension cache
     }
 }
 
@@ -62,9 +63,14 @@ ImageDrawable::DrawParams ImageDrawable::calculateDrawParams(const graphics::Ren
     x += context.offsetX;
     y += context.offsetY;
 
-    // Get bitmap dimensions
-    int bmpW = al_get_bitmap_width(bitmap);
-    int bmpH = al_get_bitmap_height(bitmap);
+    // Get bitmap dimensions (cached to avoid per-frame Allegro calls)
+    if (!dimensionsCached) {
+        cachedBmpW = al_get_bitmap_width(bitmap);
+        cachedBmpH = al_get_bitmap_height(bitmap);
+        dimensionsCached = true;
+    }
+    int bmpW = cachedBmpW;
+    int bmpH = cachedBmpH;
     float bmpAspect = static_cast<float>(bmpW) / static_cast<float>(bmpH);
 
     // Default: use full source bitmap

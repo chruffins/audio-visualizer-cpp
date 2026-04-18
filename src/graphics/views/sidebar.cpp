@@ -15,7 +15,7 @@ SidebarView::SidebarView(std::shared_ptr<util::FontManager> fontManager,
     mainFrame->setBackgroundColor(al_map_rgba(18, 18, 26, 240));
     mainFrame->setBorderColor(al_map_rgb(70, 70, 90));
     mainFrame->setBorderThickness(2);
-    mainFrame->setPadding(10.0f);
+    mainFrame->setPadding(5.0f);
     mainFrame->m_isEnabled = [this]() { return isVisible; };
 
     eventDispatcher.addEventTarget(mainFrame);
@@ -64,7 +64,7 @@ void SidebarView::rebuildButtons() {
 
     float yOffset = 0.0f;
     const float buttonHeight = 42.0f;
-    const float spacing = 10.0f;
+    const float spacing = 5.0f;
 
     for (const auto& item : items) {
         auto button = std::make_unique<ButtonDrawable>(

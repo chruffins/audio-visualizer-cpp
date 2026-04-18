@@ -23,7 +23,7 @@ AlbumListView::AlbumListView(std::shared_ptr<util::FontManager> fontManager,
     mainFrame->setBackgroundColor(al_map_rgba(20, 20, 30, 240));
     mainFrame->setBorderColor(al_map_rgb(80, 80, 100));
     mainFrame->setBorderThickness(2);
-    mainFrame->setPadding(15.0f);
+    mainFrame->setPadding(5.0f);
     mainFrame->setScrollbarColor(al_map_rgb(120, 120, 140));
     mainFrame->setScrollbarWidth(8.0f);
     mainFrame->enableScrollbar(true);
@@ -45,7 +45,8 @@ void AlbumListView::rebuildItemList() {
 
     items.clear();
     if (library) {
-        items.reserve(library->getAllAlbums().size());
+        const auto& albums = library->getAllAlbums();
+        items.reserve(albums.size());
     }
     
     auto courierFont = fontManager->getFont("courier");
@@ -59,8 +60,9 @@ void AlbumListView::rebuildItemList() {
         return;
     }
 
+    const auto& albums = library->getAllAlbums();
     size_t idx = 0;
-    for (const auto& [id, albumVal] : library->getAllAlbums()) {
+    for (const auto& [id, albumVal] : albums) {
         const music::Album* album = &albumVal;
         if (!album) continue;
         
@@ -96,8 +98,8 @@ void AlbumListView::rebuildItemList() {
          .setVerticalAlignment(graphics::VerticalAlignment::TOP);
         
         // Artist text (we'd need to look up artist name from library)
-        std::string artistText = library->getArtistById(album->artist_id) ? 
-                                 library->getArtistById(album->artist_id)->name : "Unknown Artist";
+        const auto* artist = library->getArtistById(album->artist_id);
+        std::string artistText = artist ? artist->name : "Unknown Artist";
         *item.artistText = TextDrawable(
             artistText,
             graphics::UV(0.0f, 0.0f, TEXT_OFFSET_X, 30.0f),

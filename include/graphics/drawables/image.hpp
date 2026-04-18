@@ -89,6 +89,7 @@ public:
         }
         bitmap = bmp;
         ownsBitmap = owned;
+        dimensionsCached = false;
         return *this;
     }
 
@@ -157,6 +158,7 @@ public:
         }
         bitmap = al_load_bitmap(filepath.c_str());
         ownsBitmap = (bitmap != nullptr);
+        dimensionsCached = false;
         return bitmap != nullptr;
     }
 
@@ -176,6 +178,11 @@ private:
     bool visible = true;
     graphics::HorizontalAlignment horizontalAlign = graphics::HorizontalAlignment::CENTER;
     graphics::VerticalAlignment verticalAlign = graphics::VerticalAlignment::CENTER;
+
+    // Cache for bitmap dimensions to avoid per-frame Allegro calls
+    mutable int cachedBmpW = 0;
+    mutable int cachedBmpH = 0;
+    mutable bool dimensionsCached = false;
 
     struct DrawParams {
         float dx, dy;      // destination position

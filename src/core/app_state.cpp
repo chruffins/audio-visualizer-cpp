@@ -94,8 +94,10 @@ bool AppState::init() {
     // Fill the application-owned play queue with all songs from the library
     // (enqueueing by song id). This is a simple example of populating the
     // queue; a real app would probably use playlists or user selection.
+    const auto& allSongs = this->library->getAllSongs();
     std::vector<int> allSongIds;
-    for (const auto& [sid, song] : this->library->getAllSongs()) {
+    allSongIds.reserve(allSongs.size());
+    for (const auto& [sid, song] : allSongs) {
         allSongIds.push_back(sid);
         // std::cout << "Loaded song: " << song.title << " (ID: " << song.id << ")\n";
     }

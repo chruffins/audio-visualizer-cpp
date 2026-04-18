@@ -15,7 +15,32 @@ void ScrollableFrameDrawable::draw(const graphics::RenderContext& context) const
 
     int oldClipX = 0, oldClipY = 0, oldClipW = 0, oldClipH = 0;
     al_get_clipping_rectangle(&oldClipX, &oldClipY, &oldClipW, &oldClipH);
-    al_set_clipping_rectangle(static_cast<int>(absX), static_cast<int>(absY), static_cast<int>(width), static_cast<int>(height));
+
+    auto setIntersectedClip = [](int baseX, int baseY, int baseW, int baseH,
+                                 int reqX, int reqY, int reqW, int reqH) {
+        int newClipX = reqX;
+        int newClipY = reqY;
+        int newClipW = reqW;
+        int newClipH = reqH;
+
+        if (baseW > 0 && baseH > 0) {
+            const int clipRight = std::min(baseX + baseW, reqX + reqW);
+            const int clipBottom = std::min(baseY + baseH, reqY + reqH);
+            newClipX = std::max(baseX, reqX);
+            newClipY = std::max(baseY, reqY);
+            newClipW = std::max(0, clipRight - newClipX);
+            newClipH = std::max(0, clipBottom - newClipY);
+        }
+
+        al_set_clipping_rectangle(newClipX, newClipY, newClipW, newClipH);
+    };
+
+    const int frameClipX = static_cast<int>(absX);
+    const int frameClipY = static_cast<int>(absY);
+    const int frameClipW = static_cast<int>(width);
+    const int frameClipH = static_cast<int>(height);
+    setIntersectedClip(oldClipX, oldClipY, oldClipW, oldClipH,
+                       frameClipX, frameClipY, frameClipW, frameClipH);
 
     // Draw background and border (inherited from ContainerDrawable)
     if (drawBackground) {
@@ -28,6 +53,13 @@ void ScrollableFrameDrawable::draw(const graphics::RenderContext& context) const
     // Calculate viewport dimensions accounting for padding
     const float viewportWidth = geometry.viewportWidth;
     const float viewportHeight = geometry.viewportHeight;
+
+    // Clip children to the scrollable viewport (not the full frame) to avoid bleed while scrolling.
+    setIntersectedClip(oldClipX, oldClipY, oldClipW, oldClipH,
+                       static_cast<int>(geometry.viewportX),
+                       static_cast<int>(geometry.viewportY),
+                       static_cast<int>(viewportWidth),
+                       static_cast<int>(viewportHeight));
     
     // Cache viewport height for use in event handlers
     const_cast<ScrollableFrameDrawable*>(this)->cachedViewportHeight = viewportHeight;
@@ -42,6 +74,8 @@ void ScrollableFrameDrawable::draw(const graphics::RenderContext& context) const
     drawChildren(childContext);
 
     // Draw scrollbar indicator if content exceeds viewport
+    setIntersectedClip(oldClipX, oldClipY, oldClipW, oldClipH,
+                       frameClipX, frameClipY, frameClipW, frameClipH);
     if (showScrollbar && geometry.hasScrollableRange && scrollbarWidth > 0.0f) {
         al_draw_filled_rectangle(
             geometry.thumbX,
@@ -364,8 +398,13 @@ ScrollableFrameDrawable::ScrollbarGeometry ScrollableFrameDrawable::computeScrol
     geometry.clampedScroll = std::clamp(scrollOffset, 0.0f, geometry.maxScroll);
     geometry.hasScrollableRange = geometry.maxScroll > 0.0f && geometry.viewportHeight > 0.0f;
 
+    // Reserve horizontal space for scrollbar when visible so children don't render under it.
+    if (showScrollbar && geometry.hasScrollableRange && scrollbarWidth > 0.0f) {
+        geometry.viewportWidth = std::max(0.0f, geometry.viewportWidth - scrollbarWidth);
+    }
+
     geometry.thumbWidth = std::max(0.0f, scrollbarWidth);
-    geometry.thumbX = geometry.absX + geometry.width - geometry.thumbWidth;
+    geometry.thumbX = geometry.viewportX + geometry.viewportWidth;
 
     if (!geometry.hasScrollableRange || geometry.thumbWidth <= 0.0f) {
         geometry.thumbHeight = 0.0f;
