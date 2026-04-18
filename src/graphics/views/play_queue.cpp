@@ -280,4 +280,11 @@ void PlayQueueView::draw(const graphics::RenderContext& context) {
     mainFrame->draw(context);
 }
 
+void PlayQueueView::setBounds(const graphics::UV& position, const graphics::UV& size) {
+    mainFrame->setPosition(position);
+    mainFrame->setSize(size);
+    lastDisplayWidth = 0;
+    lastDisplayHeight = 0;
+}
+
 } // namespace ui

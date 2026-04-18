@@ -2,7 +2,6 @@
 #include "core/music_engine.hpp"
 #include "util/duration.hpp"
 #include <allegro5/allegro.h>
-#include <algorithm>
 
 namespace ui {
 
@@ -241,6 +240,13 @@ void NowPlayingView::setAlbumArt(ALLEGRO_BITMAP *bitmap) {
   albumArtImage.setBitmap(bitmap);
 }
 
+void NowPlayingView::setBounds(const graphics::UV& position, const graphics::UV& size) {
+  mainFrame->setPosition(position);
+  mainFrame->setSize(size);
+  lastDisplayWidth = 0;
+  lastDisplayHeight = 0;
+}
+
 void NowPlayingView::recalculateLayout(const graphics::RenderContext& context) {
   // Only recalculate if display size has changed
   if (context.screenWidth == lastDisplayWidth && context.screenHeight == lastDisplayHeight) {
@@ -248,27 +254,6 @@ void NowPlayingView::recalculateLayout(const graphics::RenderContext& context) {
   }
   lastDisplayWidth = context.screenWidth;
   lastDisplayHeight = context.screenHeight;
-
-  // Scale font sizes responsively based on display height
-  // Title: ~6-8% of display height, clamped to reasonable range
-  int titleFontSize = static_cast<int>(std::clamp(context.screenHeight * 0.04f, 12.0f, 48.0f));
-  // Artist: ~4-5% of display height
-  int artistFontSize = static_cast<int>(std::clamp(context.screenHeight * 0.04f, 12.0f, 32.0f));
-  // Album: ~3-4% of display height
-  int albumFontSize = static_cast<int>(std::clamp(context.screenHeight * 0.04f, 12.0f, 24.0f));
-  // Time labels: ~2-3% of display height
-  int timeFontSize = static_cast<int>(std::clamp(context.screenHeight * 0.04f, 8.0f, 18.0f));
-
-  // Update font sizes
-  songTitleText.setFontSize(titleFontSize);
-  artistNameText.setFontSize(artistFontSize);
-  albumNameText.setFontSize(albumFontSize);
-  songPositionText.setFontSize(timeFontSize);
-  songDurationText.setFontSize(timeFontSize);
-
-  // Scale padding based on display width (2% of width, clamped)
-  float scaledPadding = std::clamp(context.screenWidth * 0.02f, 10.0f, 40.0f);
-  mainFrame->setPadding(scaledPadding);
 }
 
 void NowPlayingView::updatePlayPauseButton() {

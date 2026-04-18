@@ -27,6 +27,7 @@ AlbumListView::AlbumListView(std::shared_ptr<util::FontManager> fontManager,
     mainFrame->setScrollbarColor(al_map_rgb(120, 120, 140));
     mainFrame->setScrollbarWidth(8.0f);
     mainFrame->enableScrollbar(true);
+    mainFrame->m_isEnabled = [this]() { return isVisible; };
 
     eventDispatcher.addEventTarget(mainFrame);
 
@@ -228,6 +229,10 @@ void AlbumListView::recalculateLayout(const graphics::RenderContext& context) {
 }
 
 void AlbumListView::draw(const graphics::RenderContext& context) {
+    if (!isVisible) {
+        return;
+    }
+
     // Check if we need to recalculate layout
     if (context.screenWidth != lastDisplayWidth || context.screenHeight != lastDisplayHeight) {
         recalculateLayout(context);
@@ -235,6 +240,17 @@ void AlbumListView::draw(const graphics::RenderContext& context) {
     
     // Draw the main frame with all children
     mainFrame->draw(context);
+}
+
+void AlbumListView::setBounds(const graphics::UV& position, const graphics::UV& size) {
+    mainFrame->setPosition(position);
+    mainFrame->setSize(size);
+    lastDisplayWidth = 0;
+    lastDisplayHeight = 0;
+}
+
+void AlbumListView::setVisible(bool visible) {
+    isVisible = visible;
 }
 
 } // namespace ui

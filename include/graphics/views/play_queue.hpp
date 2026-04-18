@@ -75,6 +75,7 @@ public:
 
     void refresh();  // Rebuild queue display from current music engine state
     void draw(const graphics::RenderContext& context);
+    void setBounds(const graphics::UV& position, const graphics::UV& size);
     void setVisible(bool visible) { isVisible = visible; }
     bool getVisible() const { return isVisible; }
 

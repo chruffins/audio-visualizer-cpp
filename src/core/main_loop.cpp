@@ -3,6 +3,9 @@
 #include "graphics/views/now_playing.hpp"
 #include "graphics/views/album_list.hpp"
 #include "graphics/views/play_queue.hpp"
+#include "graphics/views/sidebar.hpp"
+#include "graphics/drawables/frame.hpp"
+#include "graphics/drawables/text.hpp"
 #include "graphics/uv.hpp"
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_audio.h>
@@ -19,6 +22,76 @@ void runMainLoop() {
     auto nowPlayingView = ui::NowPlayingView(appState.fontManager, appState.music_engine.progressBarModel, appState.event_dispatcher, &appState.music_engine);
     auto albumListView = ui::AlbumListView(appState.fontManager, appState.library, &appState.music_engine, appState.event_dispatcher);
     auto playQueueView = ui::PlayQueueView(appState.fontManager, appState.event_dispatcher, &appState.music_engine, appState.library.get());
+    auto sidebarView = ui::SidebarView(appState.fontManager, appState.event_dispatcher);
+
+    ui::LeftPanelView activeLeftView = ui::LeftPanelView::Albums;
+
+    ui::FrameDrawable leftPlaceholderFrame;
+    leftPlaceholderFrame.setBackgroundColor(al_map_rgba(20, 20, 30, 240));
+    leftPlaceholderFrame.setBorderColor(al_map_rgb(80, 80, 100));
+    leftPlaceholderFrame.setBorderThickness(2);
+    leftPlaceholderFrame.setPadding(12.0f);
+
+    ui::TextDrawable leftPlaceholderTitle(
+        "",
+        graphics::UV(0.0f, 0.0f, 0.0f, 10.0f),
+        graphics::UV(1.0f, 0.0f, 0.0f, 30.0f),
+        18
+    );
+    leftPlaceholderTitle.setFont(appState.fontManager->getFont("kanit"));
+    leftPlaceholderTitle.setAlignment(ui::TextDrawable::HorizontalAlignment::Left);
+    leftPlaceholderTitle.setVerticalAlignment(graphics::VerticalAlignment::TOP);
+    leftPlaceholderFrame.addChild(&leftPlaceholderTitle);
+
+    const float footerHeight = 101.0f;
+    const float sidebarWidth = 150.0f;
+    const float queueWidth = 200.0f;
+
+    auto applyLayout = [&]() {
+        nowPlayingView.setBounds(
+            graphics::UV(0.0f, 1.0f, 0.0f, -footerHeight),
+            graphics::UV(1.0f, 0.0f, 0.0f, footerHeight)
+        );
+
+        sidebarView.setBounds(
+            graphics::UV(0.0f, 0.0f, 0.0f, 0.0f),
+            graphics::UV(0.0f, 1.0f, sidebarWidth, -footerHeight)
+        );
+
+        albumListView.setBounds(
+            graphics::UV(0.0f, 0.0f, sidebarWidth, 0.0f),
+            graphics::UV(1.0f, 1.0f, -(sidebarWidth + queueWidth), -footerHeight)
+        );
+
+        playQueueView.setBounds(
+            graphics::UV(1.0f, 0.0f, -queueWidth, 0.0f),
+            graphics::UV(0.0f, 1.0f, queueWidth, -footerHeight)
+        );
+
+        leftPlaceholderFrame.setPosition(graphics::UV(0.0f, 0.0f, sidebarWidth, 0.0f));
+        leftPlaceholderFrame.setSize(graphics::UV(1.0f, 1.0f, -(sidebarWidth + queueWidth), -footerHeight));
+    };
+
+    applyLayout();
+
+    auto applyLeftPanelSelection = [&](ui::LeftPanelView selection) {
+        activeLeftView = selection;
+        albumListView.setVisible(activeLeftView == ui::LeftPanelView::Albums);
+
+        if (activeLeftView == ui::LeftPanelView::Favorites) {
+            leftPlaceholderTitle.setText("Favorites view is coming soon.");
+        } else if (activeLeftView == ui::LeftPanelView::Search) {
+            leftPlaceholderTitle.setText("Search view is coming soon.");
+        } else {
+            leftPlaceholderTitle.setText("");
+        }
+    };
+
+    sidebarView.setOnSelectionChanged([&](ui::LeftPanelView selection) {
+        applyLeftPanelSelection(selection);
+    });
+
+    applyLeftPanelSelection(activeLeftView);
 
     // Register a callback so that the NowPlayingView updates automatically when
     // MusicEngine starts a new song (e.g., via playNext or other engine-driven
@@ -106,9 +179,14 @@ void runMainLoop() {
                 //al_hold_bitmap_drawing(true);
                 //al_draw_text(appState.default_font, al_map_rgb(255, 255, 255), 200, 150, ALLEGRO_ALIGN_CENTRE, "Hello, Allegro!");
 
-                nowPlayingView.draw(globalContext);
-                albumListView.draw(globalContext);
+                sidebarView.draw(globalContext);
+                if (activeLeftView == ui::LeftPanelView::Albums) {
+                    albumListView.draw(globalContext);
+                } else {
+                    leftPlaceholderFrame.draw(globalContext);
+                }
                 playQueueView.draw(globalContext);
+                nowPlayingView.draw(globalContext);
                 //al_hold_bitmap_drawing(false);
                 al_flip_display();
             } else if (appState.event.timer.source == appState.discord_callback_timer) {
@@ -169,6 +247,13 @@ void runMainLoop() {
                     }
                 }
             }
+            break;
+        case ALLEGRO_EVENT_DISPLAY_RESIZE:
+            // Update cached display dimensions for render context
+            al_acknowledge_resize(al_get_current_display());
+            globalContext.screenWidth = al_get_display_width(al_get_current_display());
+            globalContext.screenHeight = al_get_display_height(al_get_current_display());
+            applyLayout(); // Re-apply layout to adjust to new size
             break;
         default:
             break;

@@ -32,7 +32,7 @@ bool Config::generateDefaultConfig(const std::string& filename) {
     al_set_config_value(defaultConfig, "paths", "music_directory", "/home/chris/Music");
     al_set_config_value(defaultConfig, "paths", "icon_path", "../assets/logotransparent.png");
     
-    al_set_config_value(defaultConfig, "display", "width", "800");
+    al_set_config_value(defaultConfig, "display", "width", "1024");
     al_set_config_value(defaultConfig, "display", "height", "300");
     
     al_set_config_value(defaultConfig, "discord", "application_id", "0");

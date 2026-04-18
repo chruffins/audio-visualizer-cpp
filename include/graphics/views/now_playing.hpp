@@ -34,6 +34,7 @@ public:
     void setDuration(int duration);
     void setPosition(int position);
     void setAlbumArt(ALLEGRO_BITMAP* bitmap);
+    void setBounds(const graphics::UV& position, const graphics::UV& size);
 
     void draw(const graphics::RenderContext& context);
     void updatePlayPauseButton();

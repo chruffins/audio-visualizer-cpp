@@ -88,6 +88,10 @@ public:
 
     void draw(const graphics::RenderContext& context);
 
+    void setBounds(const graphics::UV& position, const graphics::UV& size);
+    void setVisible(bool visible);
+    bool getVisible() const { return isVisible; }
+
 private:
     void rebuildItemList();
     void recalculateLayout(const graphics::RenderContext& context);
@@ -118,6 +122,7 @@ private:
     
     // Callback
     std::function<void(const music::Album*)> onAlbumSelected;
+    bool isVisible = true;
 };
 
 } // namespace ui
