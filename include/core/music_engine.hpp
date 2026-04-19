@@ -3,6 +3,8 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <vector>
+#include <mutex>
 
 #include "graphics/models/progress_bar.hpp"
 #include "music/play_queue.hpp"
@@ -41,6 +43,25 @@ public:
     void setPan(float pan);
     void setSpeed(float speed);
     void setProgress(double position); // position in seconds
+    
+    // Enable or disable audio sample capture from the active mixer output.
+    void setSampleCaptureEnabled(bool enabled);
+    bool isSampleCaptureEnabled() const;
+
+    // Capacity is expressed in individual PCM samples (interleaved channels).
+    void setSampleBufferCapacity(size_t sample_count);
+    size_t getSampleBufferCapacity() const;
+    size_t getBufferedSampleCount() const;
+    void clearSampleBuffer();
+
+    // Returns up to max_samples from newest captured audio data.
+    // Samples are normalized to [-1.0, 1.0].
+    std::vector<float> copyRecentSamples(size_t max_samples) const;
+
+    // Returns up to max_frames downmixed to mono from the newest captured audio data.
+    // This is better for waveform visualization when the source is interleaved stereo.
+    std::vector<float> copyRecentMonoSamples(size_t max_frames) const;
+
     void setPlayQueue(std::shared_ptr<music::PlayQueue> playQueue) {
         playQueueModel = playQueue;
     }
@@ -95,6 +116,26 @@ public:
 
     void update(); // Call periodically to update progress among other things
 private:
+    struct SampleCaptureState {
+        bool enabled = true;
+        size_t channels = 2;
+        std::vector<float> ring_buffer;
+        size_t ring_capacity = 0;
+        size_t ring_write_pos = 0;
+        size_t ring_size = 0;
+        mutable std::mutex ring_mutex;
+
+        void setEnabled(bool value);
+        bool isEnabled() const;
+        void setCapacity(size_t sample_count);
+        size_t getCapacity() const;
+        size_t getSize() const;
+        void clear();
+        std::vector<float> copyRecent(size_t max_samples) const;
+        std::vector<float> copyRecentMono(size_t max_frames) const;
+        void appendInterleavedInt16(const void* buf, unsigned int frames);
+    };
+
     ALLEGRO_VOICE* voice = nullptr;
     ALLEGRO_MIXER* mixer = nullptr;
     ALLEGRO_AUDIO_STREAM* current_stream = nullptr;
@@ -105,5 +146,9 @@ private:
     float current_gain = 1.0f;
     bool is_shutdown = false;
     bool song_finished_fired = false; // Track if we already fired the callback
+
+    SampleCaptureState sample_capture;
+
+    static void mixerPostprocessCallback(void* buf, unsigned int samples, void* data);
 };
 };

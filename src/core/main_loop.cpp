@@ -3,6 +3,7 @@
 #include "graphics/views/now_playing.hpp"
 #include "graphics/views/album_list.hpp"
 #include "graphics/views/play_queue.hpp"
+#include "graphics/views/audio_vis.hpp"
 #include "graphics/views/sidebar.hpp"
 #include "graphics/drawables/frame.hpp"
 #include "graphics/drawables/text.hpp"
@@ -22,6 +23,8 @@ void runMainLoop() {
     auto nowPlayingView = ui::NowPlayingView(appState.fontManager, appState.music_engine.progressBarModel, appState.event_dispatcher, &appState.music_engine);
     auto albumListView = ui::AlbumListView(appState.fontManager, appState.library, &appState.music_engine, appState.event_dispatcher);
     auto playQueueView = ui::PlayQueueView(appState.fontManager, appState.event_dispatcher, &appState.music_engine, appState.library.get());
+    auto audioVisView = ui::AudioVisualizerView(&appState.music_engine);
+    
     auto sidebarView = ui::SidebarView(appState.fontManager, appState.event_dispatcher);
 
     ui::LeftPanelView activeLeftView = ui::LeftPanelView::Albums;
@@ -63,6 +66,11 @@ void runMainLoop() {
             graphics::UV(1.0f, 1.0f, -(sidebarWidth + queueWidth), -footerHeight)
         );
 
+        audioVisView.setBounds(
+            graphics::UV(0.0f, 0.0f, sidebarWidth, 0.0f),
+            graphics::UV(1.0f, 1.0f, -(sidebarWidth + queueWidth), -footerHeight)
+        );
+
         playQueueView.setBounds(
             graphics::UV(1.0f, 0.0f, -queueWidth, 0.0f),
             graphics::UV(0.0f, 1.0f, queueWidth, -footerHeight)
@@ -77,6 +85,7 @@ void runMainLoop() {
     auto applyLeftPanelSelection = [&](ui::LeftPanelView selection) {
         activeLeftView = selection;
         albumListView.setVisible(activeLeftView == ui::LeftPanelView::Albums);
+        audioVisView.setVisible(activeLeftView == ui::LeftPanelView::NowPlaying);
 
         if (activeLeftView == ui::LeftPanelView::Favorites) {
             leftPlaceholderTitle.setText("Favorites view is coming soon.");
@@ -186,6 +195,8 @@ void runMainLoop() {
                 sidebarView.draw(globalContext);
                 if (activeLeftView == ui::LeftPanelView::Albums) {
                     albumListView.draw(globalContext);
+                } else if (activeLeftView == ui::LeftPanelView::NowPlaying) {
+                    audioVisView.draw(globalContext);
                 } else {
                     leftPlaceholderFrame.draw(globalContext);
                 }
@@ -215,28 +226,6 @@ void runMainLoop() {
         case ALLEGRO_EVENT_MOUSE_BUTTON_UP:
             appState.event_dispatcher.dispatchEvent(appState.event);
             break;
-            /*
-            if (appState.event.keyboard.keycode == ALLEGRO_KEY_ESCAPE) {
-                finished = true;
-            } else if (appState.event.keyboard.keycode == ALLEGRO_KEY_SPACE) {
-                if (appState.music_engine.isPlaying()) {
-                    appState.music_engine.pauseSound();
-                } else {
-                    appState.music_engine.resumeSound();
-                }
-            } else if (appState.event.keyboard.keycode == ALLEGRO_KEY_RIGHT) {
-                // Play random song (onSongChanged callback handles UI updates)
-                appState.music_engine.playNext();
-                /*
-                song = appState.library->getRandomSong();
-                if (song) {
-                    if (const music::SongView* songModel = appState.library->getSongById(song->id)) {
-                        appState.music_engine.playSound(songModel->filename);
-                    }
-                }
-                  
-            }
-            */
         case ALLEGRO_EVENT_UI:
             if (appState.event.user.data1 == ALLEGRO_EVENT_UI_PLAY_QUEUE_JUMP) {
                 auto& pq = appState.music_engine.playQueueModel;

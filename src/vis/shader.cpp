@@ -7,6 +7,9 @@ Shader::Shader() {
     shader = al_create_shader(ALLEGRO_SHADER_AUTO);
     const char* pixelSource = al_get_default_shader_source(ALLEGRO_SHADER_AUTO, ALLEGRO_PIXEL_SHADER);
     const char* vertexSource = al_get_default_shader_source(ALLEGRO_SHADER_AUTO, ALLEGRO_VERTEX_SHADER);
+
+    std::cout << pixelSource << std::endl;
+    std::cout << vertexSource << std::endl;
     if (!pixelSource || !vertexSource) {
         std::cerr << "Failed to get default shader source." << std::endl;
         al_destroy_shader(shader);
@@ -32,6 +35,8 @@ bool Shader::load(const std::string &vertexSource, const std::string &fragmentSo
         al_destroy_shader(shader);
         shader = nullptr;
     }
+
+    shader = al_create_shader(ALLEGRO_SHADER_AUTO);
 
     if (fromFile) {
         return loadFromFile(vertexSource, fragmentSource);
@@ -71,6 +76,8 @@ bool Shader::loadFromFile(const std::string &vertexPath, const std::string &frag
         if (!al_build_shader(shader)) {
             std::cerr << "Shader build failed: " << al_get_shader_log(shader) << std::endl;
             return false;
+        } else {
+            std::cout << "Shader loaded successfully from files: " << vertexPath << " and " << fragmentPath << std::endl;
         }
     }
     return r1 && r2;
