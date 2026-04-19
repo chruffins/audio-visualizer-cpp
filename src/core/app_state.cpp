@@ -18,7 +18,7 @@ bool AppState::init() {
     // update some flags
     al_set_new_bitmap_flags(ALLEGRO_MIN_LINEAR | ALLEGRO_MAG_LINEAR | ALLEGRO_VIDEO_BITMAP | ALLEGRO_MIPMAP);
 
-    al_set_new_display_flags(ALLEGRO_RESIZABLE);
+    al_set_new_display_flags(ALLEGRO_RESIZABLE | ALLEGRO_PROGRAMMABLE_PIPELINE | ALLEGRO_OPENGL);
 
     // Update your application state here
     this->display = al_create_display(this->config.getDisplayWidth(), this->config.getDisplayHeight());

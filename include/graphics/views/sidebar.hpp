@@ -19,8 +19,10 @@ namespace ui {
 
 enum class LeftPanelView {
     Albums = 0,
-    Favorites = 1,
-    Search = 2
+    NowPlaying = 1,
+    Favorites = 2,
+    Search = 3,
+    Settings = 4
 };
 
 class SidebarView {

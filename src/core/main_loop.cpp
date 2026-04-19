@@ -82,6 +82,10 @@ void runMainLoop() {
             leftPlaceholderTitle.setText("Favorites view is coming soon.");
         } else if (activeLeftView == ui::LeftPanelView::Search) {
             leftPlaceholderTitle.setText("Search view is coming soon.");
+        } else if (activeLeftView == ui::LeftPanelView::Settings) {
+            leftPlaceholderTitle.setText("Settings view is coming soon.");
+        } else if (activeLeftView == ui::LeftPanelView::NowPlaying) {
+            leftPlaceholderTitle.setText("");
         } else {
             leftPlaceholderTitle.setText("");
         }

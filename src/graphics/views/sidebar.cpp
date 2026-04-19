@@ -56,8 +56,10 @@ void SidebarView::rebuildButtons() {
 
     const SidebarItem items[] = {
         {"Albums", LeftPanelView::Albums},
+        {"Now Playing", LeftPanelView::NowPlaying},
         {"Favorites", LeftPanelView::Favorites},
         {"Search", LeftPanelView::Search},
+        {"Settings", LeftPanelView::Settings},
     };
 
     ALLEGRO_FONT* buttonFont = fontManager->getFont("kanit")->getFont(16);
