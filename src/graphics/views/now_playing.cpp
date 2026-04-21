@@ -1,6 +1,7 @@
 #include "graphics/views/now_playing.hpp"
 #include "core/music_engine.hpp"
 #include "util/duration.hpp"
+#include "util/config.hpp"
 #include <allegro5/allegro.h>
 
 namespace ui {
@@ -82,7 +83,7 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
   progressBar.setSize(graphics::UV(0.4f, 0.0f, 0.0f, 8.0f));
 
   // Album art image - left side
-  defaultAlbumArtBitmap = al_load_bitmap("../assets/icons/default_art.png");
+  defaultAlbumArtBitmap = al_load_bitmap(util::Config::resolveAssetPath("icons/default_art.png").c_str());
   albumArtImage.setPosition(graphics::UV(0.0f, 0.0f, 0.0f, 0.0f))
   .setSize(graphics::UV(0.0f, 0.0f, 64.0f, 64.0f))
   .setScaleMode(ImageDrawable::ScaleMode::STRETCH);
@@ -117,7 +118,7 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
   });
 
   // Setup play/pause button
-  playPauseButton.loadImageFromFile("../assets/icons/play.png");
+  playPauseButton.loadImageFromFile(util::Config::resolveAssetPath("icons/play.png"));
   playPauseButton.setDrawBorder(false);
   playPauseButton.setDrawBackground(true);
   playPauseButton.setBackgroundColors(
@@ -140,7 +141,7 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
   });
   
   // Setup rewind button
-  rewindButton.loadImageFromFile("../assets/icons/skip_prev.png");
+  rewindButton.loadImageFromFile(util::Config::resolveAssetPath("icons/skip_prev.png"));
   rewindButton.setDrawBorder(false);
   rewindButton.setDrawBackground(true);
   rewindButton.setBackgroundColors(
@@ -164,7 +165,7 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
   });
   
   // Setup skip button
-  skipButton.loadImageFromFile("../assets/icons/skip_next.png");
+  skipButton.loadImageFromFile(util::Config::resolveAssetPath("icons/skip_next.png"));
   skipButton.setDrawBorder(false);
   skipButton.setDrawBackground(true);
   skipButton.setBackgroundColors(
@@ -182,7 +183,7 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
   });
   
   // Setup loop button
-  loopButton.loadImageFromFile("../assets/icons/loop.png");
+  loopButton.loadImageFromFile(util::Config::resolveAssetPath("icons/loop.png"));
   loopButton.setDrawBorder(false);
   loopButton.setDrawBackground(true);
   loopButton.setBackgroundColors(
@@ -267,7 +268,9 @@ void NowPlayingView::recalculateLayout(const graphics::RenderContext& context) {
 
 void NowPlayingView::updatePlayPauseButton() {
   if (musicEngine) {
-    playPauseButton.loadImageFromFile(musicEngine->isPlaying() ? "../assets/icons/pause.png" : "../assets/icons/play.png");
+    playPauseButton.loadImageFromFile(
+      util::Config::resolveAssetPath(musicEngine->isPlaying() ? "icons/pause.png" : "icons/play.png")
+    );
   }
 }
 

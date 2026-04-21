@@ -1,15 +1,228 @@
 #include "util/config.hpp"
 #include <iostream>
 #include <algorithm>
+#include <cstdlib>
+#include <filesystem>
+#include <vector>
+#include <limits.h>
+#include <unistd.h>
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_native_dialog.h>
 
 namespace util {
 
+namespace {
+
+constexpr const char* kAppName = "audiovis";
+
+std::string getEnvOrEmpty(const char* name) {
+    const char* value = std::getenv(name);
+    return value ? std::string(value) : std::string();
+}
+
+std::filesystem::path getHomeDir() {
+    const std::string home = getEnvOrEmpty("HOME");
+    if (!home.empty()) {
+        return std::filesystem::path(home);
+    }
+    return std::filesystem::current_path();
+}
+
+std::filesystem::path getExecutableDir() {
+    char exePath[PATH_MAX];
+    const ssize_t len = readlink("/proc/self/exe", exePath, sizeof(exePath) - 1);
+    if (len > 0) {
+        exePath[len] = '\0';
+        return std::filesystem::path(exePath).parent_path();
+    }
+    return std::filesystem::current_path();
+}
+
+std::filesystem::path appImagePath() {
+    const std::string appImage = getEnvOrEmpty("APPIMAGE");
+    return appImage.empty() ? std::filesystem::path() : std::filesystem::path(appImage);
+}
+
+std::filesystem::path portableConfigHome() {
+    const auto appImage = appImagePath();
+    if (appImage.empty()) {
+        return {};
+    }
+
+    const auto configHome = std::filesystem::path(appImage.string() + ".config");
+    if (std::filesystem::is_directory(configHome)) {
+        return configHome;
+    }
+    return {};
+}
+
+std::filesystem::path portableHome() {
+    const auto appImage = appImagePath();
+    if (appImage.empty()) {
+        return {};
+    }
+
+    const auto home = std::filesystem::path(appImage.string() + ".home");
+    if (std::filesystem::is_directory(home)) {
+        return home;
+    }
+    return {};
+}
+
+std::filesystem::path configHomeDir() {
+    const auto portable = portableConfigHome();
+    if (!portable.empty()) {
+        return portable;
+    }
+
+    const std::string xdg = getEnvOrEmpty("XDG_CONFIG_HOME");
+    if (!xdg.empty()) {
+        return std::filesystem::path(xdg);
+    }
+    return getHomeDir() / ".config";
+}
+
+std::filesystem::path dataHomeDir() {
+    const auto portable = portableHome();
+    if (!portable.empty()) {
+        return portable / ".local" / "share";
+    }
+
+    const std::string xdg = getEnvOrEmpty("XDG_DATA_HOME");
+    if (!xdg.empty()) {
+        return std::filesystem::path(xdg);
+    }
+    return getHomeDir() / ".local" / "share";
+}
+
+std::filesystem::path cacheHomeDir() {
+    const auto portable = portableHome();
+    if (!portable.empty()) {
+        return portable / ".cache";
+    }
+
+    const std::string xdg = getEnvOrEmpty("XDG_CACHE_HOME");
+    if (!xdg.empty()) {
+        return std::filesystem::path(xdg);
+    }
+    return getHomeDir() / ".cache";
+}
+
+std::filesystem::path ensureDir(const std::filesystem::path& p) {
+    std::error_code ec;
+    std::filesystem::create_directories(p, ec);
+    return p;
+}
+
+bool migrateLegacyFileIfMissing(const std::string& legacyName, const std::filesystem::path& destination) {
+    std::error_code ec;
+    if (std::filesystem::exists(destination, ec)) {
+        return false;
+    }
+
+    const std::filesystem::path legacyPath = std::filesystem::current_path() / legacyName;
+    if (!std::filesystem::exists(legacyPath, ec)) {
+        return false;
+    }
+
+    std::filesystem::create_directories(destination.parent_path(), ec);
+    if (ec) {
+        return false;
+    }
+
+    std::filesystem::copy_file(legacyPath, destination, std::filesystem::copy_options::skip_existing, ec);
+    if (!ec) {
+        std::cout << "Migrated legacy file from " << legacyPath << " to " << destination << "\n";
+        return true;
+    }
+
+    return false;
+}
+
+std::string normalizeAssetRelativePath(std::string relativePath) {
+    if (relativePath.rfind("../assets/", 0) == 0) {
+        relativePath.erase(0, 10);
+    } else if (relativePath.rfind("assets/", 0) == 0) {
+        relativePath.erase(0, 7);
+    }
+    return relativePath;
+}
+
+std::vector<std::filesystem::path> assetRoots() {
+    std::vector<std::filesystem::path> roots;
+
+    const std::string overrideDir = getEnvOrEmpty("AUDIOVIS_ASSET_DIR");
+    if (!overrideDir.empty()) {
+        roots.emplace_back(overrideDir);
+    }
+
+    const auto exeDir = getExecutableDir();
+    roots.emplace_back(exeDir / "../share/audiovis/assets");
+    roots.emplace_back(exeDir / "../assets");
+    roots.emplace_back(exeDir / "assets");
+    roots.emplace_back("/usr/share/audiovis/assets");
+
+    return roots;
+}
+
+} // namespace
+
 Config::~Config() {
     if (config) {
         al_destroy_config(config);
     }
+}
+
+std::string Config::getConfigDir() {
+    return ensureDir(configHomeDir() / kAppName).string();
+}
+
+std::string Config::getDataDir() {
+    return ensureDir(dataHomeDir() / kAppName).string();
+}
+
+std::string Config::getCacheDir() {
+    return ensureDir(cacheHomeDir() / kAppName).string();
+}
+
+std::string Config::getConfigPath() {
+    const std::filesystem::path path = std::filesystem::path(getConfigDir()) / "config.ini";
+    migrateLegacyFileIfMissing("config.ini", path);
+    return path.string();
+}
+
+std::string Config::getDatabasePath() {
+    const std::filesystem::path path = std::filesystem::path(getDataDir()) / "music.db";
+    migrateLegacyFileIfMissing("music.db", path);
+    return path.string();
+}
+
+std::string Config::getDiscordTokenPath() {
+    const std::filesystem::path path = std::filesystem::path(getConfigDir()) / "discord_tokens.txt";
+    migrateLegacyFileIfMissing("discord_tokens.txt", path);
+    return path.string();
+}
+
+std::string Config::getAssetRoot() {
+    for (const auto& root : assetRoots()) {
+        std::error_code ec;
+        if (std::filesystem::is_directory(root, ec)) {
+            return std::filesystem::weakly_canonical(root, ec).string();
+        }
+    }
+    return (getExecutableDir() / "../assets").string();
+}
+
+std::string Config::resolveAssetPath(const std::string& relativePath) {
+    const std::filesystem::path normalizedRelative = normalizeAssetRelativePath(relativePath);
+    for (const auto& root : assetRoots()) {
+        const auto candidate = root / normalizedRelative;
+        std::error_code ec;
+        if (std::filesystem::exists(candidate, ec)) {
+            return candidate.string();
+        }
+    }
+    return (std::filesystem::path(getAssetRoot()) / normalizedRelative).string();
 }
 
 bool Config::generateDefaultConfig(const std::string& filename) {
@@ -29,8 +242,8 @@ bool Config::generateDefaultConfig(const std::string& filename) {
     }
 
     // Set default values
-    al_set_config_value(defaultConfig, "paths", "music_directory", "/home/chris/Music");
-    al_set_config_value(defaultConfig, "paths", "icon_path", "../assets/logotransparent.png");
+    al_set_config_value(defaultConfig, "paths", "music_directory", (getHomeDir() / "Music").string().c_str());
+    al_set_config_value(defaultConfig, "paths", "icon_path", "logotransparent.png");
     
     al_set_config_value(defaultConfig, "display", "width", "1024");
     al_set_config_value(defaultConfig, "display", "height", "300");
@@ -105,7 +318,17 @@ std::string Config::getMusicDirectory() const {
 }
 
 std::string Config::getIconPath() const {
-    return getString("paths", "icon_path", "../assets/logotransparent.png");
+    std::string iconPath = getString("paths", "icon_path", "logotransparent.png");
+    if (iconPath.empty()) {
+        iconPath = "logotransparent.png";
+    }
+
+    const std::filesystem::path asPath(iconPath);
+    if (asPath.is_absolute()) {
+        return iconPath;
+    }
+
+    return resolveAssetPath(iconPath);
 }
 
 uint64_t Config::getDiscordApplicationId() const {

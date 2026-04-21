@@ -11,8 +11,8 @@ bool AppState::init() {
     mp3streaming::addMP3Support();
 
     // Load configuration first
-    if (!this->config.load("config.ini")) {
-        std::cerr << "Warning: Could not load config.ini, using defaults.\n";
+    if (!this->config.load(util::Config::getConfigPath())) {
+        std::cerr << "Warning: Could not load config file, using defaults.\n";
     }
 
     // update some flags
@@ -106,11 +106,11 @@ bool AppState::init() {
     std::cout << "Loaded " << allSongIds.size() << " songs into the play queue.\n";
 
     // load fonts
-    this->fontManager->loadFont("courier", "../assets/CourierPrime-Regular.ttf");
-    this->fontManager->loadFont("kanit", "../assets/Kanit-Regular.ttf");
-    this->fontManager->loadFont("kanitLight", "../assets/Kanit-Light.ttf");
-    this->fontManager->loadFont("gothic", "../assets/fourche.ttf");
-    this->fontManager->loadFont("plexSansLight", "../assets/IBMPlexSans-Light.ttf");
+    this->fontManager->loadFont("courier", util::Config::resolveAssetPath("CourierPrime-Regular.ttf"));
+    this->fontManager->loadFont("kanit", util::Config::resolveAssetPath("Kanit-Regular.ttf"));
+    this->fontManager->loadFont("kanitLight", util::Config::resolveAssetPath("Kanit-Light.ttf"));
+    this->fontManager->loadFont("gothic", util::Config::resolveAssetPath("fourche.ttf"));
+    this->fontManager->loadFont("plexSansLight", util::Config::resolveAssetPath("IBMPlexSans-Light.ttf"));
 
     // Wire the shared play queue into the music engine so playback can operate
     // on the application-owned queue.

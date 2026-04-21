@@ -82,7 +82,7 @@ private:
 	AppState()
 		: display(nullptr)
 		, default_font(nullptr)
-		, db("music.db")
+		, db(util::Config::getDatabasePath())
 		, discord_initialized(false)
 		, discord_integration(DiscordIntegration::instance())
 		, music_engine()

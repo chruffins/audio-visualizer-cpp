@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(audiovis)
 
+include(GNUInstallDirs)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
@@ -126,3 +128,17 @@ add_custom_command(TARGET audiovis POST_BUILD
     "${DISCORD_SHARED_LIB}"
     $<TARGET_FILE_DIR:audiovis>;
 )
+
+install(TARGETS audiovis
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+install(DIRECTORY assets/
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/audiovis/assets
+)
+
+if(UNIX AND NOT APPLE)
+    install(FILES "${DISCORD_SHARED_LIB}"
+        DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
+endif()
