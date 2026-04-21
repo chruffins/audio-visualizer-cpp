@@ -82,9 +82,11 @@ NowPlayingView::NowPlayingView(std::shared_ptr<util::FontManager> fontManager,
   progressBar.setSize(graphics::UV(0.4f, 0.0f, 0.0f, 8.0f));
 
   // Album art image - left side
+  defaultAlbumArtBitmap = al_load_bitmap("../assets/icons/default_art.png");
   albumArtImage.setPosition(graphics::UV(0.0f, 0.0f, 0.0f, 0.0f))
   .setSize(graphics::UV(0.0f, 0.0f, 64.0f, 64.0f))
   .setScaleMode(ImageDrawable::ScaleMode::STRETCH);
+  albumArtImage.setBitmap(defaultAlbumArtBitmap, false);
 
   // Position and duration text below progress bar
   songPositionText = TextDrawable(
@@ -237,7 +239,14 @@ void NowPlayingView::setPosition(int position) {
 }
 
 void NowPlayingView::setAlbumArt(ALLEGRO_BITMAP *bitmap) {
-  albumArtImage.setBitmap(bitmap);
+  albumArtImage.setBitmap(bitmap ? bitmap : defaultAlbumArtBitmap, false);
+}
+
+NowPlayingView::~NowPlayingView() {
+  if (defaultAlbumArtBitmap) {
+    al_destroy_bitmap(defaultAlbumArtBitmap);
+    defaultAlbumArtBitmap = nullptr;
+  }
 }
 
 void NowPlayingView::setBounds(const graphics::UV& position, const graphics::UV& size) {

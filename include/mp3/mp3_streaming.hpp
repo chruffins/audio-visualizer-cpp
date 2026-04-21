@@ -401,7 +401,7 @@ namespace mp3streaming
                                                         mp3file->frame_buffer, &frame_info);
                 if (frame_samples == 0)
                 {
-                    mp3_stream_rewind(stream);
+                    // mp3_stream_rewind(stream);
                     break;
                 }
                 mp3file->frame_pos = 0;

@@ -121,6 +121,8 @@ void runMainLoop() {
             if (!albumArt) {
                 std::cerr << "Warning: Failed to load album art for album: " << album->title << "\n";
             }
+        } else {
+            nowPlayingView.setAlbumArt(nullptr);
         }
         nowPlayingView.setDuration(s.duration);
         nowPlayingView.setPosition(0);

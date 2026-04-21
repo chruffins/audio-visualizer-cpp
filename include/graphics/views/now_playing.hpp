@@ -27,6 +27,7 @@ public:
         std::shared_ptr<ui::ProgressBar> progressBarModel,
         graphics::EventDispatcher& eventDispatcher,
         core::MusicEngine* musicEngine);
+    ~NowPlayingView();
 
     void setSongTitle(const std::string& title);
     void setArtistName(const std::string& artist);
@@ -61,6 +62,7 @@ private:
     TextDrawable songDurationText;
 
     // Album drawable
+    ALLEGRO_BITMAP* defaultAlbumArtBitmap = nullptr;
     ImageDrawable albumArtImage;
     
     // Progress bar
