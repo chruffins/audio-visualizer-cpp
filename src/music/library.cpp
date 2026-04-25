@@ -45,6 +45,7 @@ bool Library::loadFromDatabase(database::MusicDatabase& db) {
     }
 
     songArtists.clear();
+    songArtists.reserve(songs.size());
     for (const auto& [songId, song] : songs) {
         (void)song;
         std::vector<std::string> names;
@@ -72,9 +73,17 @@ void Library::recreateViews() {
     songViews.clear();
     albumViews.clear();
     playlistViews.clear();
+    songViewIndex.clear();
+
+    songViews.reserve(songs.size());
+    albumViews.reserve(albums.size());
+    playlistViews.reserve(playlists.size());
+    songViewIndex.reserve(songs.size());
 
     // create SongViews from preloaded entity maps and cached song artist names
-    
+    std::unordered_map<int, std::vector<SongView>> songsByAlbum;
+    songsByAlbum.reserve(albums.size());
+
     for (const auto& [songId, song] : songs) {
         const Album* album = getAlbumById(song.album_id);
         std::string albumTitle = album ? album->title : "";
@@ -85,14 +94,14 @@ void Library::recreateViews() {
 
         auto songArtistIt = songArtists.find(songId);
         if (songArtistIt != songArtists.end()) {
-            std::ostringstream oss;
+            std::string joinedArtists;
             for (size_t i = 0; i < songArtistIt->second.size(); ++i) {
                 if (i > 0) {
-                    oss << ", ";
+                    joinedArtists += ", ";
                 }
-                oss << songArtistIt->second[i];
+                joinedArtists += songArtistIt->second[i];
             }
-            artistName = oss.str();
+            artistName = std::move(joinedArtists);
         }
         
         if (album) {
@@ -120,20 +129,18 @@ void Library::recreateViews() {
             song.filename,
             song.album_id
         );
+
+        songViewIndex.emplace(song.id, songViews.size() - 1);
+
+        songsByAlbum[song.album_id].push_back(songViews.back());
     }
 
     // create AlbumViews - group songs by album
     for (const auto& [albumId, album] : albums) {
         std::vector<SongView> albumSongs;
-        
-        // find all songs for this album
-        for (const auto& songView : songViews) {
-            // check if the original song belongs to this album
-            auto it = songs.find(songView.id);
-            const Song* song = it != songs.end() ? &it->second : nullptr;
-            if (song && song->album_id == albumId) {
-                albumSongs.push_back(songView);
-            }
+        auto bucketIt = songsByAlbum.find(albumId);
+        if (bucketIt != songsByAlbum.end()) {
+            albumSongs = std::move(bucketIt->second);
         }
         
         // sort songs by track number
@@ -182,9 +189,8 @@ void Library::recreateViews() {
 }
 
 const SongView* Library::getSongById(int id) const {
-    // TODO: i think songViews should just be a map for efficiency
-    auto it = std::find_if(songViews.begin(), songViews.end(), [id](const SongView& sv) { return sv.id == id; });
-    return (it != songViews.end()) ? &(*it) : nullptr;
+    auto it = songViewIndex.find(id);
+    return (it != songViewIndex.end()) ? &songViews[it->second] : nullptr;
 }
 
 const Album* Library::getAlbumById(int id) const {

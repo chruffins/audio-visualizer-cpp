@@ -33,6 +33,7 @@ struct AlbumListItem {
     std::unique_ptr<TextDrawable> artistText;
     std::unique_ptr<TextDrawable> yearText;
     std::unique_ptr<ButtonDrawable> actionButton;
+    std::string artistName;
     
     // Reference to the album data
     const music::Album* album = nullptr;

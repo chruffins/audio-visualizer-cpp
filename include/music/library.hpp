@@ -65,6 +65,7 @@ private:
     std::unordered_map<int, Playlist> playlists;
     std::unordered_map<int, Song> songs;
     std::unordered_map<int, std::vector<std::string>> songArtists;
+    std::unordered_map<int, size_t> songViewIndex;
 
     std::vector<SongView> songViews;
     std::vector<AlbumView> albumViews;

@@ -209,6 +209,9 @@ void AlbumListView::configureItem(AlbumListItem& item,
     item.albumArt->setScaleMode(ImageDrawable::ScaleMode::STRETCH);
     item.albumArt->setImageModel(album->cover_art_model);
 
+    const auto* artist = library->getArtistById(album->artist_id);
+    item.artistName = artist ? artist->name : "Unknown Artist";
+
     *item.titleText = TextDrawable(
         album->title,
         graphics::UV(0.0f, 0.0f, TEXT_OFFSET_X, 5.0f),
@@ -219,10 +222,8 @@ void AlbumListView::configureItem(AlbumListItem& item,
      .setAlignment(TextDrawable::HorizontalAlignment::Left)
      .setVerticalAlignment(graphics::VerticalAlignment::TOP);
 
-    const auto* artist = library->getArtistById(album->artist_id);
-    const std::string artistText = artist ? artist->name : "Unknown Artist";
     *item.artistText = TextDrawable(
-        artistText,
+        item.artistName,
         graphics::UV(0.0f, 0.0f, TEXT_OFFSET_X, 30.0f),
         graphics::UV(1.0f, 0.0f, -TEXT_OFFSET_X - 20.0f, 20.0f),
         14
@@ -273,14 +274,10 @@ void AlbumListView::sortItems(SortMode mode) {
             });
             break;
         case SortMode::ByArtist:
-            std::sort(items.begin(), items.end(), [this](const AlbumListItem& a, const AlbumListItem& b) {
+            std::sort(items.begin(), items.end(), [](const AlbumListItem& a, const AlbumListItem& b) {
                 if (!a.album || !b.album) return false;
-                const auto* artistA = this->library->getArtistById(a.album->artist_id);
-                const auto* artistB = this->library->getArtistById(b.album->artist_id);
-                const std::string& artistNameA = artistA ? artistA->name : "Unknown Artist";
-                const std::string& artistNameB = artistB ? artistB->name : "Unknown Artist";
-                if (artistNameA != artistNameB) {
-                    return artistNameA < artistNameB;
+                if (a.artistName != b.artistName) {
+                    return a.artistName < b.artistName;
                 }
                 if (a.album->year != b.album->year) {
                     return a.album->year < b.album->year;
