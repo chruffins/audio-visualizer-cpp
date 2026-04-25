@@ -12,6 +12,16 @@ public:
     Config() : config(nullptr) {}
     ~Config();
 
+    // Global path policy for runtime files and packaged assets.
+    static std::string getConfigDir();
+    static std::string getDataDir();
+    static std::string getCacheDir();
+    static std::string getConfigPath();
+    static std::string getDatabasePath();
+    static std::string getDiscordTokenPath();
+    static std::string getAssetRoot();
+    static std::string resolveAssetPath(const std::string& relativePath);
+
     bool load(const std::string& filename);
     bool generateDefaultConfig(const std::string& filename);
     

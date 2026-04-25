@@ -1,22 +1,32 @@
 #include "core/discord_integration.hpp"
 #include "music/library_views.hpp"
 #include "music/song.hpp"
+#include "util/config.hpp"
 #include <fstream>
 #include <filesystem>
 #include <chrono>
 #include <allegro5/allegro.h>
-
-const std::string token_file = "discord_tokens.txt";
+#if defined(__unix__) || defined(__APPLE__)
+#include <sys/stat.h>
+#endif
 
 namespace core {
 
+static std::string token_file_path() {
+    return util::Config::getDiscordTokenPath();
+}
+
 static bool save_tokens(const std::string& access, const std::string& refresh, int32_t expires_at) {
     try {
+        const std::string token_file = token_file_path();
         std::ofstream ofs(token_file, std::ios::trunc);
         if (!ofs) return false;
         ofs << "access_token=" << access << "\n";
         ofs << "refresh_token=" << refresh << "\n";
         ofs << "expires_at=" << expires_at << "\n";
+#if defined(__unix__) || defined(__APPLE__)
+        chmod(token_file.c_str(), 0600);
+#endif
         return true;
     } catch (...) {
         return false;
@@ -24,6 +34,7 @@ static bool save_tokens(const std::string& access, const std::string& refresh, i
 }
 
 static bool load_tokens(std::string& access, std::string& refresh, int32_t& expires_at) {
+    const std::string token_file = token_file_path();
     if (!std::filesystem::exists(token_file)) return false;
     std::ifstream ifs(token_file);
     if (!ifs) return false;

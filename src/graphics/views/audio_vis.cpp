@@ -7,6 +7,7 @@
 #include <allegro5/allegro_primitives.h>
 
 #include "core/music_engine.hpp"
+#include "util/config.hpp"
 #include "vis/shader.hpp"
 
 namespace ui {
@@ -53,9 +54,9 @@ void AudioVisualizerView::BitmapDeleter::operator()(ALLEGRO_BITMAP* bmp) const {
 
 AudioVisualizerView::AudioVisualizerView(core::MusicEngine* musicEngine)
     : musicEngine(musicEngine) {
-        const char* vertexSource = "../assets/shaders/vertex.glsl";
-        const char* pixelSource = "../assets/shaders/pixel.glsl";
-        shader = std::make_unique<vis::Shader>(vertexSource, pixelSource, true);
+        const std::string vertexSource = util::Config::resolveAssetPath("shaders/vertex.glsl");
+        const std::string pixelSource = util::Config::resolveAssetPath("shaders/pixel.glsl");
+        shader = std::make_unique<vis::Shader>(vertexSource.c_str(), pixelSource.c_str(), true);
         // shader = std::make_unique<vis::Shader>(); // use default shader for now
     }
 

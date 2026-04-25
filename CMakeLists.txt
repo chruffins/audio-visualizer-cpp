@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.10)
 project(audiovis)
 
+include(GNUInstallDirs)
+
+configure_file(
+    "${CMAKE_SOURCE_DIR}/packaging/linux/audiovis.desktop.in"
+    "${CMAKE_BINARY_DIR}/audiovis.desktop"
+    @ONLY
+)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
@@ -111,12 +119,16 @@ target_compile_options(audiovis PRIVATE ${TAGLIB_CFLAGS_OTHER})
 
 # Set the runtime search path (RPATH) for Linux and macOS
 if(UNIX)
-    # Use RPATH when building
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-    # Set the RPATH to use the lib directory relative to the executable
-    set(CMAKE_INSTALL_RPATH "$ORIGIN")
     if(APPLE)
-        set(CMAKE_INSTALL_RPATH "@executable_path")
+        set_target_properties(audiovis PROPERTIES
+            BUILD_RPATH "@executable_path"
+            INSTALL_RPATH "@executable_path"
+        )
+    else()
+        set_target_properties(audiovis PROPERTIES
+            BUILD_RPATH "$ORIGIN:$ORIGIN/../${CMAKE_INSTALL_LIBDIR}"
+            INSTALL_RPATH "$ORIGIN:$ORIGIN/../${CMAKE_INSTALL_LIBDIR}"
+        )
     endif()
 endif()
 
@@ -126,3 +138,36 @@ add_custom_command(TARGET audiovis POST_BUILD
     "${DISCORD_SHARED_LIB}"
     $<TARGET_FILE_DIR:audiovis>;
 )
+
+install(TARGETS audiovis
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+install(TARGETS scrob
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+install(DIRECTORY assets/
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/audiovis/assets
+)
+
+install(FILES "${CMAKE_BINARY_DIR}/audiovis.desktop"
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
+)
+
+install(FILES "${CMAKE_SOURCE_DIR}/assets/logo.png"
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/512x512/apps
+    RENAME "audiovis.png"
+)
+
+if(UNIX AND NOT APPLE)
+    install(FILES "${DISCORD_SHARED_LIB}"
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
+
+    add_custom_target(appimage
+        COMMAND "${CMAKE_SOURCE_DIR}/scripts/build-appimage.sh" "${CMAKE_BINARY_DIR}" "${CMAKE_BINARY_DIR}/AppDir"
+        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+        COMMENT "Building AppImage from install tree"
+    )
+endif()

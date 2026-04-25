@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=forte player
+Comment=Desktop music player
+Exec=audiovis
+Icon=audiovis
+Terminal=false
+Categories=Audio;Player;
+Keywords=music;player;audio;
+StartupNotify=true
