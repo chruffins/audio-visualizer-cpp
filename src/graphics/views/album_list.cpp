@@ -39,9 +39,108 @@ void AlbumListView::refresh() {
     rebuildItemList();
 }
 
+void AlbumListView::rebuildSortControls() {
+    if (!sortByNameButton) {
+        sortByNameButton = std::make_unique<ButtonDrawable>(
+            graphics::UV(0.0f, 0.0f, 0.0f, 0.0f),
+            graphics::UV(0.333f, 0.0f, -4.0f, SORT_BUTTON_HEIGHT),
+            "Name"
+        );
+        sortByNameButton->setOnClick([this]() {
+            currentSortMode = SortMode::ByTitle;
+            sortItems(currentSortMode);
+            relayoutItemPositions();
+            updateSortButtonStyles();
+        });
+    }
+
+    if (!sortByArtistButton) {
+        sortByArtistButton = std::make_unique<ButtonDrawable>(
+            graphics::UV(0.333f, 0.0f, 2.0f, 0.0f),
+            graphics::UV(0.333f, 0.0f, -4.0f, SORT_BUTTON_HEIGHT),
+            "Artist"
+        );
+        sortByArtistButton->setOnClick([this]() {
+            currentSortMode = SortMode::ByArtist;
+            sortItems(currentSortMode);
+            relayoutItemPositions();
+            updateSortButtonStyles();
+        });
+    }
+
+    if (!sortByYearButton) {
+        sortByYearButton = std::make_unique<ButtonDrawable>(
+            graphics::UV(0.666f, 0.0f, 4.0f, 0.0f),
+            graphics::UV(0.334f, 0.0f, -4.0f, SORT_BUTTON_HEIGHT),
+            "Release"
+        );
+        sortByYearButton->setOnClick([this]() {
+            currentSortMode = SortMode::ByYear;
+            sortItems(currentSortMode);
+            relayoutItemPositions();
+            updateSortButtonStyles();
+        });
+    }
+
+    ALLEGRO_FONT* buttonFont = fontManager->getFont("kanit")->getFont(16);
+    sortByNameButton->setFont(buttonFont);
+    sortByArtistButton->setFont(buttonFont);
+    sortByYearButton->setFont(buttonFont);
+
+    mainFrame->addChild(sortByNameButton.get());
+    mainFrame->addChild(sortByArtistButton.get());
+    mainFrame->addChild(sortByYearButton.get());
+    updateSortButtonStyles();
+}
+
+void AlbumListView::updateSortButtonStyles() {
+    const ALLEGRO_COLOR activeNormal = al_map_rgb(78, 116, 180);
+    const ALLEGRO_COLOR activeHover = al_map_rgb(98, 136, 200);
+    const ALLEGRO_COLOR activePressed = al_map_rgb(58, 96, 160);
+
+    const ALLEGRO_COLOR idleNormal = al_map_rgb(45, 45, 60);
+    const ALLEGRO_COLOR idleHover = al_map_rgb(65, 65, 85);
+    const ALLEGRO_COLOR idlePressed = al_map_rgb(35, 35, 50);
+
+    if (sortByNameButton) {
+        const bool isActive = currentSortMode == SortMode::ByTitle;
+        sortByNameButton->setColors(
+            isActive ? activeNormal : idleNormal,
+            isActive ? activeHover : idleHover,
+            isActive ? activePressed : idlePressed
+        );
+    }
+
+    if (sortByArtistButton) {
+        const bool isActive = currentSortMode == SortMode::ByArtist;
+        sortByArtistButton->setColors(
+            isActive ? activeNormal : idleNormal,
+            isActive ? activeHover : idleHover,
+            isActive ? activePressed : idlePressed
+        );
+    }
+
+    if (sortByYearButton) {
+        const bool isActive = currentSortMode == SortMode::ByYear;
+        sortByYearButton->setColors(
+            isActive ? activeNormal : idleNormal,
+            isActive ? activeHover : idleHover,
+            isActive ? activePressed : idlePressed
+        );
+    }
+}
+
+void AlbumListView::relayoutItemPositions() {
+    for (size_t i = 0; i < items.size(); ++i) {
+        const float yPos = SORT_SECTION_HEIGHT + static_cast<float>(i) * (ITEM_HEIGHT + ITEM_SPACING);
+        items[i].frame.setPosition(graphics::UV(0.0f, 0.0f, 0.0f, yPos));
+    }
+}
+
 void AlbumListView::rebuildItemList() {
     // Remove old children so we don't keep pointers to destroyed items
     mainFrame->clearChildren();
+    rebuildSortControls();
 
     items.clear();
     if (library) {
@@ -69,9 +168,15 @@ void AlbumListView::rebuildItemList() {
         AlbumListItem& item = items.back();
         configureItem(item, album, idx, kanitFont, gothicFont);
         
+        ++idx;
+    }
+
+    sortItems(currentSortMode);
+    relayoutItemPositions();
+
+    for (auto& item : items) {
         // Add frame as child of the main frame (contains all UI elements)
         mainFrame->addChild(&item.frame);
-        ++idx;
     }
     
     // Update content height for scrolling
@@ -90,7 +195,7 @@ void AlbumListView::configureItem(AlbumListItem& item,
                                   const std::shared_ptr<util::Font>& gothicFont) {
     item.album = album;
 
-    const float yPos = static_cast<float>(index) * (ITEM_HEIGHT + ITEM_SPACING);
+    const float yPos = SORT_SECTION_HEIGHT + static_cast<float>(index) * (ITEM_HEIGHT + ITEM_SPACING);
 
     item.frame.setPosition(graphics::UV(0.0f, 0.0f, 0.0f, yPos));
     item.frame.setSize(graphics::UV(1.0f, 0.0f, 0.0f, ITEM_HEIGHT - ITEM_SPACING / 2.0f));
@@ -153,11 +258,46 @@ void AlbumListView::configureItem(AlbumListItem& item,
     });
 }
 
+void AlbumListView::sortItems(SortMode mode) {
+    switch (mode) {
+        case SortMode::ByYear:
+            std::sort(items.begin(), items.end(), [](const AlbumListItem& a, const AlbumListItem& b) {
+                if (!a.album || !b.album) return false;
+                return a.album->year < b.album->year;
+            });
+            break;
+        case SortMode::ByTitle:
+            std::sort(items.begin(), items.end(), [](const AlbumListItem& a, const AlbumListItem& b) {
+                if (!a.album || !b.album) return false;
+                return a.album->title < b.album->title;
+            });
+            break;
+        case SortMode::ByArtist:
+            std::sort(items.begin(), items.end(), [this](const AlbumListItem& a, const AlbumListItem& b) {
+                if (!a.album || !b.album) return false;
+                const auto* artistA = this->library->getArtistById(a.album->artist_id);
+                const auto* artistB = this->library->getArtistById(b.album->artist_id);
+                const std::string& artistNameA = artistA ? artistA->name : "Unknown Artist";
+                const std::string& artistNameB = artistB ? artistB->name : "Unknown Artist";
+                if (artistNameA != artistNameB) {
+                    return artistNameA < artistNameB;
+                }
+                if (a.album->year != b.album->year) {
+                    return a.album->year < b.album->year;
+                }
+                return a.album->title < b.album->title;
+            });
+            break;
+        default:
+            break;
+    }
+}
+
 float AlbumListView::calculateContentHeight() const {
     if (items.empty()) {
-        return 0.0f;
+        return SORT_SECTION_HEIGHT;
     }
-    return items.size() * (ITEM_HEIGHT + ITEM_SPACING) - ITEM_SPACING;
+    return SORT_SECTION_HEIGHT + items.size() * (ITEM_HEIGHT + ITEM_SPACING) - ITEM_SPACING;
 }
 
 void AlbumListView::scrollBy(float delta) {
@@ -211,8 +351,13 @@ int AlbumListView::handleClick(float x, float y, const graphics::RenderContext& 
     float padding = mainFrame->getPadding();
     float relativeY = y - frameY - padding + mainFrame->getScrollOffset();
     
+    // Ignore click area occupied by sort controls.
+    if (relativeY < SORT_SECTION_HEIGHT) {
+        return -1;
+    }
+
     // Calculate which item
-    int clickedIndex = static_cast<int>(relativeY / (ITEM_HEIGHT + ITEM_SPACING));
+    int clickedIndex = static_cast<int>((relativeY - SORT_SECTION_HEIGHT) / (ITEM_HEIGHT + ITEM_SPACING));
     
     if (clickedIndex >= 0 && clickedIndex < static_cast<int>(items.size())) {
         selectedIndex = clickedIndex;

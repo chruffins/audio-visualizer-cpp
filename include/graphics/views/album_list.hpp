@@ -93,6 +93,17 @@ public:
     bool getVisible() const { return isVisible; }
 
 private:
+    enum class SortMode {
+        ByYear,
+        ByTitle,
+        ByArtist
+    };
+
+    void sortItems(SortMode mode);
+    void rebuildSortControls();
+    void updateSortButtonStyles();
+    void relayoutItemPositions();
+
     void rebuildItemList();
     void configureItem(AlbumListItem& item,
                        const music::Album* album,
@@ -110,6 +121,12 @@ private:
 
     // Main scrollable container
     std::shared_ptr<ScrollableFrameDrawable> mainFrame;
+
+    // Sort controls (anchored at top of the scrollable content)
+    std::unique_ptr<ButtonDrawable> sortByNameButton;
+    std::unique_ptr<ButtonDrawable> sortByArtistButton;
+    std::unique_ptr<ButtonDrawable> sortByYearButton;
+    SortMode currentSortMode = SortMode::ByTitle;
     
     // Album items
     std::vector<AlbumListItem> items;
@@ -119,6 +136,8 @@ private:
     static constexpr float ITEM_SPACING = 10.0f;
     static constexpr float ALBUM_ART_SIZE = 64.0f;
     static constexpr float TEXT_OFFSET_X = 74.0f;
+    static constexpr float SORT_BUTTON_HEIGHT = 32.0f;
+    static constexpr float SORT_SECTION_HEIGHT = 42.0f;
     
     // Selection state
     int selectedIndex = -1;
