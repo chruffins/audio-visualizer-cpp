@@ -15,7 +15,6 @@ uniform float echo_decay;
 uniform float echo_speed;
 uniform float audio_peak;
 uniform float audio_transient;
-uniform float time;
 
 varying vec4 varying_color;
 varying vec2 varying_texcoord;
@@ -50,22 +49,15 @@ void main()
   }
 
   vec4 historyCore = texture2D(history_tex, historyUv);
-  vec4 historyBlur = vec4(0.0);
-  historyBlur += texture2D(history_tex, historyUv + vec2(texel_size.x, 0.0));
-  historyBlur += texture2D(history_tex, historyUv - vec2(texel_size.x, 0.0));
-  historyBlur += texture2D(history_tex, historyUv + vec2(0.0, texel_size.y));
-  historyBlur += texture2D(history_tex, historyUv - vec2(0.0, texel_size.y));
-  historyBlur += texture2D(history_tex, historyUv + texel_size);
-  historyBlur += texture2D(history_tex, historyUv - texel_size);
-  historyBlur += texture2D(history_tex, historyUv + vec2(texel_size.x, -texel_size.y));
-  historyBlur += texture2D(history_tex, historyUv + vec2(-texel_size.x, texel_size.y));
-  historyBlur *= 0.125;
-
-  vec4 history = max(historyCore, historyBlur * 0.92);
+  vec4 history = historyCore * 0.55;
+  history += texture2D(history_tex, historyUv + vec2(texel_size.x, 0.0)) * 0.1125;
+  history += texture2D(history_tex, historyUv - vec2(texel_size.x, 0.0)) * 0.1125;
+  history += texture2D(history_tex, historyUv + vec2(0.0, texel_size.y)) * 0.1125;
+  history += texture2D(history_tex, historyUv - vec2(0.0, texel_size.y)) * 0.1125;
   float radiusFade = 1.0 - smoothstep(0.0, 1.1, dist);
 
   vec3 echoColor = history.rgb;
-  echoColor *= mix(vec3(1.0), vec3(0.72, 0.85, 1.0), radiusFade * 0.35);
+  echoColor *= mix(vec3(1.0), vec3(0.82, 0.82, 0.82), radiusFade * 0.35);
 
   vec4 outColor;
   outColor.rgb = clamp(current.rgb + (echoColor * echo_decay), 0.0, 1.0);

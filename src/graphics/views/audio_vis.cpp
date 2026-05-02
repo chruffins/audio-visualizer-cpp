@@ -21,6 +21,11 @@ struct AudioMetrics {
     float transient = 0.0f;
 };
 
+constexpr size_t kPolarWaveformSampleWindow = 1024;
+constexpr size_t kMirrorBarsSampleWindow = 768;
+constexpr size_t kDualEchoStereoSampleWindow = 1024;
+constexpr size_t kDualEchoMonoFallbackWindow = 512;
+
 AudioMetrics computeAudioMetrics(const float* samples, size_t sampleCount) {
     AudioMetrics metrics;
     if (!samples || sampleCount == 0) {
@@ -54,18 +59,32 @@ struct DualEchoFeedbackState {
     int height = 0;
     int historyIndex = 0;
     std::unique_ptr<vis::Shader> feedbackShader;
+    std::vector<ALLEGRO_VERTEX> topChannelVertices;
+    std::vector<ALLEGRO_VERTEX> bottomChannelVertices;
 
-    ~DualEchoFeedbackState() {
+    void releaseResources() {
         if (historyA) {
             al_destroy_bitmap(historyA);
+            historyA = nullptr;
         }
         if (historyB) {
             al_destroy_bitmap(historyB);
+            historyB = nullptr;
         }
         if (currentFrame) {
             al_destroy_bitmap(currentFrame);
+            currentFrame = nullptr;
         }
+
+        width = 0;
+        height = 0;
+        historyIndex = 0;
+        feedbackShader.reset();
+        topChannelVertices.clear();
+        bottomChannelVertices.clear();
     }
+
+    ~DualEchoFeedbackState() = default;
 
     bool ensureRenderTargets(int newWidth, int newHeight) {
         if (newWidth <= 0 || newHeight <= 0) {
@@ -207,25 +226,35 @@ void AudioVisualizerView::draw(const graphics::RenderContext& context) {
         return;
     }
 
+    const std::size_t activeIndex = visualizationToIndex(activeVisualization);
+    const bool needsStereoChannels = (activeVisualization == VisualizationType::DualEchoWave);
+
     std::vector<float> monoSamples;
     std::vector<float> interleavedSamples;
     std::vector<float> leftSamples;
     std::vector<float> rightSamples;
     if (musicEngine) {
-        monoSamples = musicEngine->copyRecentMonoSamples(2048);
-        interleavedSamples = musicEngine->copyRecentSamples(4096);
+        if (needsStereoChannels) {
+            interleavedSamples = musicEngine->copyRecentSamples(kDualEchoStereoSampleWindow);
 
-        if (interleavedSamples.size() >= 4 && (interleavedSamples.size() % 2 == 0)) {
-            const size_t frameCount = interleavedSamples.size() / 2;
-            leftSamples.reserve(frameCount);
-            rightSamples.reserve(frameCount);
-            for (size_t i = 0; i + 1 < interleavedSamples.size(); i += 2) {
-                leftSamples.push_back(interleavedSamples[i]);
-                rightSamples.push_back(interleavedSamples[i + 1]);
+            if (interleavedSamples.size() >= 4 && (interleavedSamples.size() % 2 == 0)) {
+                const size_t frameCount = interleavedSamples.size() / 2;
+                leftSamples.resize(frameCount);
+                rightSamples.resize(frameCount);
+                for (size_t i = 0, frame = 0; i + 1 < interleavedSamples.size(); i += 2, ++frame) {
+                    leftSamples[frame] = interleavedSamples[i];
+                    rightSamples[frame] = interleavedSamples[i + 1];
+                }
+            } else {
+                monoSamples = musicEngine->copyRecentMonoSamples(kDualEchoMonoFallbackWindow);
+                leftSamples = monoSamples;
+                rightSamples = monoSamples;
             }
         } else {
-            leftSamples = monoSamples;
-            rightSamples = monoSamples;
+            const size_t monoWindow = (activeVisualization == VisualizationType::MirrorBars)
+                ? kMirrorBarsSampleWindow
+                : kPolarWaveformSampleWindow;
+            monoSamples = musicEngine->copyRecentMonoSamples(monoWindow);
         }
     }
 
@@ -239,7 +268,6 @@ void AudioVisualizerView::draw(const graphics::RenderContext& context) {
         al_draw_filled_rectangle(x, y, x + w, y + h, al_map_rgb(12, 12, 20));
     }
 
-    const std::size_t activeIndex = visualizationToIndex(activeVisualization);
     Visualization& visualization = visualizations[activeIndex];
     DrawContext drawContext;
     drawContext.x = x;
@@ -270,6 +298,10 @@ void AudioVisualizerView::draw(const graphics::RenderContext& context) {
         al_use_shader(nullptr);
     }
 
+}
+
+void shutdownAudioVisualizerResources() {
+    g_dualEchoFeedback.releaseResources();
 }
 
 std::size_t AudioVisualizerView::visualizationToIndex(VisualizationType visualization) {
@@ -406,34 +438,43 @@ void AudioVisualizerView::renderDualEchoWave(const DrawContext& context) {
 
     const float topBaseline = texH * 0.28f;
     const float bottomBaseline = texH * 0.72f;
-    const float amplitude = texH * 0.19f;
+    const float amplitude = texH * 0.25f;
 
-    auto drawChannel = [&](const std::vector<float>* samples, float baselineY, ALLEGRO_COLOR color) {
+    auto drawChannel = [&](const std::vector<float>* samples,
+                           float baselineY,
+                           ALLEGRO_COLOR color,
+                           std::vector<ALLEGRO_VERTEX>& vertices) {
         if (!samples || samples->size() < 2) {
+            vertices.clear();
             return;
         }
 
-        const float widthDenom = static_cast<float>(samples->size() - 1);
+        const size_t segmentCount = samples->size() - 1;
+        vertices.resize(segmentCount * 2);
+        const float invWidthDenom = 1.0f / static_cast<float>(segmentCount);
 
-        for (size_t i = 1; i < samples->size(); ++i) {
-            const float x1 = (static_cast<float>(i - 1) / widthDenom) * texW;
-            const float x2 = (static_cast<float>(i) / widthDenom) * texW;
+        for (size_t i = 1, vertexIndex = 0; i < samples->size(); ++i, vertexIndex += 2) {
+            const float x1 = (static_cast<float>(i - 1) * invWidthDenom) * texW;
+            const float x2 = (static_cast<float>(i) * invWidthDenom) * texW;
 
             const float y1 = baselineY - std::clamp((*samples)[i - 1], -1.0f, 1.0f) * amplitude;
             const float y2 = baselineY - std::clamp((*samples)[i], -1.0f, 1.0f) * amplitude;
 
-            al_draw_line(x1, y1, x2, y2, color, 2.2f);
+            vertices[vertexIndex] = {x1, y1, 0.0f, 0.0f, 0.0f, color};
+            vertices[vertexIndex + 1] = {x2, y2, 0.0f, 0.0f, 0.0f, color};
         }
+
+        al_draw_prim(vertices.data(), nullptr, nullptr, 0, static_cast<int>(vertices.size()), ALLEGRO_PRIM_LINE_LIST);
     };
 
     ALLEGRO_BITMAP* previousTarget = al_get_target_bitmap();
     al_set_target_bitmap(g_dualEchoFeedback.currentFrame);
     al_clear_to_color(al_map_rgba(0, 0, 0, 0));
 
-    const ALLEGRO_COLOR topColor = al_map_rgba_f(1.0f, 0.22f, 0.28f, 0.95f);
-    const ALLEGRO_COLOR bottomColor = al_map_rgba_f(0.24f, 0.54f, 1.0f, 0.95f);
-    drawChannel(topSamples, topBaseline, topColor);
-    drawChannel(bottomSamples, bottomBaseline, bottomColor);
+    const ALLEGRO_COLOR topColor = al_map_rgba_f(1.0f, 0.15f, 0.15f, 0.95f); // gb: 0.22, 0.28
+    const ALLEGRO_COLOR bottomColor = al_map_rgba_f(0.15f, 0.15f, 1.0f, 0.95f); // rg: 0.24, 0.54
+    drawChannel(topSamples, topBaseline, topColor, g_dualEchoFeedback.topChannelVertices);
+    drawChannel(bottomSamples, bottomBaseline, bottomColor, g_dualEchoFeedback.bottomChannelVertices);
 
     ALLEGRO_BITMAP* historySrc = (g_dualEchoFeedback.historyIndex == 0) ? g_dualEchoFeedback.historyA : g_dualEchoFeedback.historyB;
     ALLEGRO_BITMAP* historyDst = (g_dualEchoFeedback.historyIndex == 0) ? g_dualEchoFeedback.historyB : g_dualEchoFeedback.historyA;
@@ -443,14 +484,17 @@ void AudioVisualizerView::renderDualEchoWave(const DrawContext& context) {
 
     if (g_dualEchoFeedback.feedbackShader && g_dualEchoFeedback.feedbackShader->isLoaded()) {
         g_dualEchoFeedback.feedbackShader->use();
-        g_dualEchoFeedback.feedbackShader->setFloat("time", context.timeSeconds);
 
         float peak = 0.0f;
         float transient = 0.0f;
-        const std::vector<float>* monoSamples = context.monoSamples;
-        if (monoSamples && !monoSamples->empty()) {
-            const size_t metricSampleCount = std::min<size_t>(1024, monoSamples->size());
-            const float* metricSamples = monoSamples->data() + (monoSamples->size() - metricSampleCount);
+        const std::vector<float>* metricSource = context.monoSamples;
+        if ((!metricSource || metricSource->empty()) && topSamples && !topSamples->empty()) {
+            metricSource = topSamples;
+        }
+
+        if (metricSource && !metricSource->empty()) {
+            const size_t metricSampleCount = std::min<size_t>(1024, metricSource->size());
+            const float* metricSamples = metricSource->data() + (metricSource->size() - metricSampleCount);
             const AudioMetrics metrics = computeAudioMetrics(metricSamples, metricSampleCount);
             peak = metrics.peak;
             transient = metrics.transient;

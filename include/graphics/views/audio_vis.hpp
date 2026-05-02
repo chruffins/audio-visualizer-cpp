@@ -20,6 +20,10 @@ class Shader;
 
 namespace ui {
 
+// Release shared visualization resources that outlive AudioVisualizerView instances.
+// Must be called before Allegro display shutdown.
+void shutdownAudioVisualizerResources();
+
 class AudioVisualizerView {
 public:
     enum class VisualizationType : std::size_t {

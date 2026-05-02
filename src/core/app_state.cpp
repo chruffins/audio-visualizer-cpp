@@ -1,6 +1,7 @@
 #include <core/app_state.hpp>
 #include "mp3/mp3_support.hpp"
 #include "music/album.hpp"
+#include "graphics/views/audio_vis.hpp"
 #include "libscrobbler.h"
 
 namespace core {
@@ -135,6 +136,9 @@ void AppState::shutdown() {
     config.save();
 
     music_engine.shutdown();
+
+    // Release shared visualizer render targets/shaders while Allegro is still active.
+    ui::shutdownAudioVisualizerResources();
 
     // Clear library (destroys album cover ImageModels) before destroying display
     // This is critical because Allegro bitmaps must be destroyed before the display
