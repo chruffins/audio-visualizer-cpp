@@ -5,6 +5,8 @@
 #include <sqlite3.h>
 #include <optional>
 #include <vector>
+#include <utility>
+#include <functional>
 
 namespace music {
 // forward declarations
@@ -67,6 +69,7 @@ public:
     std::vector<music::Genre> getAllGenres() const;
     std::vector<music::Artist> getAllArtists() const;
     std::vector<music::Artist> getSongArtistsById(int64_t song_id) const;
+    std::vector<std::pair<int64_t, music::Artist>> getAllSongArtists() const;
     std::vector<music::Album> getAllAlbums() const;
     std::vector<music::Song> getAllSongs() const;
     std::vector<music::Playlist> getAllPlaylists() const;
@@ -78,5 +81,9 @@ private:
 
     bool addToJunctionTable(const std::string& table, const std::string& col1, const std::string& col2, int64_t id1, int64_t id2);
     int64_t getLastPositionInPlaylist(int64_t playlist_id);
+
+    // helpers for insertion
+    std::optional<int64_t> selectOneId(const std::string& sql, std::function<void(sqlite3_stmt*)> bindFunc) const;
+    std::optional<int64_t> insertOne(const std::string& sql, std::function<void(sqlite3_stmt*)> bindFunc) const;
 };
 } // namespace database

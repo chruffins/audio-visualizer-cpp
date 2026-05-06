@@ -48,15 +48,21 @@ bool Library::loadFromDatabase(database::MusicDatabase& db) {
     songArtists.reserve(songs.size());
     for (const auto& [songId, song] : songs) {
         (void)song;
-        std::vector<std::string> names;
-        auto songArtistVec = db.getSongArtistsById(songId);
-        names.reserve(songArtistVec.size());
-        for (const auto& artist : songArtistVec) {
-            if (!artist.name.empty()) {
-                names.push_back(artist.name);
-            }
+        songArtists.emplace(songId, std::vector<std::string>{});
+    }
+
+    auto songArtistRows = db.getAllSongArtists();
+    std::vector<std::string>* currentNames = nullptr;
+    int64_t currentSongId = -1;
+    for (const auto& [songId, artist] : songArtistRows) {
+        if (songId != currentSongId) {
+            currentSongId = songId;
+            currentNames = &songArtists[songId];
         }
-        songArtists.emplace(songId, std::move(names));
+
+        if (currentNames && !artist.name.empty()) {
+            currentNames->push_back(artist.name);
+        }
     }
 
     if (!db.lastError().empty()) {
