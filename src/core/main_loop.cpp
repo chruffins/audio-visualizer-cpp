@@ -23,7 +23,7 @@ void runMainLoop() {
     auto nowPlayingView = ui::NowPlayingView(appState.fontManager, appState.music_engine.progressBarModel, appState.event_dispatcher, &appState.music_engine);
     auto albumListView = ui::AlbumListView(appState.fontManager, appState.library, &appState.music_engine, appState.event_dispatcher);
     auto playQueueView = ui::PlayQueueView(appState.fontManager, appState.event_dispatcher, &appState.music_engine, appState.library.get());
-    auto audioVisView = ui::AudioVisualizerView(&appState.music_engine);
+    auto audioVisView = ui::AudioVisualizerView(appState.fontManager, appState.event_dispatcher, &appState.music_engine);
     
     auto sidebarView = ui::SidebarView(appState.fontManager, appState.event_dispatcher);
 

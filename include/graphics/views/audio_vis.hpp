@@ -2,9 +2,11 @@
 
 #include <array>
 #include <cstddef>
+#include <functional>
 #include <memory>
 #include <vector>
 
+#include "graphics/drawables/button.hpp"
 #include "graphics/uv.hpp"
 #include "graphics/drawable.hpp"
 
@@ -14,8 +16,16 @@ namespace core {
 class MusicEngine;
 }
 
+namespace graphics {
+class EventDispatcher;
+}
+
 namespace vis {
 class Shader;
+}
+
+namespace util {
+class FontManager;
 }
 
 namespace ui {
@@ -33,10 +43,11 @@ public:
     };
 
     AudioVisualizerView() = delete;
-    explicit AudioVisualizerView(core::MusicEngine* musicEngine);
+    explicit AudioVisualizerView(std::shared_ptr<util::FontManager> fontManager, graphics::EventDispatcher& eventDispatcher, core::MusicEngine* musicEngine);
     ~AudioVisualizerView();
 
     void draw(const graphics::RenderContext& context);
+
     void setMusicEngine(core::MusicEngine* musicEngine);
     core::MusicEngine* getMusicEngine() const { return musicEngine; }
 
@@ -54,9 +65,16 @@ public:
 
     void setVisualization(VisualizationType visualization);
     VisualizationType getVisualization() const { return activeVisualization; }
+    void nextVisualization();
+    void previousVisualization();
+    const char* getVisualizationName() const;
 
 private:
     static constexpr std::size_t kVisualizationCount = 3;
+    static constexpr float kControlStripHeight = 36.0f;
+    static constexpr float kControlStripPadding = 10.0f;
+    static constexpr float kControlButtonWidth = 64.0f;
+    static constexpr float kControlButtonHeight = 22.0f;
 
     struct DrawContext {
         float x = 0.0f;
@@ -80,19 +98,27 @@ private:
     };
 
     static std::size_t visualizationToIndex(VisualizationType visualization);
+    static graphics::UV screenToUV(float x, float y, float w, float h, float screenWidth, float screenHeight);
+    static const char* visualizationName(VisualizationType visualization);
     static void configureAudioReactiveShader(vis::Shader& shader, const DrawContext& context);
     static void configureTintedShader(vis::Shader& shader, const DrawContext& context);
     static void renderPolarWaveform(const DrawContext& context);
     static void renderMirrorBars(const DrawContext& context);
     static void renderDualEchoWave(const DrawContext& context);
+    void layoutControls(const graphics::RenderContext& context, float x, float y, float w, float h);
 
     bool isVisible = true;
+    std::shared_ptr<util::FontManager> fontManager;
+    graphics::EventDispatcher& eventDispatcher;
     core::MusicEngine* musicEngine = nullptr; // non-owning dependency
     graphics::UV position{0.0f, 0.0f, 0.0f, 0.0f};
     graphics::UV size{1.0f, 1.0f, 0.0f, 0.0f};
     std::unique_ptr<ALLEGRO_BITMAP, BitmapDeleter> bitmap;
     std::array<Visualization, kVisualizationCount> visualizations;
     VisualizationType activeVisualization = VisualizationType::DualEchoWave;
+    std::shared_ptr<ui::ButtonDrawable> previousButton;
+    std::shared_ptr<ui::ButtonDrawable> nextButton;
+    ALLEGRO_FONT* controlFont = nullptr;
 
 };
 

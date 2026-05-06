@@ -2,12 +2,16 @@
 
 #include <algorithm>
 #include <cmath>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include <allegro5/allegro.h>
+#include <allegro5/allegro_font.h>
 #include <allegro5/allegro_primitives.h>
 
 #include "core/music_engine.hpp"
+#include "util/font.hpp"
 #include "util/config.hpp"
 #include "vis/shader.hpp"
 
@@ -25,6 +29,21 @@ constexpr size_t kPolarWaveformSampleWindow = 1024;
 constexpr size_t kMirrorBarsSampleWindow = 768;
 constexpr size_t kDualEchoStereoSampleWindow = 1024;
 constexpr size_t kDualEchoMonoFallbackWindow = 512;
+constexpr float kControlStripHeightPx = 36.0f;
+constexpr float kControlStripPaddingPx = 10.0f;
+constexpr float kControlButtonWidthPx = 64.0f;
+constexpr float kControlButtonHeightPx = 22.0f;
+
+struct ControlLayout {
+    float stripX = 0.0f;
+    float stripY = 0.0f;
+    float stripW = 0.0f;
+    float stripH = 0.0f;
+    float previousX = 0.0f;
+    float previousY = 0.0f;
+    float nextX = 0.0f;
+    float nextY = 0.0f;
+};
 
 AudioMetrics computeAudioMetrics(const float* samples, size_t sampleCount) {
     AudioMetrics metrics;
@@ -49,6 +68,19 @@ AudioMetrics computeAudioMetrics(const float* samples, size_t sampleCount) {
     metrics.peak = peak;
     metrics.transient = std::max(0.0f, peak - (sumAbs / count));
     return metrics;
+}
+
+ControlLayout makeControlLayout(float x, float y, float w, float h) {
+    ControlLayout layout;
+    layout.stripX = x;
+    layout.stripW = w;
+    layout.stripH = std::min(kControlStripHeightPx, std::max(0.0f, h));
+    layout.stripY = y + h - layout.stripH;
+    layout.previousX = x + kControlStripPaddingPx;
+    layout.nextX = x + w - kControlStripPaddingPx - kControlButtonWidthPx;
+    layout.previousY = layout.stripY + std::max(0.0f, (layout.stripH - kControlButtonHeightPx) * 0.5f);
+    layout.nextY = layout.previousY;
+    return layout;
 }
 
 struct DualEchoFeedbackState {
@@ -142,8 +174,33 @@ void AudioVisualizerView::BitmapDeleter::operator()(ALLEGRO_BITMAP* bmp) const {
     }
 }
 
-AudioVisualizerView::AudioVisualizerView(core::MusicEngine* musicEngine)
-    : musicEngine(musicEngine) {
+AudioVisualizerView::AudioVisualizerView(std::shared_ptr<util::FontManager> fontManager, graphics::EventDispatcher& eventDispatcher, core::MusicEngine* musicEngine)
+    : fontManager(std::move(fontManager)),
+            eventDispatcher(eventDispatcher),
+      musicEngine(musicEngine),
+            previousButton(std::make_shared<ButtonDrawable>(graphics::UV(), graphics::UV(), "Prev")),
+            nextButton(std::make_shared<ButtonDrawable>(graphics::UV(), graphics::UV(), "Next")) {
+        auto kanitFont = this->fontManager ? this->fontManager->getFont("kanit") : nullptr;
+        controlFont = kanitFont ? kanitFont->getFont(14) : nullptr;
+                previousButton->setFont(controlFont);
+                nextButton->setFont(controlFont);
+                previousButton->setColors(
+            al_map_rgb(52, 56, 70),
+            al_map_rgb(68, 74, 92),
+            al_map_rgb(82, 90, 112)
+        );
+                nextButton->setColors(
+            al_map_rgb(52, 56, 70),
+            al_map_rgb(68, 74, 92),
+            al_map_rgb(82, 90, 112)
+        );
+                previousButton->setTextColor(al_map_rgb(245, 247, 250));
+                nextButton->setTextColor(al_map_rgb(245, 247, 250));
+                previousButton->setOnClick([this]() { previousVisualization(); });
+                nextButton->setOnClick([this]() { nextVisualization(); });
+                eventDispatcher.addEventTarget(previousButton);
+                eventDispatcher.addEventTarget(nextButton);
+
         const std::string vertexSource = util::Config::resolveAssetPath("shaders/vertex.glsl");
         const std::string polarFragmentSource = util::Config::resolveAssetPath("shaders/pixel.glsl");
         const std::string barsFragmentSource = util::Config::resolveAssetPath("shaders/rainbow.glsl");
@@ -176,6 +233,12 @@ void AudioVisualizerView::setBounds(const graphics::UV& newPosition, const graph
 
 void AudioVisualizerView::setVisible(bool visible) {
     isVisible = visible;
+    if (previousButton) {
+        previousButton->setEnabled(visible);
+    }
+    if (nextButton) {
+        nextButton->setEnabled(visible);
+    }
 }
 
 void AudioVisualizerView::setBitmap(ALLEGRO_BITMAP* newBitmap) {
@@ -205,6 +268,29 @@ void AudioVisualizerView::setVisualization(VisualizationType visualization) {
     activeVisualization = visualization;
 }
 
+void AudioVisualizerView::nextVisualization() {
+    const std::size_t nextIndex = (visualizationToIndex(activeVisualization) + 1) % kVisualizationCount;
+    setVisualization(static_cast<VisualizationType>(nextIndex));
+}
+
+void AudioVisualizerView::previousVisualization() {
+    const std::size_t currentIndex = visualizationToIndex(activeVisualization);
+    const std::size_t previousIndex = (currentIndex + kVisualizationCount - 1) % kVisualizationCount;
+    setVisualization(static_cast<VisualizationType>(previousIndex));
+}
+
+const char* AudioVisualizerView::getVisualizationName() const {
+    return visualizationName(activeVisualization);
+}
+
+void AudioVisualizerView::layoutControls(const graphics::RenderContext& context, float x, float y, float w, float h) {
+    const ControlLayout layout = makeControlLayout(x, y, w, h);
+    previousButton->setPosition(screenToUV(layout.previousX, layout.previousY, 0.0f, 0.0f, context.screenWidth, context.screenHeight));
+    previousButton->setSize(screenToUV(0.0f, 0.0f, kControlButtonWidth, kControlButtonHeight, context.screenWidth, context.screenHeight));
+    nextButton->setPosition(screenToUV(layout.nextX, layout.nextY, 0.0f, 0.0f, context.screenWidth, context.screenHeight));
+    nextButton->setSize(screenToUV(0.0f, 0.0f, kControlButtonWidth, kControlButtonHeight, context.screenWidth, context.screenHeight));
+}
+
 void AudioVisualizerView::draw(const graphics::RenderContext& context) {
     if (!isVisible) {
         return;
@@ -225,6 +311,8 @@ void AudioVisualizerView::draw(const graphics::RenderContext& context) {
     if (w <= 0.0f || h <= 0.0f) {
         return;
     }
+
+    layoutControls(context, x, y, w, h);
 
     const std::size_t activeIndex = visualizationToIndex(activeVisualization);
     const bool needsStereoChannels = (activeVisualization == VisualizationType::DualEchoWave);
@@ -298,6 +386,25 @@ void AudioVisualizerView::draw(const graphics::RenderContext& context) {
         al_use_shader(nullptr);
     }
 
+    const float stripHeight = std::min(kControlStripHeight, std::max(0.0f, h));
+    const float stripY = y + h - stripHeight;
+    const float stripRight = x + w;
+    al_draw_filled_rectangle(x, stripY, stripRight, y + h, al_map_rgba(18, 20, 28, 220));
+    al_draw_rectangle(x, stripY, stripRight, y + h, al_map_rgba(92, 96, 116, 220), 1.0f);
+
+    if (controlFont) {
+        const std::string label = std::string("Visualization: ") + getVisualizationName();
+        const float textY = stripY + std::max(0.0f, (stripHeight - static_cast<float>(al_get_font_line_height(controlFont))) * 0.5f);
+        al_draw_text(controlFont, al_map_rgb(242, 244, 248), x + (w * 0.5f), textY, ALLEGRO_ALIGN_CENTRE, label.c_str());
+    }
+
+    if (previousButton) {
+        previousButton->draw(context);
+    }
+    if (nextButton) {
+        nextButton->draw(context);
+    }
+
 }
 
 void shutdownAudioVisualizerResources() {
@@ -306,6 +413,28 @@ void shutdownAudioVisualizerResources() {
 
 std::size_t AudioVisualizerView::visualizationToIndex(VisualizationType visualization) {
     return static_cast<std::size_t>(visualization);
+}
+
+graphics::UV AudioVisualizerView::screenToUV(float x, float y, float w, float h, float screenWidth, float screenHeight) {
+    return graphics::UV(
+        screenWidth > 0.0f ? (x / screenWidth) : 0.0f,
+        screenHeight > 0.0f ? (y / screenHeight) : 0.0f,
+        w,
+        h
+    );
+}
+
+const char* AudioVisualizerView::visualizationName(VisualizationType visualization) {
+    switch (visualization) {
+        case VisualizationType::PolarWaveform:
+            return "Polar Waveform";
+        case VisualizationType::MirrorBars:
+            return "Mirror Bars";
+        case VisualizationType::DualEchoWave:
+            return "Dual Echo Wave";
+        default:
+            return "Visualization";
+    }
 }
 
 void AudioVisualizerView::configureAudioReactiveShader(vis::Shader& shader, const DrawContext& context) {
