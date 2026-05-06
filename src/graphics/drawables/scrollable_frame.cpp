@@ -109,10 +109,19 @@ bool ScrollableFrameDrawable::onMouseDown(const graphics::MouseEvent& event) {
         }
 
         if (onScrollbarTrack) {
-            const float targetThumbTop = clampThumbTop(event.y - geometry.thumbHeight * 0.5f, geometry);
-            scrollOffset = scrollOffsetFromThumbTop(targetThumbTop, geometry);
-            isDraggingScrollbar = true;
-            scrollbarDragOffsetY = event.y - targetThumbTop;
+            // Page-jump behavior: click on the track moves the view by one
+            // viewport height toward the click (familiar Windows behavior).
+            const float viewportH = geometry.viewportHeight;
+            if (event.y < geometry.thumbY) {
+                // Clicked above the thumb -> page up
+                scrollOffset -= viewportH;
+            } else {
+                // Clicked below the thumb -> page down
+                scrollOffset += viewportH;
+            }
+            // Clamp to valid scroll range
+            if (scrollOffset < 0.0f) scrollOffset = 0.0f;
+            if (scrollOffset > geometry.maxScroll) scrollOffset = geometry.maxScroll;
             return true;
         }
     }
