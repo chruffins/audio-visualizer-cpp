@@ -5,7 +5,11 @@
 #include <filesystem>
 #include <vector>
 #include <limits.h>
+#if defined(_WIN32) || defined(WIN32)
+#include <windows.h>
+#else
 #include <unistd.h>
+#endif
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_native_dialog.h>
 
@@ -20,7 +24,13 @@ std::string getEnvOrEmpty(const char* name) {
     return value ? std::string(value) : std::string();
 }
 
-std::filesystem::path getHomeDir() {
+std::filesystem::path getExecutableDir();
+
+// Platform-specific helpers. We keep Windows and POSIX implementations
+// separate and provide wrapper functions selected via preprocessor.
+
+// Linux / POSIX implementations
+std::filesystem::path getHomeDirLinux() {
     const std::string home = getEnvOrEmpty("HOME");
     if (!home.empty()) {
         return std::filesystem::path(home);
@@ -28,7 +38,7 @@ std::filesystem::path getHomeDir() {
     return std::filesystem::current_path();
 }
 
-std::filesystem::path getExecutableDir() {
+std::filesystem::path getExecutableDirLinux() {
     char exePath[PATH_MAX];
     const ssize_t len = readlink("/proc/self/exe", exePath, sizeof(exePath) - 1);
     if (len > 0) {
@@ -38,13 +48,13 @@ std::filesystem::path getExecutableDir() {
     return std::filesystem::current_path();
 }
 
-std::filesystem::path appImagePath() {
+std::filesystem::path appImagePathLinux() {
     const std::string appImage = getEnvOrEmpty("APPIMAGE");
     return appImage.empty() ? std::filesystem::path() : std::filesystem::path(appImage);
 }
 
-std::filesystem::path portableConfigHome() {
-    const auto appImage = appImagePath();
+std::filesystem::path portableConfigHomeLinux() {
+    const auto appImage = appImagePathLinux();
     if (appImage.empty()) {
         return {};
     }
@@ -56,8 +66,8 @@ std::filesystem::path portableConfigHome() {
     return {};
 }
 
-std::filesystem::path portableHome() {
-    const auto appImage = appImagePath();
+std::filesystem::path portableHomeLinux() {
+    const auto appImage = appImagePathLinux();
     if (appImage.empty()) {
         return {};
     }
@@ -69,8 +79,8 @@ std::filesystem::path portableHome() {
     return {};
 }
 
-std::filesystem::path configHomeDir() {
-    const auto portable = portableConfigHome();
+std::filesystem::path configHomeDirLinux() {
+    const auto portable = portableConfigHomeLinux();
     if (!portable.empty()) {
         return portable;
     }
@@ -79,11 +89,11 @@ std::filesystem::path configHomeDir() {
     if (!xdg.empty()) {
         return std::filesystem::path(xdg);
     }
-    return getHomeDir() / ".config";
+    return getHomeDirLinux() / ".config";
 }
 
-std::filesystem::path dataHomeDir() {
-    const auto portable = portableHome();
+std::filesystem::path dataHomeDirLinux() {
+    const auto portable = portableHomeLinux();
     if (!portable.empty()) {
         return portable / ".local" / "share";
     }
@@ -92,11 +102,11 @@ std::filesystem::path dataHomeDir() {
     if (!xdg.empty()) {
         return std::filesystem::path(xdg);
     }
-    return getHomeDir() / ".local" / "share";
+    return getHomeDirLinux() / ".local" / "share";
 }
 
-std::filesystem::path cacheHomeDir() {
-    const auto portable = portableHome();
+std::filesystem::path cacheHomeDirLinux() {
+    const auto portable = portableHomeLinux();
     if (!portable.empty()) {
         return portable / ".cache";
     }
@@ -105,7 +115,133 @@ std::filesystem::path cacheHomeDir() {
     if (!xdg.empty()) {
         return std::filesystem::path(xdg);
     }
-    return getHomeDir() / ".cache";
+    return getHomeDirLinux() / ".cache";
+}
+
+std::filesystem::path configHomeDirFallback() {
+    return getExecutableDir();
+}
+
+std::filesystem::path dataHomeDirFallback() {
+    return getExecutableDir();
+}
+
+std::filesystem::path cacheHomeDirFallback() {
+    return getExecutableDir();
+}
+
+// Windows implementations
+#if defined(_WIN32) || defined(WIN32)
+std::filesystem::path getHomeDirWindows() {
+    const std::string homeEnv = getEnvOrEmpty("HOME");
+    if (!homeEnv.empty()) {
+        return std::filesystem::path(homeEnv);
+    }
+    const std::string userProfile = getEnvOrEmpty("USERPROFILE");
+    if (!userProfile.empty()) {
+        return std::filesystem::path(userProfile);
+    }
+    const std::string homeDrive = getEnvOrEmpty("HOMEDRIVE");
+    const std::string homePath = getEnvOrEmpty("HOMEPATH");
+    if (!homeDrive.empty() && !homePath.empty()) {
+        return std::filesystem::path(homeDrive + homePath);
+    }
+    return std::filesystem::current_path();
+}
+
+std::filesystem::path getExecutableDirWindows() {
+    char exePath[MAX_PATH];
+    const DWORD len = GetModuleFileNameA(NULL, exePath, MAX_PATH);
+    if (len > 0 && len < MAX_PATH) {
+        exePath[len] = '\0';
+        return std::filesystem::path(exePath).parent_path();
+    }
+    return std::filesystem::current_path();
+}
+
+std::filesystem::path configHomeDirWindows() {
+    const std::string appdata = getEnvOrEmpty("APPDATA");
+    if (!appdata.empty()) {
+        return std::filesystem::path(appdata);
+    }
+    return getHomeDirWindows() / "AppData" / "Roaming";
+}
+
+std::filesystem::path dataHomeDirWindows() {
+    const std::string local = getEnvOrEmpty("LOCALAPPDATA");
+    if (!local.empty()) {
+        return std::filesystem::path(local);
+    }
+    return getHomeDirWindows() / "AppData" / "Local";
+}
+
+std::filesystem::path cacheHomeDirWindows() {
+    // Use Local AppData for caches on Windows
+    return dataHomeDirWindows();
+}
+#endif
+
+// Generic wrappers selected by preprocessor
+std::filesystem::path getHomeDir() {
+#if defined(_WIN32) || defined(WIN32)
+    return getHomeDirWindows();
+#else
+    return getHomeDirLinux();
+#endif
+}
+
+std::filesystem::path getExecutableDir() {
+#if defined(_WIN32) || defined(WIN32)
+    return getExecutableDirWindows();
+#else
+    return getExecutableDirLinux();
+#endif
+}
+
+std::filesystem::path portableConfigHome() {
+#if defined(_WIN32) || defined(WIN32)
+    return {};
+#else
+    return portableConfigHomeLinux();
+#endif
+}
+
+std::filesystem::path portableHome() {
+#if defined(_WIN32) || defined(WIN32)
+    return {};
+#else
+    return portableHomeLinux();
+#endif
+}
+
+std::filesystem::path configHomeDir() {
+#if defined(_WIN32) || defined(WIN32)
+    return configHomeDirWindows();
+#elif defined(__linux__)
+    return configHomeDirLinux();
+#else
+    return configHomeDirFallback();
+#endif
+}
+
+std::filesystem::path dataHomeDir() {
+#if defined(_WIN32) || defined(WIN32)
+    return dataHomeDirWindows();
+#elif defined(__linux__)
+    return dataHomeDirLinux();
+#else
+    return dataHomeDirFallback();
+#endif
+}
+
+std::filesystem::path cacheHomeDir() {
+#if defined(_WIN32) || defined(WIN32)
+    return cacheHomeDirWindows();
+#elif defined(__linux__)
+    return cacheHomeDirLinux();
+#else
+    return cacheHomeDirFallback();
+#endif
 }
 
 std::filesystem::path ensureDir(const std::filesystem::path& p) {
@@ -165,6 +301,12 @@ std::vector<std::filesystem::path> assetRoots() {
     return roots;
 }
 
+std::vector<std::filesystem::path> assetRootsFallback() {
+    std::vector<std::filesystem::path> roots;
+    roots.emplace_back(getExecutableDir());
+    return roots;
+}
+
 } // namespace
 
 Config::~Config() {
@@ -204,6 +346,7 @@ std::string Config::getDiscordTokenPath() {
 }
 
 std::string Config::getAssetRoot() {
+#if defined(_WIN32) || defined(WIN32) || defined(__linux__)
     for (const auto& root : assetRoots()) {
         std::error_code ec;
         if (std::filesystem::is_directory(root, ec)) {
@@ -211,10 +354,20 @@ std::string Config::getAssetRoot() {
         }
     }
     return (getExecutableDir() / "../assets").string();
+#else
+    for (const auto& root : assetRootsFallback()) {
+        std::error_code ec;
+        if (std::filesystem::is_directory(root, ec)) {
+            return std::filesystem::weakly_canonical(root, ec).string();
+        }
+    }
+    return getExecutableDir().string();
+#endif
 }
 
 std::string Config::resolveAssetPath(const std::string& relativePath) {
     const std::filesystem::path normalizedRelative = normalizeAssetRelativePath(relativePath);
+#if defined(_WIN32) || defined(WIN32) || defined(__linux__)
     for (const auto& root : assetRoots()) {
         const auto candidate = root / normalizedRelative;
         std::error_code ec;
@@ -223,6 +376,16 @@ std::string Config::resolveAssetPath(const std::string& relativePath) {
         }
     }
     return (std::filesystem::path(getAssetRoot()) / normalizedRelative).string();
+#else
+    for (const auto& root : assetRootsFallback()) {
+        const auto candidate = root / normalizedRelative;
+        std::error_code ec;
+        if (std::filesystem::exists(candidate, ec)) {
+            return candidate.string();
+        }
+    }
+    return (std::filesystem::path(getAssetRoot()) / normalizedRelative).string();
+#endif
 }
 
 bool Config::generateDefaultConfig(const std::string& filename) {
@@ -314,7 +477,7 @@ bool Config::save() const {
 }
 
 std::string Config::getMusicDirectory() const {
-    return getString("paths", "music_directory", "/home/chris/Music");
+    return getString("paths", "music_directory", (getHomeDir() / "Music").string());
 }
 
 std::string Config::getIconPath() const {
