@@ -22,6 +22,7 @@ const char* INIT_SQL = "CREATE TABLE IF NOT EXISTS songs (" \
     "name TEXT NOT NULL, " \
     "year INTEGER, " \
     "picture_path TEXT, " \
+    "musicbrainz_release_group_id TEXT, " \
     "cover_art_block BLOB, " \
     "cover_art_mime TEXT, " \
     "artist_id INTEGER, " \

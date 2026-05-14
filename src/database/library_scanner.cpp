@@ -13,6 +13,7 @@
 #include <taglib/mpegfile.h>
 #include <taglib/id3v2tag.h>
 #include <taglib/id3v2frame.h>
+#include <taglib/textidentificationframe.h>
 #include <taglib/attachedpictureframe.h>
 #include <taglib/flacfile.h>
 #include <taglib/flacpicture.h>
@@ -40,6 +41,88 @@ static std::string normalize_extension(std::string ext)
     }
 
     return ext;
+}
+
+static std::string readFirstString(const TagLib::StringList& values) {
+    if (values.isEmpty()) {
+        return {};
+    }
+    return values.front().to8Bit(true);
+}
+
+static std::string extractMusicBrainzReleaseGroupId(const std::string& path)
+{
+    TagLib::FileRef f(path.c_str());
+    if (f.isNull() || !f.file()) {
+        return {};
+    }
+
+    auto matchesKey = [](const std::string& key) {
+        return key == "MUSICBRAINZ_RELEASEGROUPID" ||
+               key == "MusicBrainz Release Group Id" ||
+               key == "MUSICBRAINZ_ALBUMID" ||
+               key == "MusicBrainz Album Id";
+    };
+
+    if (auto* mpegFile = dynamic_cast<TagLib::MPEG::File*>(f.file())) {
+        if (mpegFile->ID3v2Tag()) {
+            auto frameList = mpegFile->ID3v2Tag()->frameListMap()["TXXX"];
+            for (auto* frame : frameList) {
+                auto* userText = dynamic_cast<TagLib::ID3v2::UserTextIdentificationFrame*>(frame);
+                if (!userText) {
+                    continue;
+                }
+                if (matchesKey(userText->description().to8Bit(true))) {
+                    return readFirstString(userText->fieldList());
+                }
+            }
+        }
+    } else if (auto* flacFile = dynamic_cast<TagLib::FLAC::File*>(f.file())) {
+        if (flacFile->xiphComment()) {
+            auto fieldMap = flacFile->xiphComment()->fieldListMap();
+            for (const auto& key : {"MUSICBRAINZ_RELEASEGROUPID", "MusicBrainz Release Group Id", "MUSICBRAINZ_ALBUMID", "MusicBrainz Album Id"}) {
+                auto it = fieldMap.find(key);
+                if (it != fieldMap.end()) {
+                    return readFirstString(it->second);
+                }
+            }
+        }
+    } else if (auto* mp4File = dynamic_cast<TagLib::MP4::File*>(f.file())) {
+        if (mp4File->tag()) {
+            auto itemMap = mp4File->tag()->itemMap();
+            for (const auto& key : {"----:com.apple.iTunes:MusicBrainz Release Group Id", "----:com.apple.iTunes:MusicBrainz Album Id"}) {
+                auto it = itemMap.find(key);
+                if (it != itemMap.end()) {
+                    auto values = it->second.toStringList();
+                    if (!values.isEmpty()) {
+                        return values.front().to8Bit(true);
+                    }
+                }
+            }
+        }
+    } else if (auto* vorbisFile = dynamic_cast<TagLib::Ogg::Vorbis::File*>(f.file())) {
+        if (vorbisFile->tag()) {
+            auto fieldMap = vorbisFile->tag()->fieldListMap();
+            for (const auto& key : {"MUSICBRAINZ_RELEASEGROUPID", "MusicBrainz Release Group Id", "MUSICBRAINZ_ALBUMID", "MusicBrainz Album Id"}) {
+                auto it = fieldMap.find(key);
+                if (it != fieldMap.end()) {
+                    return readFirstString(it->second);
+                }
+            }
+        }
+    } else if (auto* opusFile = dynamic_cast<TagLib::Ogg::Opus::File*>(f.file())) {
+        if (opusFile->tag()) {
+            auto fieldMap = opusFile->tag()->fieldListMap();
+            for (const auto& key : {"MUSICBRAINZ_RELEASEGROUPID", "MusicBrainz Release Group Id", "MUSICBRAINZ_ALBUMID", "MusicBrainz Album Id"}) {
+                auto it = fieldMap.find(key);
+                if (it != fieldMap.end()) {
+                    return readFirstString(it->second);
+                }
+            }
+        }
+    }
+
+    return {};
 }
 
 bool LibraryScanner::isAudioFile(const std::string &path)
@@ -232,7 +315,7 @@ ScanResult LibraryScanner::scan(MusicDatabase &db,
                 }
             }
 
-            album_id_opt = db.addAlbum(rep.album, static_cast<int>(artist_id), "", std::optional<int>(rep.year), cover_art_ptr, cover_mime);
+            album_id_opt = db.addAlbum(rep.album, static_cast<int>(artist_id), "", std::optional<int>(rep.year), rep.musicbrainz_release_group_id, cover_art_ptr, cover_mime);
         }
         int64_t album_id = album_id_opt ? *album_id_opt : 0;
 
@@ -290,6 +373,7 @@ music::SongMetadata LibraryScanner::readSongMetadata(const std::string &path)
     music::SongMetadata meta;
 
     meta.filepath = path;
+    meta.musicbrainz_release_group_id = extractMusicBrainzReleaseGroupId(path);
     if (!f.isNull() && f.tag())
     {
         TagLib::Tag *tag = f.tag();

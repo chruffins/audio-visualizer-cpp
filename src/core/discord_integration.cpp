@@ -1,4 +1,5 @@
 #include "core/discord_integration.hpp"
+#include "core/app_state.hpp"
 #include "music/library_views.hpp"
 #include "music/song.hpp"
 #include "util/config.hpp"
@@ -6,6 +7,7 @@
 #include <filesystem>
 #include <chrono>
 #include <allegro5/allegro.h>
+#include <unordered_map>
 #if defined(__unix__) || defined(__APPLE__)
 #include <sys/stat.h>
 #endif
@@ -104,6 +106,16 @@ void DiscordIntegration::setSongPresence(const music::SongView &song) {
         return;
     }
 
+    std::string largeImageUrl;
+    auto& appState = AppState::instance();
+    if (appState.library) {
+        if (const music::Album* album = appState.library->getAlbumById(song.album_id)) {
+            if (!album->musicbrainz_release_group_id.empty()) {
+                largeImageUrl = std::string("https://coverartarchive.org/release-group/") + album->musicbrainz_release_group_id + "/front";
+            }
+        }
+    }
+
     discordpp::Activity activity;
     discordpp::ActivityAssets assets;
     discordpp::ActivityTimestamps timestamps;
@@ -111,7 +123,13 @@ void DiscordIntegration::setSongPresence(const music::SongView &song) {
     assets.SetSmallUrl("https://github.com/chruffins/audio-visualizer-cpp");
     assets.SetSmallText("∫orte player");
     // TODO: dynamically get a URL for album art... like from coverartarchive.org
-    assets.SetLargeImage("https://coverartarchive.org/release-group/3c7430a6-798f-3060-8539-4d22a92aaffe/front");
+    if (!largeImageUrl.empty()) {
+        // later: possibly make a network request to MB to get MBID and save it
+        assets.SetLargeImage(largeImageUrl);
+    } else {
+        // Fallback to a default image if no album art is available
+        assets.SetLargeImage("https://coverartarchive.org/release-group/3c7430a6-798f-3060-8539-4d22a92aaffe/front");
+    }
     assets.SetLargeText(song.album);
 
 

@@ -10,6 +10,7 @@ struct Album {
     int year;                       // Release year
     std::string cover_image_path;   // Path to the cover image file (if external)
     int artist_id;                  // Foreign key to the artist
+    std::string musicbrainz_release_group_id;
     
     // Album art management
     std::shared_ptr<ui::ImageModel> cover_art_model; // Manages album art bitmap loading/caching
@@ -18,13 +19,23 @@ struct Album {
     // Constructor with path only (for backward compatibility)
     Album(int id, const std::string& title, int year, const std::string& cover_image_path, int artist_id)
         : id(id), title(title), year(year), cover_image_path(cover_image_path), artist_id(artist_id),
-          cover_art_model(nullptr) {}
+                    musicbrainz_release_group_id(""), cover_art_model(nullptr) {}
+
+        Album(int id, const std::string& title, int year, const std::string& cover_image_path, int artist_id,
+                    const std::string& musicbrainz_release_group_id)
+                : id(id), title(title), year(year), cover_image_path(cover_image_path), artist_id(artist_id),
+                    musicbrainz_release_group_id(musicbrainz_release_group_id), cover_art_model(nullptr) {}
 
     // Full constructor with embedded cover art
     Album(int id, const std::string& title, int year, const std::string& cover_image_path, int artist_id,
           ui::ImageModel cover_art_model, const std::string& cover_art_mime)
         : id(id), title(title), year(year), cover_image_path(cover_image_path), artist_id(artist_id),
-          cover_art_model(std::make_shared<ui::ImageModel>(std::move(cover_art_model))), cover_art_mime(cover_art_mime) {}
+                    musicbrainz_release_group_id(""), cover_art_model(std::make_shared<ui::ImageModel>(std::move(cover_art_model))), cover_art_mime(cover_art_mime) {}
+
+        Album(int id, const std::string& title, int year, const std::string& cover_image_path, int artist_id,
+                    const std::string& musicbrainz_release_group_id, ui::ImageModel cover_art_model, const std::string& cover_art_mime)
+                : id(id), title(title), year(year), cover_image_path(cover_image_path), artist_id(artist_id),
+                    musicbrainz_release_group_id(musicbrainz_release_group_id), cover_art_model(std::make_shared<ui::ImageModel>(std::move(cover_art_model))), cover_art_mime(cover_art_mime) {}
 
     // Get the album art bitmap (loads if necessary)
     ALLEGRO_BITMAP* getAlbumArt() const;

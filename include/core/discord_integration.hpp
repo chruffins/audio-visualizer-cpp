@@ -4,6 +4,7 @@
 #include <mutex>
 #include <string>
 #include <iostream>
+#include <unordered_map>
 #include "discordpp.h"
 
 namespace music {

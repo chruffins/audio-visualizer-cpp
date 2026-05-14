@@ -20,6 +20,7 @@ struct SongMetadata {
     std::string album_artist;
     std::string genre;
     std::string comment;
+    std::string musicbrainz_release_group_id;
     
     uint32_t track;
     uint32_t disc;

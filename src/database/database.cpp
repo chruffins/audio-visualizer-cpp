@@ -6,6 +6,7 @@
 #include <sstream>
 #include <iostream>
 #include <cstring>
+#include <vector>
 
 #include "music/album.hpp"
 #include "music/artist.hpp"
@@ -153,7 +154,7 @@ std::optional<int64_t> MusicDatabase::addPlaylist(const std::string& name, const
     });
 }
 
-std::optional<int64_t> MusicDatabase::addAlbum(const std::string& album_name, int64_t artist_id, const std::string& picture_path, std::optional<int> year, const std::vector<unsigned char>* cover_art_data, const std::string& cover_art_mime) {
+std::optional<int64_t> MusicDatabase::addAlbum(const std::string& album_name, int64_t artist_id, const std::string& picture_path, std::optional<int> year, const std::string& musicbrainz_release_group_id, const std::vector<unsigned char>* cover_art_data, const std::string& cover_art_mime) {
     auto id = selectOneId("SELECT id FROM albums WHERE name = ?1 AND artist_id IS ?2", [&](sqlite3_stmt* stmt) {
         sqlite3_bind_text(stmt, 1, album_name.c_str(), -1, SQLITE_TRANSIENT);
         if (artist_id > 0) sqlite3_bind_int(stmt, 2, artist_id); else sqlite3_bind_null(stmt, 2);
@@ -161,19 +162,20 @@ std::optional<int64_t> MusicDatabase::addAlbum(const std::string& album_name, in
     if (id) {
         return id;
     }
-    return insertOne("INSERT INTO albums (name, year, picture_path, artist_id, cover_art_block, cover_art_mime) VALUES (?1, ?2, ?3, ?4, ?5, ?6);", [&](sqlite3_stmt* stmt) {
+    return insertOne("INSERT INTO albums (name, year, picture_path, artist_id, musicbrainz_release_group_id, cover_art_block, cover_art_mime) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7);", [&](sqlite3_stmt* stmt) {
         sqlite3_bind_text(stmt, 1, album_name.c_str(), -1, SQLITE_TRANSIENT);
         if (year.has_value()) sqlite3_bind_int(stmt, 2, year.value()); else sqlite3_bind_null(stmt, 2);
         sqlite3_bind_text(stmt, 3, picture_path.c_str(), -1, SQLITE_TRANSIENT);
         if (artist_id > 0) sqlite3_bind_int(stmt, 4, artist_id); else sqlite3_bind_null(stmt, 4);
+        if (!musicbrainz_release_group_id.empty()) sqlite3_bind_text(stmt, 5, musicbrainz_release_group_id.c_str(), -1, SQLITE_TRANSIENT); else sqlite3_bind_null(stmt, 5);
         
         // Bind cover art BLOB if provided
         if (cover_art_data && !cover_art_data->empty()) {
-            sqlite3_bind_blob(stmt, 5, cover_art_data->data(), static_cast<int>(cover_art_data->size()), SQLITE_TRANSIENT);
-            sqlite3_bind_text(stmt, 6, cover_art_mime.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_blob(stmt, 6, cover_art_data->data(), static_cast<int>(cover_art_data->size()), SQLITE_TRANSIENT);
+            sqlite3_bind_text(stmt, 7, cover_art_mime.c_str(), -1, SQLITE_TRANSIENT);
         } else {
-            sqlite3_bind_null(stmt, 5);
             sqlite3_bind_null(stmt, 6);
+            sqlite3_bind_null(stmt, 7);
         }
     });
 }
@@ -329,7 +331,7 @@ std::optional<music::Artist> MusicDatabase::getArtistById(int64_t id) const {
 std::optional<music::Album> MusicDatabase::getAlbumById(int64_t id) const {
     if (!db) { lastErr = "DB not open"; return std::nullopt; }
     sqlite3_stmt* stmt = nullptr;
-    const char* sql = "SELECT id, name, year, picture_path, artist_id, cover_art_block, cover_art_mime FROM albums WHERE id = ?1";
+    const char* sql = "SELECT id, name, year, picture_path, artist_id, musicbrainz_release_group_id, cover_art_block, cover_art_mime FROM albums WHERE id = ?1";
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) { lastErr = sqlite3_errmsg(db); return std::nullopt; }
     sqlite3_bind_int64(stmt, 1, id);
     int rc = sqlite3_step(stmt);
@@ -343,21 +345,23 @@ std::optional<music::Album> MusicDatabase::getAlbumById(int64_t id) const {
         
         std::string title = titleTxt ? reinterpret_cast<const char*>(titleTxt) : std::string();
         std::string pic = picTxt ? reinterpret_cast<const char*>(picTxt) : std::string();
+        const unsigned char* mbidTxt = sqlite3_column_text(stmt, 5);
+        std::string mbid = mbidTxt ? reinterpret_cast<const char*>(mbidTxt) : std::string();
         
         // Read cover art BLOB and MIME type
         std::vector<unsigned char> cover_art_data;
         std::string cover_art_mime;
         
-        if (sqlite3_column_type(stmt, 5) == SQLITE_BLOB) {
-            const void* blob = sqlite3_column_blob(stmt, 5);
-            int blob_size = sqlite3_column_bytes(stmt, 5);
+        if (sqlite3_column_type(stmt, 6) == SQLITE_BLOB) {
+            const void* blob = sqlite3_column_blob(stmt, 6);
+            int blob_size = sqlite3_column_bytes(stmt, 6);
             if (blob && blob_size > 0) {
                 cover_art_data.resize(blob_size);
                 std::memcpy(cover_art_data.data(), blob, blob_size);
             }
         }
         
-        const unsigned char* mimeTxt = sqlite3_column_text(stmt, 6);
+        const unsigned char* mimeTxt = sqlite3_column_text(stmt, 7);
         if (mimeTxt) {
             cover_art_mime = reinterpret_cast<const char*>(mimeTxt);
         }
@@ -368,7 +372,7 @@ std::optional<music::Album> MusicDatabase::getAlbumById(int64_t id) const {
             cover_art_model.loadFromMemory(cover_art_data.data(), cover_art_data.size(), cover_art_mime);
         }
         
-        result = music::Album(aid, title, year, pic, artist_id, std::move(cover_art_model), cover_art_mime);
+        result = music::Album(aid, title, year, pic, artist_id, mbid, std::move(cover_art_model), cover_art_mime);
     }
     sqlite3_finalize(stmt);
     return result;
@@ -537,7 +541,7 @@ std::vector<music::Album> MusicDatabase::getAllAlbums() const {
     std::vector<music::Album> out;
     if (!db) { lastErr = "DB not open"; return out; }
     sqlite3_stmt* stmt = nullptr;
-    const char* sql = "SELECT id, name, year, picture_path, artist_id, cover_art_block, cover_art_mime FROM albums ORDER BY id ASC";
+    const char* sql = "SELECT id, name, year, picture_path, artist_id, musicbrainz_release_group_id, cover_art_block, cover_art_mime FROM albums ORDER BY id ASC";
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) { lastErr = sqlite3_errmsg(db); return out; }
     out.reserve(256);
     while (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -549,21 +553,23 @@ std::vector<music::Album> MusicDatabase::getAllAlbums() const {
         
         std::string title = titleTxt ? reinterpret_cast<const char*>(titleTxt) : std::string();
         std::string pic = picTxt ? reinterpret_cast<const char*>(picTxt) : std::string();
+        const unsigned char* mbidTxt = sqlite3_column_text(stmt, 5);
+        std::string mbid = mbidTxt ? reinterpret_cast<const char*>(mbidTxt) : std::string();
         
         // Read cover art BLOB and MIME type
         std::vector<unsigned char> cover_art_data;
         std::string cover_art_mime;
         
-        if (sqlite3_column_type(stmt, 5) == SQLITE_BLOB) {
-            const void* blob = sqlite3_column_blob(stmt, 5);
-            int blob_size = sqlite3_column_bytes(stmt, 5);
+        if (sqlite3_column_type(stmt, 6) == SQLITE_BLOB) {
+            const void* blob = sqlite3_column_blob(stmt, 6);
+            int blob_size = sqlite3_column_bytes(stmt, 6);
             if (blob && blob_size > 0) {
                 cover_art_data.resize(blob_size);
                 std::memcpy(cover_art_data.data(), blob, blob_size);
             }
         }
         
-        const unsigned char* mimeTxt = sqlite3_column_text(stmt, 6);
+        const unsigned char* mimeTxt = sqlite3_column_text(stmt, 7);
         if (mimeTxt) {
             cover_art_mime = reinterpret_cast<const char*>(mimeTxt);
         }
@@ -574,7 +580,7 @@ std::vector<music::Album> MusicDatabase::getAllAlbums() const {
             cover_art_model.loadFromMemory(cover_art_data.data(), cover_art_data.size(), cover_art_mime);
         }
         
-        out.emplace_back(aid, title, year, pic, artist_id, std::move(cover_art_model), cover_art_mime);
+        out.emplace_back(aid, title, year, pic, artist_id, mbid, std::move(cover_art_model), cover_art_mime);
     }
     sqlite3_finalize(stmt);
     return out;
