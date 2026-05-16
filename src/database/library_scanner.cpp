@@ -50,6 +50,25 @@ static std::string readFirstString(const TagLib::StringList& values) {
     return values.front().to8Bit(true);
 }
 
+// MusicBrainz Release Group ID key candidates
+static constexpr const char* MBID_KEY_CANDIDATES[] = {
+    "MUSICBRAINZ_RELEASEGROUPID",
+    "MusicBrainz Release Group Id",
+    "MUSICBRAINZ_ALBUMID",
+    "MusicBrainz Album Id"
+};
+
+// Extract MBID from Xiph-style FieldListMap (used by FLAC, Vorbis, Opus)
+static std::string extractMBIDFromFieldMap(const TagLib::Ogg::FieldListMap& fieldMap) {
+    for (const auto& key : MBID_KEY_CANDIDATES) {
+        auto it = fieldMap.find(key);
+        if (it != fieldMap.end()) {
+            return readFirstString(it->second);
+        }
+    }
+    return {};
+}
+
 static std::string extractMusicBrainzReleaseGroupId(const std::string& path)
 {
     TagLib::FileRef f(path.c_str());
@@ -58,10 +77,10 @@ static std::string extractMusicBrainzReleaseGroupId(const std::string& path)
     }
 
     auto matchesKey = [](const std::string& key) {
-        return key == "MUSICBRAINZ_RELEASEGROUPID" ||
-               key == "MusicBrainz Release Group Id" ||
-               key == "MUSICBRAINZ_ALBUMID" ||
-               key == "MusicBrainz Album Id";
+        for (const auto& candidate : MBID_KEY_CANDIDATES) {
+            if (key == candidate) return true;
+        }
+        return false;
     };
 
     if (auto* mpegFile = dynamic_cast<TagLib::MPEG::File*>(f.file())) {
@@ -69,9 +88,7 @@ static std::string extractMusicBrainzReleaseGroupId(const std::string& path)
             auto frameList = mpegFile->ID3v2Tag()->frameListMap()["TXXX"];
             for (auto* frame : frameList) {
                 auto* userText = dynamic_cast<TagLib::ID3v2::UserTextIdentificationFrame*>(frame);
-                if (!userText) {
-                    continue;
-                }
+                if (!userText) continue;
                 if (matchesKey(userText->description().to8Bit(true))) {
                     return readFirstString(userText->fieldList());
                 }
@@ -79,13 +96,7 @@ static std::string extractMusicBrainzReleaseGroupId(const std::string& path)
         }
     } else if (auto* flacFile = dynamic_cast<TagLib::FLAC::File*>(f.file())) {
         if (flacFile->xiphComment()) {
-            auto fieldMap = flacFile->xiphComment()->fieldListMap();
-            for (const auto& key : {"MUSICBRAINZ_RELEASEGROUPID", "MusicBrainz Release Group Id", "MUSICBRAINZ_ALBUMID", "MusicBrainz Album Id"}) {
-                auto it = fieldMap.find(key);
-                if (it != fieldMap.end()) {
-                    return readFirstString(it->second);
-                }
-            }
+            return extractMBIDFromFieldMap(flacFile->xiphComment()->fieldListMap());
         }
     } else if (auto* mp4File = dynamic_cast<TagLib::MP4::File*>(f.file())) {
         if (mp4File->tag()) {
@@ -102,23 +113,11 @@ static std::string extractMusicBrainzReleaseGroupId(const std::string& path)
         }
     } else if (auto* vorbisFile = dynamic_cast<TagLib::Ogg::Vorbis::File*>(f.file())) {
         if (vorbisFile->tag()) {
-            auto fieldMap = vorbisFile->tag()->fieldListMap();
-            for (const auto& key : {"MUSICBRAINZ_RELEASEGROUPID", "MusicBrainz Release Group Id", "MUSICBRAINZ_ALBUMID", "MusicBrainz Album Id"}) {
-                auto it = fieldMap.find(key);
-                if (it != fieldMap.end()) {
-                    return readFirstString(it->second);
-                }
-            }
+            return extractMBIDFromFieldMap(vorbisFile->tag()->fieldListMap());
         }
     } else if (auto* opusFile = dynamic_cast<TagLib::Ogg::Opus::File*>(f.file())) {
         if (opusFile->tag()) {
-            auto fieldMap = opusFile->tag()->fieldListMap();
-            for (const auto& key : {"MUSICBRAINZ_RELEASEGROUPID", "MusicBrainz Release Group Id", "MUSICBRAINZ_ALBUMID", "MusicBrainz Album Id"}) {
-                auto it = fieldMap.find(key);
-                if (it != fieldMap.end()) {
-                    return readFirstString(it->second);
-                }
-            }
+            return extractMBIDFromFieldMap(opusFile->tag()->fieldListMap());
         }
     }
 
